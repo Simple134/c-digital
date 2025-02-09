@@ -3,11 +3,11 @@ import Header from "./components/header";
 import Background from "./components/background";
 export default function Home() {
   return (
-    <div className="relative h-screen">
+    <div className="relative ">
       <Background />
-      <Container className="relative z-10 h-[99vh] bg-transparent rounded-2xl p-4 no-scrollbar">
+      <Container className="relative z-10  bg-transparent rounded-2xl ">
         <Header />
-        <div className="flex flex-col items-center justify-center h-[88vh] w-full space-y-8">
+        <div className="flex flex-col items-center justify-center h-[80vh] w-full space-y-8 ">
           <div className="h-[3px] bg-[#01aaa8] w-64 mb-10 rounded-full"></div>
           <div className="flex flex-col items-center justify-center space-y-4 ">
             <h1 className="text-white text-[90px] font-bold font-['Poppins'] lg:text-9xl">
