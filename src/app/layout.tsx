@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import Background from "./components/background";
 export const metadata: Metadata = {
   title: "C Digital",
   description: "C Digital",
