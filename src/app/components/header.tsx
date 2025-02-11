@@ -11,7 +11,7 @@ const Header = () => {
         <Container className="!w-full bg-transparent relative z-50">
             <div className="flex justify-between items-center text-white !w-full pt-4 relative z-50" >
                 <div className="cursor-pointer top-0 left-0 relative z-50" onClick={() => router.push("/")}>
-                    <img src="/Layer_1.png" alt="logo" className="object-cover w-64 h-full"   />
+                    <img src="/Layer_1.png" alt="logo" className="object-cover lg:w-64 w-44 h-full"   />
                 </div>
                 <div className="flex space-x-8 lg:block hidden relative z-50">
                     <Link href="/" className={` ${pathname === "/" ? "bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] text-transparent bg-clip-text font-bold" : "hover:text-[#9F9F9F] font-normal"} font-['Poppins']`}>Inicio</Link>

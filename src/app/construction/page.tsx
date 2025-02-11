@@ -15,7 +15,7 @@ const Construction = () => {
     }
 
     return (
-        <div className="flex flex-col items-center justify-center h-[90vh] w-full space-y-8 bg-black">
+        <div className="relative flex flex-col items-center justify-center h-[90vh] w-full space-y-8 bg-black">
             <div className="flex flex-col items-center justify-center space-y-4 ">
                 <h1 className="text-white text-6xl text-center font-bold font-['Poppins'] lg:text-9xl">
                     Web en Trabajo
@@ -23,7 +23,7 @@ const Construction = () => {
 
                 </h1>
                 <p className="text-white w-[80%] text-center font-['Poppins'] lg:text-xl">
-                    Contáctanos en <span className="text-[#01aaa8]">Nuestras Redes</span>
+                    Contáctanos en <span className="bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] text-transparent bg-clip-text">Nuestras Redes</span>
                 </p>
                 <div className="flex gap-8 ">
                     <Image
@@ -50,6 +50,9 @@ const Construction = () => {
                         onClick={handleYouTubeClick}
                         className="cursor-pointer"
                     />
+                </div>
+                <div className="absolute items-end justify-center bottom-4" >
+                    <a href="mailto:hola@estudiocdigital.com" className="text-[#5A5A5A] text-lg tracking-wide" > hola@estudiocdigital.com</a>
                 </div>
             </div>
         </div>
