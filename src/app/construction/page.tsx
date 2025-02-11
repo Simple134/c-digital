@@ -51,7 +51,7 @@ const Construction = () => {
                         className="cursor-pointer"
                     />
                 </div>
-                <div className="absolute items-end justify-center bottom-4" >
+                <div className="absolute items-end justify-center bottom-12" >
                     <a href="mailto:hola@estudiocdigital.com" className="text-[#5A5A5A] text-lg tracking-wide" > hola@estudiocdigital.com</a>
                 </div>
             </div>
