@@ -3,7 +3,7 @@ import Image from "next/image"
 
 const Construction = () => {
     const handleWhatsAppClick = () => {
-        window.open(`https://wa.me/17867557025`, '_blank')
+        window.open(`https://wa.link/h0k461`, '_blank')
     }
 
     const handleInstagramClick = () => {

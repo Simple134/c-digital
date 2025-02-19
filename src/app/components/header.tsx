@@ -7,6 +7,10 @@ const Header = () => {
     const pathname = usePathname()
     const router = useRouter()
 
+    if(pathname === "/trabajos" ) {
+        return 
+    }
+
     return (
         <Container className="!w-full bg-transparent relative z-50">
             <div className="flex justify-between items-center text-white !w-full pt-4 relative z-50" >
@@ -15,7 +19,7 @@ const Header = () => {
                 </div>
                 <div className="flex space-x-8 lg:block hidden relative z-50">
                     <Link href="/" className={` ${pathname === "/" ? "bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] text-transparent bg-clip-text font-bold" : "hover:text-[#9F9F9F] font-normal"} font-['Poppins']`}>Inicio</Link>
-                    <Link href="/construction" className={` ${pathname === "" ? "text-[#01aaa8] font-bold" : "hover:text-[#9F9F9F] font-normal"} font-['Poppins']`}>Trabajos</Link>
+                    <Link href="/trabajos" className={` ${pathname === "/trabajos" ? "text-[#01aaa8] font-bold" : "hover:text-[#9F9F9F] font-normal"} font-['Poppins']`}>Trabajos</Link>
                     <Link href="/construction" className={` ${pathname === "" ? "text-[#01aaa8] font-bold" : "hover:text-[#9F9F9F] font-normal"} font-['Poppins']`}>Blogs</Link>
                     <Link href="/construction" className={` ${pathname === "" ? "text-[#01aaa8] font-bold" : "hover:text-[#9F9F9F] font-normal"} font-['Poppins']`}>Contactos</Link>
                 </div>

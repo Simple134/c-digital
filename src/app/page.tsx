@@ -26,7 +26,7 @@ export default function Home() {
                 style={{
                   borderImage: 'linear-gradient(to right, #00C5FF, #00FF7C) 1',
                 }}
-                onClick={() => router.push("/construction")}
+                onClick={() => router.push("/trabajos")}
               >
                 <span className="font-semibold">Soluciones Digitales</span>
               </button>
