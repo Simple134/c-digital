@@ -72,7 +72,7 @@ const Trabajos = () => {
             className="!m-0 !p-0"
             behavior="media"
           >
-            {(showNewProjects ? newProjects : initialProjects).map((project, index) => (
+            {(showNewProjects ? newProjects : initialProjects).map((project) => (
               <motion.div
                 key={project.image}
                 className="relative flex justify-center items-center group"
