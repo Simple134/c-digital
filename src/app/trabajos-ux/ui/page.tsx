@@ -63,7 +63,7 @@ const Trabajos = () => {
     window.open(`https://wa.link/h0k461`, "_blank");
   };
   return (
-    <div className="h-screen overflow-y-auto">
+    <div className="h-[100vh] overflow-y-auto pb-24">
       <Container>
         <AnimatePresence mode="wait">
           <Grid
