@@ -43,6 +43,7 @@ const Background = () => {
             enable: true,
             mode: "push",
           },
+          
           onHover: {
             enable: true,
             mode: "repulse",

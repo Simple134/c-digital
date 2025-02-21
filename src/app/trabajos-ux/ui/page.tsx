@@ -59,6 +59,12 @@ const Trabajos = () => {
       projectsElement.scrollIntoView({ behavior: 'smooth' });
     }
   };
+  const handleMarcasClick = () => {
+    const marcasElement = document.getElementById('marcas');
+    if (marcasElement) {
+      marcasElement.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
 
   const projectVariants = {
     initial: { opacity: 0, scale: 0.5 },
@@ -70,7 +76,7 @@ const Trabajos = () => {
     window.open(`https://wa.link/h0k461`, "_blank");
   };
   return (
-    <div className="relative h-[90vh] overflow-y-auto pb-8">
+    <div className="relative h-[90vh] overflow-y-auto pb-14">
       <Background />
       <div className="relative z-10">
       <Container>
@@ -165,13 +171,15 @@ const Trabajos = () => {
       </Container>
       <div className="h-48"></div>
       <Container>
-        <Grid columns={{ xl: 4, lg: 4, md: 1, sm: 1 }} >
+        <Grid columns={{ xl: 4, lg: 4, md: 1, sm: 1 }} id="marcas">
         <Column columns={{ xl: { width: 2 }, md: { width: 1 }, }}>
-          <div className="flex">
+          <div className="flex h-full">
             <Image
               src="/trabajos/7.png"
               alt="Project 1"
-              fill
+              width={650}
+              height={650}
+              className="w-full h-full"
             />
           </div>
           </Column>
@@ -217,7 +225,7 @@ const Trabajos = () => {
             </div>
           </Column>
           <Column columns={{ xl: { width: 2 }, md: { width: 1 }, }}>
-          <div className="ml-4 w-full">
+          <div className="lg:ml-4 w-full">
             <span className="bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] text-transparent bg-clip-text font-bold text-2xl">
               {" "}
               Branding / Rebranding
@@ -234,11 +242,11 @@ const Trabajos = () => {
             </p>
             <div className="flex gap-4">
               <button
-                onClick={handleVerMas}
                 className={`border-2 border-white w-fit px-4 py-2 mt-10 font-['Poppins'] lg:text-2xl text-white hover:text-transparent bg-clip-text hover:bg-gradient-to-r hover:from-[#00C5FF] hover:to-[#00FF7C]`}
                 style={{
                   borderImage: "linear-gradient(to right, #00C5FF, #00FF7C) 1",
                 }}
+                onClick={handleMarcasClick}
               >
                 <span className="font-semibold text-xl">Ver más</span>
               </button>
