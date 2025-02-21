@@ -1,8 +1,9 @@
 "use client";
 import { useState } from "react";
-import { Container, Grid } from "@bitnation-dev/components";
+import { Column, Container, Grid } from "@bitnation-dev/components";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
+import Background from "@/app/components/background";
 
 const Trabajos = () => {
   const [showNewProjects, setShowNewProjects] = useState(false);
@@ -51,19 +52,27 @@ const Trabajos = () => {
 
   const handleVerMas = () => {
     setShowNewProjects(!showNewProjects);
+    
+    // Desplazarse al elemento con ID "projects"
+    const projectsElement = document.getElementById('projects');
+    if (projectsElement) {
+      projectsElement.scrollIntoView({ behavior: 'smooth' });
+    }
   };
 
   const projectVariants = {
-    initial: { opacity: 0, scale: 0.9 },
-    animate: { opacity: 1, scale: 1, transition: { duration: 0.5 } },
-    exit: { opacity: 0, scale: 0.9, transition: { duration: 0.5 } },
+    initial: { opacity: 0, scale: 0.5 },
+    animate: { opacity: 1, scale: 1, transition: { duration: 1 } },
+    exit: { opacity: 0, scale: 0.9, transition: { duration: 1 } },
   };
 
   const handleWhatsAppClick = () => {
     window.open(`https://wa.link/h0k461`, "_blank");
   };
   return (
-    <div className="h-[100vh] overflow-y-auto pb-24">
+    <div className="relative h-[90vh] overflow-y-auto pb-8">
+      <Background />
+      <div className="relative z-10">
       <Container>
         <AnimatePresence mode="wait">
           <Grid
@@ -71,6 +80,7 @@ const Trabajos = () => {
             columns={{ xl: 3, lg: 3, md: 2, sm: 1 }}
             className="!m-0 !p-0"
             behavior="media"
+            id="projects"
           >
             {(showNewProjects ? newProjects : initialProjects).map(
               (project) => (
@@ -117,9 +127,13 @@ const Trabajos = () => {
               Diseño De <br className="leading-[0.3]" /> Productos
             </h1>
           </div>
-          <div className="mt-6 w-full h-full justify-center flex flex-col">
-            <p className="text-white text-2xl font-['Poppins']">
+          <div className="lg:mt-6 w-full h-full justify-center flex flex-col">
+            <p className="text-white text-2xl font-['Poppins'] hidden lg:block md:hidden">
               Creamos Webs y Aplicaciones desde cero; <br /> que generan impacto
+              con diseños a la <br /> vanguardia. Para personas ambiciosas.
+            </p>
+            <p className="text-white text-2xl font-['Poppins'] block lg:hidden md:hidden">
+              Creamos Webs y Aplicaciones desde cero; que generan impacto
               con diseños a la <br /> vanguardia. Para personas ambiciosas.
             </p>
             <div className="flex gap-4">
@@ -149,16 +163,15 @@ const Trabajos = () => {
           </div>
         </Grid>
       </Container>
-      {/*<div className="h-48"></div>
-      <div className="flex  items-center justify-center w-[100vw] pb-10">
-        <Grid columns={{ xl: 4, lg: 2, md: 2 }} className="!m-0 !p-0">
+      <div className="h-48"></div>
+      <Container>
+        <Grid columns={{ xl: 4, lg: 4, md: 2, sm: 1 }} >
         <Column columns={{ xl: { width: 2 }, md: { width: 1 }, }}>
           <div className="flex">
             <Image
               src="/trabajos/7.png"
               alt="Project 1"
-              width={630}
-              height={630}
+              fill
             />
           </div>
           </Column>
@@ -169,6 +182,7 @@ const Trabajos = () => {
               alt="Project 1"
               width={545}
               height={520}
+              className="w-full h-full"
             />
           </div>
           </Column>
@@ -180,6 +194,7 @@ const Trabajos = () => {
               alt="Project 1"
               width={630}
               height={650}
+              className="w-full h-full"
             />
             <div className="flex gap-4">
             <Image
@@ -207,7 +222,7 @@ const Trabajos = () => {
               {" "}
               Branding / Rebranding
             </span>
-            <h1 className="text-white text-8xl font-bold font-['Poppins'] whitespace-normal leading-[1.1]">
+            <h1 className="text-white lg:text-8xl text-6xl font-bold font-['Poppins'] whitespace-normal leading-[1.1]">
               Diseño De <br className="leading-[0.3]" /> Marcas
             </h1>
             <div className="mt-6 w-full h-full justify-center flex flex-col">
@@ -242,7 +257,8 @@ const Trabajos = () => {
           </div>
           </Column>
         </Grid>
-      </div>*/}
+      </Container>
+      </div>
     </div>
   );
 };
