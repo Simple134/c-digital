@@ -77,7 +77,7 @@ const Trabajos = () => {
         <AnimatePresence mode="wait">
           <Grid
             key={showNewProjects ? "new-projects" : "initial-projects"}
-            columns={{ xl: 3, lg: 3, md: 2, sm: 1 }}
+            columns={{ xl: 3, lg: 3, md: 1, sm: 1 }}
             className="!m-0 !p-0"
             behavior="media"
             id="projects"
@@ -117,7 +117,7 @@ const Trabajos = () => {
             )}
           </Grid>
         </AnimatePresence>
-        <Grid columns={{ xl: 2, lg: 2, md: 2, sm: 1 }} className="grid grid-cols-2 gap-6 w-full">
+        <Grid columns={{ xl: 2, lg: 2, md: 1, sm: 1 }} >
           <div className="mt-6 w-full">
             <span className="bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] text-transparent bg-clip-text font-bold text-2xl">
               {" "}
@@ -134,7 +134,7 @@ const Trabajos = () => {
             </p>
             <p className="text-white text-2xl font-['Poppins'] block lg:hidden md:hidden">
               Creamos Webs y Aplicaciones desde cero; que generan impacto
-              con diseños a la <br /> vanguardia. Para personas ambiciosas.
+              con diseños a la  vanguardia. Para personas ambiciosas.
             </p>
             <div className="flex gap-4">
               <button
@@ -165,7 +165,7 @@ const Trabajos = () => {
       </Container>
       <div className="h-48"></div>
       <Container>
-        <Grid columns={{ xl: 4, lg: 4, md: 2, sm: 1 }} >
+        <Grid columns={{ xl: 4, lg: 4, md: 1, sm: 1 }} >
         <Column columns={{ xl: { width: 2 }, md: { width: 1 }, }}>
           <div className="flex">
             <Image
@@ -225,9 +225,12 @@ const Trabajos = () => {
             <h1 className="text-white lg:text-8xl text-6xl font-bold font-['Poppins'] whitespace-normal leading-[1.1]">
               Diseño De <br className="leading-[0.3]" /> Marcas
             </h1>
-            <div className="mt-6 w-full h-full justify-center flex flex-col">
-            <p className="text-white text-2xl font-['Poppins']">
+            <div className="lg:mt-6 w-full h-full justify-center flex flex-col">
+            <p className="text-white text-2xl font-['Poppins'] hidden lg:block md:hidden">
             Diseñamos marcas que reflejan un <br /> concepto e impulsan estrategias que <br /> venden.
+            </p>
+            <p className="text-white text-2xl font-['Poppins'] block lg:hidden md:hidden">
+            Diseñamos marcas que reflejan un  concepto e impulsan estrategias que venden.
             </p>
             <div className="flex gap-4">
               <button
