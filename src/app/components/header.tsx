@@ -8,13 +8,10 @@ const Header = () => {
     const pathname = usePathname()
     const router = useRouter()
 
-    if(pathname === "/trabajos" ) {
-        return 
-    }
 
     return (
-        <Container className="!w-full bg-transparent relative z-50">
-            <div className="flex justify-between items-center text-white !w-full pt-4 relative z-50" >
+        <Container className="!w-full bg-transparent relative z-[100]">
+            <div className="flex justify-between items-center text-white !w-full pt-4 relative z-[100] " >
                 <div className="cursor-pointer top-0 left-0 relative z-50" onClick={() => router.push("/")}>
                     <Image src="/Layer_1.png" alt="logo" className="object-cover lg:w-64 w-44 h-full" width={256} height={256} />
                 </div>
