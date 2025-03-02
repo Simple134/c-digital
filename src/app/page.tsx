@@ -199,7 +199,7 @@ export default function Home() {
         <div className=" w-full h-[30vh] flex">
           <div className="w-full h-full flex justify-end items-center  ">
             <p className="text-white text-md md:text-2xl">
-              "Somos un estudio de diseño gráfico y diseño web <br />
+              Somos un estudio de diseño gráfico y diseño web <br />
               especializado en brindar soluciones digitales a medida para <br />
               empresas en sus diferentes etapas. Más que vendedores de <br />
               servicios de diseño, somos asesores que te ayudarán a resolver{" "}
@@ -208,7 +208,7 @@ export default function Home() {
               <br />
               expertos en marketing digital y desarrollo web para ofrecerte un{" "}
               <br />
-              servicio integral y de alta calidad."
+              servicio integral y de alta calidad.
             </p>
           </div>
         </div>

@@ -1,4 +1,4 @@
-import { Grid, Container } from "@bitnation-dev/components";
+import {  Container } from "@bitnation-dev/components";
 
 const Footer = () => {
   return (
