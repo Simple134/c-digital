@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 import Header from "./components/header";
 import Script from "next/script";
+import Background from "./components/background";
+import Footer from "./components/footer";
 export const metadata: Metadata = {
   title: "C Digital",
   description:
@@ -40,7 +42,7 @@ export default function RootLayout({
           `}
         </Script>
       </head>
-      <body suppressHydrationWarning>
+      <body suppressHydrationWarning >
         {/* Noscript fallback */}
         <noscript>
           <iframe
@@ -51,7 +53,9 @@ export default function RootLayout({
           ></iframe>
         </noscript>
         <Header />
+      <Background />
         {children}
+        <Footer />
       </body>
     </html>
   );
