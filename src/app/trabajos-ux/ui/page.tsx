@@ -80,7 +80,7 @@ const Trabajos = () => {
       <Background />
       <div className="relative z-10">
         <Container id="cont-1">
-          <AnimatePresence mode="wait">
+          <AnimatePresence>
             <Grid
               key={showNewProjects ? "new-projects" : "initial-projects"}
               columns={{ xl: 3, lg: 3, md: 1, sm: 1 }}

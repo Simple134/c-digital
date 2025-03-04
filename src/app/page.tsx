@@ -1,5 +1,6 @@
-"use client";
-import { Column, Container, Grid } from "@bitnation-dev/components";
+
+"use client"
+import { Container, Grid, Column } from "@bitnation-dev/components";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import { useState } from "react";
@@ -84,6 +85,13 @@ export default function Home() {
       creceElement.scrollIntoView({ behavior: "smooth" });
     }
   };
+
+  const handleContactClick = () => {
+    const contactElement = document.getElementById("quienes-somos");
+    if (contactElement) {
+      contactElement.scrollIntoView({ behavior: "smooth" });
+    }
+  };
   
   
   
@@ -149,10 +157,9 @@ export default function Home() {
               </motion.h1>
               <motion.p
                 variants={itemVariants}
-                className="w-[80%] text-center font-['Poppins'] lg:text-xl"
+                className="w-[90%] text-center font-['Poppins'] lg:text-xl pt-6"
               >
-                Soluciones empresariales innovadoras para potenciar tu negocio;
-                conecta <br /> con nosotros y destaca tu proyecto.
+                Somos el equipo de desarrollo y diseño responsable que tu proyecto o negocio necesita <br /> para  destacar en el mercado digital.
               </motion.p>
             </motion.div>
 
@@ -165,7 +172,7 @@ export default function Home() {
                 style={{
                   borderImage: "linear-gradient(to right, #00C5FF, #00FF7C) 1",
                 }}
-              //onClick={() => router.push("")}
+              onClick={handleContactClick}
               >
                 <span className="font-semibold">¿Quienes somos?</span>
               </button>
@@ -179,39 +186,32 @@ export default function Home() {
           </motion.div>
         </AnimatePresence>
       </Container>
-      <div className="h-48"></div>
-      <Container className="w-full px-0 mx-0 max-w-none bg-black">
-        <div className="w-full h-56 flex justify-center items-center ">
-          <div className="h-1 bg-white w-96"></div>
+      <div className="h-48" ></div>
+      <Container className="w-full px-0 mx-0 max-w-none bg-black" id="quienes-somos">
+        <div className="w-full h-56 flex justify-end md:justify-center items-end md:items-center ">
+          <div className="h-1 bg-white w-48 md:w-96 mb-14" ></div>
         </div>
-        <div className="flex w-full pl-12">
-          <div className="w-full">
-            <span className="bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] text-transparent bg-clip-text font-bold text-2xl">
+        <div className="flex w-full justify-start items-start ">
+          <div className="w-full" >
+            <span className="bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] text-transparent bg-clip-text font-bold text-lg md:text-2xl   ">
               ¿Quienes somos?
             </span>
-            <div className="h-40 relative">
-              <div className="flex items-center">
-                <h1 className="text-white text-4xl md:text-9xl font-bold font-['Poppins']">
-                  C Digital
-                </h1>
-                <div className="h-2 w-2 md:h-4 md:w-4 ml-2 mt-2 md:ml-2 md:mt-16 bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] flex-shrink-0"></div>
-              </div>
+            <div className="h-40 relative mt-4">
+              <Image src="/logoCdigital.png" alt="logo" width={500} height={500} className="w-[60%] " />
             </div>
           </div>
         </div>
-        <div className=" w-full h-[30vh] flex">
-          <div className="w-full h-full flex justify-end items-center  ">
-            <p className="text-white text-md md:text-2xl">
-              Somos un estudio de diseño gráfico y diseño web <br />
-              especializado en brindar soluciones digitales a medida para <br />
-              empresas en sus diferentes etapas. Más que vendedores de <br />
-              servicios de diseño, somos asesores que te ayudarán a resolver{" "}
-              <br />
-              problemas y alcanzar tus objetivos. Contamos con un equipo de{" "}
-              <br />
-              expertos en marketing digital y desarrollo web para ofrecerte un{" "}
-              <br />
-              servicio integral y de alta calidad.
+        <div className=" w-full h-[30vh] flex mt-4 justify-end items-end ">
+          <div className="md:w-[60%] w-full h-full flex justify-end items-end   ">
+            <p className="text-white text-md md:text-2xl pl-20 md:pl-0 text-left">
+              Somos un estudio de diseño gráfico en La Vega, Rep. Dom.
+              especializado en brindar soluciones digitales a medida para 
+              empresas en todo el mundo en sus diferentes etapas. Más que vendedores de 
+              servicios de diseño, somos asesores que te ayudarán a resolver
+              problemas y alcanzar tus objetivos. Contamos con un equipo de
+              expertos en cada uno de nuestros servicios para ofrecerte
+              un servicio integral y de alta calidad.
+              
             </p>
           </div>
         </div>
@@ -260,19 +260,16 @@ export default function Home() {
               )
             )}
           </Grid>
-          <motion.div
-            className="mt-6 w-full "
-            initial={{ opacity: 0, y: 0 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-          >
+          </AnimatePresence>
+          <div
+            className="mt-6 w-full ">
             <Grid columns={{ xl: 2, lg: 2, md: 1, sm: 1 }}>
               <div>
                 <span className="bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] text-transparent bg-clip-text font-bold text-2xl">
                   {" "}
                   UX/UI Design
                 </span>
-                <h1 className="text-white text-[65px] lg:text-[120px] font-bold font-['Poppins'] whitespace-normal leading-[1.1]">
+                <h1 className="text-white text-6xl lg:text-8xl font-bold font-['Poppins'] whitespace-normal leading-[1.1]">
                   Diseño De <br className="leading-[0.3]" /> Productos
                 </h1>
               </div>
@@ -301,7 +298,7 @@ export default function Home() {
                     className="bg-white text-black px-4 py-2 mt-10 font-['Poppins'] lg:text-2xl flex gap-2 items-center"
                     onClick={handleWhatsAppClick}
                   >
-                    <span className="font-semibold text-xl">Hablemos</span>
+                    <span className="font-semibold text-xl ">Hablemos</span>
                     <Image
                       src="/whatsapp.png"
                       alt="WhatsApp"
@@ -313,8 +310,7 @@ export default function Home() {
                 </div>
               </div>
             </Grid>
-          </motion.div>
-        </AnimatePresence>
+          </div>
       </Container>
       <div className="h-64"></div>
       <Container id="cont-2">
@@ -455,7 +451,7 @@ export default function Home() {
               Diseño gráfico
             </span>
             <h1 className="text-white text-[65px] lg:text-[120px] font-bold font-['Poppins'] whitespace-normal leading-[0.9] w-fit">
-              Content <br className="leading-[0.3]" /> Support
+              Content <br className="leading-[0.3]" /> Design
             </h1>
           </div>
           <div className="lg:mt-6 h-full justify-center flex flex-col">
@@ -469,7 +465,6 @@ export default function Home() {
             </p>
             <div className="flex gap-4">
               <button
-                onClick={handleVerMas}
                 className={`border-2 border-white w-fit px-4 py-2 mt-10 font-['Poppins'] lg:text-2xl text-white hover:text-transparent bg-clip-text hover:bg-gradient-to-r hover:from-[#00C5FF] hover:to-[#00FF7C]`}
                 style={{
                   borderImage: "linear-gradient(to right, #00C5FF, #00FF7C) 1",
@@ -495,12 +490,12 @@ export default function Home() {
         </Grid>
       </Container>
       <div className="h-64"></div>
-      <Container className="bg-white h-[65vh]  flex flex-col  ">
+      <Container className="bg-white h-[65vh] w-full  flex flex-col overflow-hidden !p-0 !m-0  ">
         <div className="flex flex-col items-center  ">
           <p className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#00C5FF] to-[#00FF7C]">
             Conoce algunos de
           </p>
-          <h1 className="text-black text-6xl font-bold font-['Poppins'] pb-16">
+          <h1 className="text-black text-4xl md:text-6xl font-bold font-['Poppins'] pb-16">
             Nuestros Clientes
           </h1>
           <InfiniteLogo />
@@ -511,13 +506,13 @@ export default function Home() {
         <Grid columns={{ xl: 2, lg: 2, md: 1, sm: 1 }}>
           <div className="flex flex-col justify-center ">
             <span className="bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] text-transparent bg-clip-text font-bold text-2xl w-fit">
-              Fases y Servicios
+              Servicios
             </span>
-            <h1 className="text-white text-6xl text-start font-bold font-['Poppins'] lg:text-7xl">
-              Problemas Que Resolvemos
+            <h1 className="text-white text-5xl text-start font-bold font-['Poppins'] lg:text-7xl">
+              Fases de Desarrollo
             </h1>
           </div>
-          <div className="flex flex-col space-y-6">
+          <div className="flex flex-col space-y-6 mt-8 md:mt-0">
             <div className="flex flex-col justify-center items-end">
               <span className="text-[#AFAFAF] hover:text-white text-3xl font-bold font-['Poppins'] hover:cursor-pointer" onClick={handleConectaClick}>
                 1. Conecta
@@ -584,12 +579,12 @@ export default function Home() {
             </ul>
           </div>
           <div className="flex flex-col items-start justify-start mt-8">
-            <span className="text-white text-xl ">
+            <span className="text-white text-xl md:text-2xl ">
               En esta fase inicial, definimos la visión de tu negocio, la
-              identidad visual de tu <br /> marca y tu buyer persona. Realizamos
-              una investigación exhaustiva del <br /> mercado y analizamos a tu
-              competencia para identificar oportunidades y <br /> desafíos.
-              Establecemos una estrategia de marca sólida que te permita <br />{" "}
+              identidad visual de tu marca y tu buyer persona. Realizamos
+              una investigación exhaustiva del mercado y analizamos a tu
+              competencia para identificar oportunidades y desafíos.
+              Establecemos una estrategia de marca sólida que te permita
               diferenciarte y conectar con tu público objetivo.
             </span>
             <div className=" mt-8">
@@ -664,7 +659,7 @@ export default function Home() {
           <div className="flex flex-col items-start justify-start mt-8">
             <span className="text-white text-xl ">
               En esta fase, damos vida a tu marca mediante la creación de
-              activos visuales <br /> y digitales que transmitan su esencia.
+              activos visuales y digitales que transmitan su esencia.
               Diseñamos logos, páginas web atractivas y apps innovadoras,
               empaques creativos y mucho más. Nos aseguramos de que cada
               elemento esté alineado con la narrativa de tu marca y genere un
@@ -759,7 +754,7 @@ export default function Home() {
             <span className="bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] text-transparent bg-clip-text font-bold text-2xl w-fit">
               Dudas o Preguntas?
             </span>
-            <h1 className="text-white text-6xl text-center font-bold font-['Poppins'] lg:text-9xl">
+            <h1 className="text-white text-4xl md:text-6xl text-center font-bold font-['Poppins'] lg:text-9xl">
               Hablemos
             </h1>
             <p className="text-white text-xl">

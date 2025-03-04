@@ -180,7 +180,7 @@ const InfiniteLogo = () => {
                   direction="left"
                   speed="slow"
                   pauseOnHover={false}
-                  className=""
+                  className="w-fit overflow-hidden"
                 />
     </div>
   );

@@ -2,8 +2,8 @@ import {  Container } from "@bitnation-dev/components";
 
 const Footer = () => {
   return (
-    <footer className="bg-black text-white">
-      <Container>
+    <footer className=" text-white">
+      <Container className="bg-black">
         <div className="flex w-full h-[1px] bg-white mb-4"></div>
         <div className="flex flex-col space-y-4 ">
             <span className="text-2xl font-bold">C Digital</span>

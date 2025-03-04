@@ -10,6 +10,7 @@ import {
 // import { loadAll } from "@tsparticles/all"; // if you are going to use `loadAll`, install the "@tsparticles/all" package too.
 // import { loadFull } from "tsparticles"; // if you are going to use `loadFull`, install the "tsparticles" package too.
 import { loadSlim } from "@tsparticles/slim"; // if you are going to use `loadSlim`, install the "@tsparticles/slim" package too.
+import { loadFull } from "tsparticles";
 // import { loadBasic } from "@tsparticles/basic"; // if you are going to use `loadBasic`, install the "@tsparticles/basic" package too.
 
 // Extender la interfaz Window para incluir opera
@@ -26,7 +27,7 @@ const Background = () => {
   // Detectar si es un dispositivo móvil
   useEffect(() => {
     const checkIfMobile = () => {
-      const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+      const userAgent = navigator.userAgent ||  window.opera;
       const mobileRegex = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i;
       setIsMobile(mobileRegex.test(userAgent || '') || window.innerWidth < 768);
     };
@@ -46,7 +47,7 @@ const Background = () => {
       // this loads the tsparticles package bundle, it's the easiest method for getting everything ready
       // starting from v2 you can add only the features you need reducing the bundle size
       //await loadAll(engine);
-      //await loadFull(engine);
+      await loadFull(engine);
       await loadSlim(engine);
       //await loadBasic(engine);
     }).then(() => {
@@ -60,7 +61,7 @@ const Background = () => {
 
   const options: ISourceOptions = useMemo(
     () => ({
-      fpsLimit: isMobile ? 10 : 60,
+      fpsLimit: isMobile ? 10 : 120,
       interactivity: {
         events: {
           onClick: {
@@ -75,7 +76,7 @@ const Background = () => {
         },
         modes: {
           push: {
-            quantity: isMobile ? 2 : 4,
+            quantity: isMobile ? 2 : 8,
           },
           repulse: {
             distance: isMobile ? 50 : 200,
@@ -101,7 +102,7 @@ const Background = () => {
             default: OutMode.out,
           },
           random: false,
-          speed: isMobile ? 1 : 2,
+          speed: isMobile ? 1 : 4,
           straight: false,
         },
         number: {
