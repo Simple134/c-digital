@@ -14,6 +14,23 @@ import { loadSlim } from "@tsparticles/slim"; // if you are going to use `loadSl
 
 const Background = () => {
   const [init, setInit] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Detectar si es un dispositivo móvil
+  useEffect(() => {
+    const checkIfMobile = () => {
+      const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera;
+      const mobileRegex = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i;
+      setIsMobile(mobileRegex.test(userAgent) || window.innerWidth < 768);
+    };
+
+    checkIfMobile();
+    window.addEventListener('resize', checkIfMobile);
+    
+    return () => {
+      window.removeEventListener('resize', checkIfMobile);
+    };
+  }, []);
 
   // this should be run only once per application lifetime
   useEffect(() => {
@@ -36,16 +53,16 @@ const Background = () => {
 
   const options: ISourceOptions = useMemo(
     () => ({
-      fpsLimit: 50,
+      fpsLimit: isMobile ? 30 : 50,
       interactivity: {
         events: {
           onClick: {
-            enable: true,
+            enable: !isMobile,
             mode: "push",
           },
           
           onHover: {
-            enable: true,
+            enable: !isMobile,
             mode: "repulse",
           },
         },
@@ -77,14 +94,15 @@ const Background = () => {
             default: OutMode.out,
           },
           random: false,
-          speed: 2,
+          speed: isMobile ? 1 : 2,
           straight: false,
         },
         number: {
           density: {
             enable: true,
+            value_area: isMobile ? 1200 : 800,
           },
-          value: 70,
+          value: isMobile ? 30 : 70,
         },
         opacity: {
           value: 0.5,
@@ -93,12 +111,12 @@ const Background = () => {
           type: "circle",
         },
         size: {
-          value: { min: 1, max: 5 },
+          value: { min: 1, max: isMobile ? 3 : 5 },
         },
       },
       detectRetina: true,
     }),
-    [],
+    [isMobile],
   );
 
   if (init) {
