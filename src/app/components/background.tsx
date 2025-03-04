@@ -12,6 +12,13 @@ import {
 import { loadSlim } from "@tsparticles/slim"; // if you are going to use `loadSlim`, install the "@tsparticles/slim" package too.
 // import { loadBasic } from "@tsparticles/basic"; // if you are going to use `loadBasic`, install the "@tsparticles/basic" package too.
 
+// Extender la interfaz Window para incluir opera
+declare global {
+  interface Window {
+    opera?: string;
+  }
+}
+
 const Background = () => {
   const [init, setInit] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -19,9 +26,9 @@ const Background = () => {
   // Detectar si es un dispositivo móvil
   useEffect(() => {
     const checkIfMobile = () => {
-      const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera;
+      const userAgent = navigator.userAgent || navigator.vendor || window.opera;
       const mobileRegex = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i;
-      setIsMobile(mobileRegex.test(userAgent) || window.innerWidth < 768);
+      setIsMobile(mobileRegex.test(userAgent || '') || window.innerWidth < 768);
     };
 
     checkIfMobile();
