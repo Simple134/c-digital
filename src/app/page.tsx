@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import { useState } from "react";
 import InfiniteLogo from "./components/infiniteLogo";
+import Background from "./components/background";
 
 export default function Home() {
   const [showNewProjects, setShowNewProjects] = useState(false);
@@ -121,6 +122,8 @@ export default function Home() {
 
   return (
     <div className="relative min-h-screen ">
+      <Background />
+      <div className="relative z-10">
       <Container>
         <AnimatePresence>
           <motion.div
@@ -814,6 +817,7 @@ export default function Home() {
           </div>
         </Grid>
       </Container>
+      </div>
     </div>
   );
 }

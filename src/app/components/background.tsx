@@ -36,7 +36,7 @@ const Background = () => {
 
   const options: ISourceOptions = useMemo(
     () => ({
-      fpsLimit: 120,
+      fpsLimit: 60,
       interactivity: {
         events: {
           onClick: {

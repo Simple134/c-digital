@@ -53,7 +53,6 @@ export default function RootLayout({
           ></iframe>
         </noscript>
         <Header />
-      <Background />
         {children}
         <Footer />
       </body>
