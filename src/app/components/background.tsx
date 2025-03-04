@@ -60,7 +60,7 @@ const Background = () => {
 
   const options: ISourceOptions = useMemo(
     () => ({
-      fpsLimit: isMobile ? 30 : 50,
+      fpsLimit: isMobile ? 10 : 60,
       interactivity: {
         events: {
           onClick: {
@@ -75,11 +75,11 @@ const Background = () => {
         },
         modes: {
           push: {
-            quantity: 4,
+            quantity: isMobile ? 2 : 4,
           },
           repulse: {
-            distance: 100,
-            duration: 0.5,
+            distance: isMobile ? 50 : 200,
+            duration: isMobile ? 0.1 : 0.5,
           },
         },
       },
@@ -107,7 +107,7 @@ const Background = () => {
         number: {
           density: {
             enable: true,
-            value_area: isMobile ? 1200 : 800,
+            value_area: isMobile ? 200 : 800,
           },
           value: isMobile ? 30 : 70,
         },
