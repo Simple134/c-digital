@@ -65,7 +65,7 @@ const Background = () => {
       interactivity: {
         events: {
           onClick: {
-            enable: !isMobile,
+            enable: false,
             mode: "push",
           },
           

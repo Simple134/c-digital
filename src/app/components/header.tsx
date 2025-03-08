@@ -19,7 +19,7 @@ const Header = () => {
                     <Link href="/" className={` ${pathname === "/" ? "bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] text-transparent bg-clip-text font-bold" : "hover:text-[#9F9F9F] font-normal"} font-['Poppins']`}>Home</Link>
                     <Link href="/construction" className={` ${pathname === "" ? "text-[#01aaa8] font-bold" : "hover:text-[#9F9F9F] font-normal"} font-['Poppins']`}>Servicios</Link>
                     <Link href="/construction" className={` ${pathname === "" ? "text-[#01aaa8] font-bold" : "hover:text-[#9F9F9F] font-normal"} font-['Poppins']`}>Nosotros</Link>
-                    <Link href="/construction" className={` ${pathname === "" ? "text-[#01aaa8] font-bold" : "hover:text-[#9F9F9F] font-normal"} font-['Poppins']`}>Contacto</Link>
+                    <Link href="/contacto" className={` ${pathname === "/contacto" ? "bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] text-transparent bg-clip-text font-bold" : "hover:text-[#9F9F9F] font-normal"} font-['Poppins']`}>Contacto</Link>
                 </div>
             </div>
         </Container>

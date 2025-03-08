@@ -1,11 +1,11 @@
-
 "use client"
 import { Container, Grid, Column } from "@bitnation-dev/components";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import { useState } from "react";
 import InfiniteLogo from "./components/infiniteLogo";
-import Background from "./components/background";
+import Link from "next/link";
+import { RedirectButton } from '@/components/RedirectButton';
 
 export default function Home() {
   const [showNewProjects, setShowNewProjects] = useState(false);
@@ -130,8 +130,6 @@ export default function Home() {
 
   return (
     <div className="relative min-h-screen ">
-      <Background />
-      <div className="relative z-10">
       <Container>
         <AnimatePresence>
           <motion.div
@@ -176,12 +174,13 @@ export default function Home() {
               >
                 <span className="font-semibold">¿Quienes somos?</span>
               </button>
-              <button
+              <Link
+                href="/contacto"
                 className={`border-2 border-white px-6 py-2 mt-10 font-['Poppins'] lg:text-2xl bg-white text-black`}
               //onClick={() => router.push("/trabajos-ux/ui")}
               >
                 <span className="font-semibold">Contactar </span>
-              </button>
+              </Link>
             </motion.div>
           </motion.div>
         </AnimatePresence>
@@ -294,19 +293,13 @@ export default function Home() {
                   >
                     <span className="font-semibold text-xl">Ver más</span>
                   </button>
-                  <button
+                  <RedirectButton 
                     className="bg-white text-black px-4 py-2 mt-10 font-['Poppins'] lg:text-2xl flex gap-2 items-center"
-                    onClick={handleWhatsAppClick}
+                    whatsappLink={handleWhatsAppClick}
+                    service="diseño-app"
                   >
-                    <span className="font-semibold text-xl ">Hablemos</span>
-                    <Image
-                      src="/whatsapp.png"
-                      alt="WhatsApp"
-                      width={30}
-                      height={30}
-                      className="cursor-pointer"
-                    />
-                  </button>
+                    <span className="font-semibold text-xl">Hablemos</span>
+                  </RedirectButton>
                 </div>
               </div>
             </Grid>
@@ -394,19 +387,13 @@ export default function Home() {
                   >
                     <span className="font-semibold text-xl">Ver más</span>
                   </button>
-                  <button
+                  <RedirectButton 
                     className="bg-white text-black px-4 py-2 mt-10 font-['Poppins'] lg:text-2xl flex gap-2 items-center"
-                    onClick={handleWhatsAppClick}
+                    whatsappLink={handleWhatsAppClick}
+                    service="desarrollo-web"
                   >
                     <span className="font-semibold text-xl">Hablemos</span>
-                    <Image
-                      src="/whatsapp.png"
-                      alt="WhatsApp"
-                      width={30}
-                      height={30}
-                      className="cursor-pointer"
-                    />
-                  </button>
+                  </RedirectButton>
                 </div>
               </div>
             </div>
@@ -472,19 +459,13 @@ export default function Home() {
               >
                 <span className="font-semibold text-xl">Ver más</span>
               </button>
-              <button
+              <RedirectButton 
                 className="bg-white text-black px-4 py-2 mt-10 font-['Poppins'] lg:text-2xl flex gap-2 items-center"
-                onClick={handleWhatsAppClick}
+                whatsappLink={handleWhatsAppClick}
+                service="branding"
               >
                 <span className="font-semibold text-xl">Hablemos</span>
-                <Image
-                  src="/whatsapp.png"
-                  alt="WhatsApp"
-                  width={30}
-                  height={30}
-                  className="cursor-pointer"
-                />
-              </button>
+              </RedirectButton>
             </div>
           </div>
         </Grid>
@@ -588,14 +569,12 @@ export default function Home() {
               diferenciarte y conectar con tu público objetivo.
             </span>
             <div className=" mt-8">
-              <button
+              <RedirectButton 
                 className={`border-2 border-white px-6 py-2 mt-10 font-['Poppins'] lg:text-2xl text-white hover:text-transparent bg-clip-text hover:bg-gradient-to-r hover:from-[#00C5FF] hover:to-[#00FF7C]`}
-                style={{
-                  borderImage: "linear-gradient(to right, #00C5FF, #00FF7C) 1",
-                }}
+                whatsappLink={handleWhatsAppClick}
               >
                 <span className="font-semibold">Necesito Esto +</span>
-              </button>
+              </RedirectButton>
             </div>
           </div>
         </Grid>
@@ -666,14 +645,12 @@ export default function Home() {
               impacto positivo en tu audiencia.
             </span>
             <div className=" mt-8">
-              <button
+              <RedirectButton 
                 className={`border-2 border-white px-6 py-2 mt-10 font-['Poppins'] lg:text-2xl text-white hover:text-transparent bg-clip-text hover:bg-gradient-to-r hover:from-[#00C5FF] hover:to-[#00FF7C]`}
-                style={{
-                  borderImage: "linear-gradient(to right, #00C5FF, #00FF7C) 1",
-                }}
+                whatsappLink={handleWhatsAppClick}
               >
                 <span className="font-semibold">Necesito Esto +</span>
-              </button>
+              </RedirectButton>
             </div>
           </div>
         </Grid>
@@ -732,14 +709,12 @@ export default function Home() {
               cualificados y posicionarte en un mercado competitivo.
             </span>
             <div className=" mt-8">
-              <button
+              <RedirectButton 
                 className={`border-2 border-white px-6 py-2 mt-10 font-['Poppins'] lg:text-2xl text-white hover:text-transparent bg-clip-text hover:bg-gradient-to-r hover:from-[#00C5FF] hover:to-[#00FF7C]`}
-                style={{
-                  borderImage: "linear-gradient(to right, #00C5FF, #00FF7C) 1",
-                }}
+                whatsappLink={handleWhatsAppClick}
               >
                 <span className="font-semibold">Necesito Esto +</span>
-              </button>
+              </RedirectButton>
             </div>
           </div>
         </Grid>
@@ -813,6 +788,5 @@ export default function Home() {
         </Grid>
       </Container>
       </div>
-    </div>
   );
 }

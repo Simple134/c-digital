@@ -3,6 +3,7 @@ import "./globals.css";
 import Header from "./components/header";
 import Script from "next/script";
 import Footer from "./components/footer";
+import Background from "./components/background";
 export const metadata: Metadata = {
   title: "C Digital",
   description:
@@ -52,6 +53,7 @@ export default function RootLayout({
           ></iframe>
         </noscript>
         <Header />
+        <Background />
         {children}
         <Footer />
       </body>
