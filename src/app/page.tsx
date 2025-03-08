@@ -268,9 +268,9 @@ export default function Home() {
                   {" "}
                   UX/UI Design
                 </span>
-                <h1 className="text-white text-6xl lg:text-8xl font-bold font-['Poppins'] whitespace-normal leading-[1.1]">
+                <h2 className="text-white text-6xl lg:text-8xl font-bold font-['Poppins'] whitespace-normal leading-[1.1]">
                   Diseño De <br className="leading-[0.3]" /> Productos
-                </h1>
+                </h2>
               </div>
               <div className="lg:mt-6 w-full h-full justify-center flex flex-col">
                 <p className="text-white text-2xl font-['Poppins'] hidden lg:block md:hidden">
@@ -364,9 +364,9 @@ export default function Home() {
                 {" "}
                 Branding / Rebranding
               </span>
-              <h1 className="text-white lg:text-8xl text-6xl font-bold font-['Poppins'] whitespace-normal leading-[1.1]">
+              <h2 className="text-white lg:text-8xl text-6xl font-bold font-['Poppins'] whitespace-normal leading-[1.1]">
                 Diseño De <br className="leading-[0.3]" /> Marcas
-              </h1>
+              </h2>
               <div className="lg:mt-6 w-full h-full justify-center flex flex-col">
                 <p className="text-white text-2xl font-['Poppins'] hidden lg:block md:hidden">
                   Diseñamos marcas que reflejan un <br /> concepto e impulsan
@@ -437,9 +437,9 @@ export default function Home() {
               {" "}
               Diseño gráfico
             </span>
-            <h1 className="text-white text-[65px] lg:text-[120px] font-bold font-['Poppins'] whitespace-normal leading-[0.9] w-fit">
+            <h2 className="text-white text-[65px] lg:text-[120px] font-bold font-['Poppins'] whitespace-normal leading-[0.9] w-fit">
               Content <br className="leading-[0.3]" /> Design
-            </h1>
+            </h2>
           </div>
           <div className="lg:mt-6 h-full justify-center flex flex-col">
             <p className="text-white text-2xl font-['Poppins'] hidden lg:block md:hidden">
@@ -476,9 +476,9 @@ export default function Home() {
           <p className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#00C5FF] to-[#00FF7C]">
             Conoce algunos de
           </p>
-          <h1 className="text-black text-4xl md:text-6xl font-bold font-['Poppins'] pb-16">
+          <h2 className="text-black text-4xl md:text-6xl font-bold font-['Poppins'] pb-16">
             Nuestros Clientes
-          </h1>
+          </h2>
           <InfiniteLogo />
         </div>
       </Container>
@@ -489,9 +489,9 @@ export default function Home() {
             <span className="bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] text-transparent bg-clip-text font-bold text-2xl w-fit">
               Servicios
             </span>
-            <h1 className="text-white text-5xl text-start font-bold font-['Poppins'] lg:text-7xl">
+            <h2 className="text-white text-5xl text-start font-bold font-['Poppins'] lg:text-7xl">
               Fases de Desarrollo
-            </h1>
+            </h2>
           </div>
           <div className="flex flex-col space-y-6 mt-8 md:mt-0">
             <div className="flex flex-col justify-center items-end">
@@ -519,14 +519,14 @@ export default function Home() {
       <Container className="h-[80vh]" >
         <div className="flex justify-between">
           <div className="">
-            <h1 className="text-white text-6xl text-center font-bold font-['Poppins'] lg:text-9xl">
+            <h2 className="text-white text-6xl text-center font-bold font-['Poppins'] lg:text-9xl">
               1.
-            </h1>
+            </h2>
           </div>
           <div className="">
-            <h1 className="text-white text-6xl text-center font-bold font-['Poppins'] lg:text-9xl">
+            <h2 className="text-white text-6xl text-center font-bold font-['Poppins'] lg:text-9xl">
               Conecta
-            </h1>
+            </h2>
           </div>
         </div>
         <div className="flex w-full h-[2px] bg-[#AFAFAF] mt-4" ></div>
@@ -583,14 +583,14 @@ export default function Home() {
       <Container className="h-[80vh]" >
         <div className="flex justify-between ">
           <div className="">
-            <h1 className="text-white text-6xl text-center font-bold font-['Poppins'] lg:text-9xl">
+            <h2 className="text-white text-6xl text-center font-bold font-['Poppins'] lg:text-9xl">
               2.
-            </h1>
+            </h2>
           </div>
           <div className="">
-            <h1 className="text-white text-6xl text-center font-bold font-['Poppins'] lg:text-9xl">
+            <h2 className="text-white text-6xl text-center font-bold font-['Poppins'] lg:text-9xl">
               Crea
-            </h1>
+            </h2>
           </div>
         </div>
         <div className="flex w-full h-[2px] bg-[#AFAFAF] mt-4"></div>
@@ -659,14 +659,14 @@ export default function Home() {
       <Container className="h-[80vh]" >
         <div className="flex justify-between ">
           <div className="">
-            <h1 className="text-white text-6xl text-center font-bold font-['Poppins'] lg:text-9xl">
+            <h2 className="text-white text-6xl text-center font-bold font-['Poppins'] lg:text-9xl">
               3.
-            </h1>
+            </h2>
           </div>
           <div className="">
-            <h1 className="text-white text-6xl text-center font-bold font-['Poppins'] lg:text-9xl">
+            <h2 className="text-white text-6xl text-center font-bold font-['Poppins'] lg:text-9xl">
               Crece
-            </h1>
+            </h2>
           </div>
         </div>
         <div className="flex w-full h-[2px] bg-[#AFAFAF] mt-4"></div>
@@ -729,9 +729,9 @@ export default function Home() {
             <span className="bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] text-transparent bg-clip-text font-bold text-2xl w-fit">
               Dudas o Preguntas?
             </span>
-            <h1 className="text-white text-4xl md:text-6xl text-center font-bold font-['Poppins'] lg:text-9xl">
+            <h2 className="text-white text-4xl md:text-6xl text-center font-bold font-['Poppins'] lg:text-9xl">
               Hablemos
-            </h1>
+            </h2>
             <p className="text-white text-xl">
               Tu proyecto solo necesita un estudio de diseño responsable para
               escalar; agenda una llamada ahora y no procrastines.{" "}

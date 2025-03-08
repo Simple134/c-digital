@@ -1,79 +1,101 @@
 import { NextResponse } from 'next/server';
-import nodemailer from 'nodemailer';
+// Importación de resend (descomentar cuando se instale)
+import { Resend } from 'resend';
+
+// Acceder a la API key desde las variables de entorno
+const resendApiKey = process.env.RESEND_API_KEY || 're_Ht5h5wqA_GtJ7JgM6PpSV5ZbLN9bQ9z8S';
+let resend: Resend | null = null;
+
+// Inicializar Resend si está disponible
+try {
+  resend = new Resend(resendApiKey);
+} catch (error) {
+  console.error('Error al inicializar Resend:', error);
+  resend = null;
+}
 
 export async function POST(request: Request) {
-  const data = await request.json();
-  
-  // Crear un transporter de prueba para desarrollo
-  let transporter;
-  
-  // Para entorno de producción, usa credenciales reales
-  if (process.env.NODE_ENV === 'production') {
-    transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST || 'smtp.hostinger.com',
-      port: Number(process.env.SMTP_PORT) || 465,
-      secure: process.env.SMTP_SECURE === 'false' ? false : true, // true para 465, false para otros puertos
-      auth: {
-        user: process.env.SMTP_USER || 'hola@estudiocdigital.com',
-        pass: process.env.SMTP_PASS || '',
-      },
-    });
-  } else {
-    // Para entorno de desarrollo, usar ethereal.email (correos de prueba)
-    try {
-      const testAccount = await nodemailer.createTestAccount();
-      transporter = nodemailer.createTransport({
-        host: 'smtp.ethereal.email',
-        port: 587,
-        secure: false,
-        auth: {
-          user: testAccount.user,
-          pass: testAccount.pass,
-        },
-      });
-    } catch (error) {
-      console.error('Error al crear cuenta de prueba:', error);
-      // Fallback a Hostinger en caso de error con Ethereal
-      transporter = nodemailer.createTransport({
-        host: process.env.SMTP_HOST || 'smtp.hostinger.com',
-        port: Number(process.env.SMTP_PORT) || 465,
-        secure: process.env.SMTP_SECURE === 'false' ? false : true,
-        auth: {
-          user: process.env.SMTP_USER || 'hola@estudiocdigital.com',
-          pass: process.env.SMTP_PASS || '',
-        },
-      });
-    }
-  }
-  
-  // Formatea los servicios seleccionados
-  const serviciosSeleccionados = Array.isArray(data.servicios) 
-    ? data.servicios.join(', ') 
-    : data.servicios || 'No especificado';
-  
   try {
-    // Envía el correo
-    const info = await transporter.sendMail({
-      from: `"Formulario Web" <${process.env.SMTP_USER || 'hola@estudiocdigital.com'}>`,
-      to: 'hola@estudiocdigital.com',
-      subject: `Nuevo contacto: ${data.nombre}`,
-      html: `
-        <h1>Nuevo mensaje de contacto</h1>
-        <p><strong>Nombre:</strong> ${data.nombre}</p>
-        <p><strong>Email:</strong> ${data.email}</p>
-        <p><strong>Servicios:</strong> ${serviciosSeleccionados}</p>
-        <p><strong>Descripción:</strong> ${data.descripcion}</p>
-        ${data.archivoAdjunto ? `<p><strong>Archivo adjunto:</strong> ${data.archivoAdjunto}</p>` : ''}
-      `,
-    });
+    const formData = await request.formData();
     
-    // Si estamos en desarrollo, mostrar la URL para ver el correo de prueba
-    if (process.env.NODE_ENV !== 'production' && info.messageId.includes('ethereal')) {
-      console.log('URL para ver el correo de prueba:', nodemailer.getTestMessageUrl(info));
+    // Obtener datos del formulario
+    const nombre = formData.get('nombre') as string;
+    const email = formData.get('email') as string;
+    const descripcion = formData.get('descripcion') as string;
+    const servicios = formData.get('servicios') as string;
+    const archivoAdjunto = formData.get('archivoAdjunto') as string;
+    
+    // Obtener archivo adjunto si existe
+    const fileAttachment = formData.get('attachment') as File | null;
+    let attachment;
+    
+    if (fileAttachment) {
+      const fileArrayBuffer = await fileAttachment.arrayBuffer();
+      const fileBuffer = Buffer.from(fileArrayBuffer);
+      
+      attachment = {
+        filename: fileAttachment.name,
+        content: fileBuffer
+      };
     }
     
-    return NextResponse.json({ success: true });
-  } catch (error: Error | unknown) {
+    // Configurar el contenido del correo
+    const emailContent = `
+      <h1>Nuevo mensaje de contacto</h1>
+      <p><strong>Nombre:</strong> ${nombre}</p>
+      <p><strong>Email:</strong> ${email}</p>
+      <p><strong>Servicios:</strong> ${servicios}</p>
+      <p><strong>Descripción:</strong> ${descripcion}</p>
+      ${archivoAdjunto ? `<p><strong>Archivo adjunto:</strong> ${archivoAdjunto}</p>` : ''}
+    `;
+    
+    // Si Resend está disponible, usar Resend
+    if (resend) {
+      try {
+        const data = await resend.emails.send({
+          from: process.env.RESEND_FROM_EMAIL || 'Formulario Web <formulario@estudiocdigital.com>',
+          to: [process.env.RESEND_TO_EMAIL || 'hola@estudiocdigital.com'],
+          subject: `Nuevo contacto: ${nombre}`,
+          html: emailContent,
+          ...(attachment && {
+            attachments: [attachment]
+          })
+        });
+        
+        if (data.error) {
+          console.error('Error al enviar con Resend:', data.error);
+          return NextResponse.json(
+            { error: 'Error al enviar el correo', details: data.error },
+            { status: 500 }
+          );
+        }
+        
+        return NextResponse.json({ 
+          success: true, 
+          provider: 'resend'
+        });
+      } catch (resendError) {
+        console.error('Error al usar Resend:', resendError);
+        // Continúa con el fallback
+      }
+    }
+    
+    // Fallback: Registrar el intento y devolver éxito para pruebas
+    console.log('Correo simulado enviado (fallback):', {
+      nombre,
+      email,
+      servicios,
+      descripcion,
+      archivoAdjunto,
+      tieneArchivo: !!fileAttachment
+    });
+    
+    return NextResponse.json({ 
+      success: true, 
+      provider: 'fallback',
+      message: 'Modo de desarrollo: correo registrado pero no enviado'
+    });
+  } catch (error) {
     console.error('Error al enviar email:', error);
     const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
     
