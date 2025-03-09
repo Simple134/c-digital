@@ -719,6 +719,14 @@ export default function Home() {
           </div>
         </Grid>
       </Container>
+      <div className="h-48 hidden"></div>
+      <Container className="h-[80vh] hidden">
+          <div className="flex flex-col items-center justify-center w-full">
+                <span className="bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] text-transparent bg-clip-text text-2xl w-fit">¿Cómo trabajamos?</span>
+                <h2 className="text-white text-4xl md:text-6xl text-center font-bold font-['Poppins'] lg:text-9xl">Nuestro Proceso</h2>
+          </div>
+
+      </Container>
       <div className="h-48"></div>
       <Container className="h-[80vh]">
         <Grid columns={{ xl: 2, lg: 2, md: 1, sm: 1 }}>

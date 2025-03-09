@@ -101,14 +101,14 @@ const ContactoContent = () => {
       <Container className="flex flex-col items-center justify-center h-full w-full z-50 !p-0 !m-0">
         <Grid columns={{ xl: 2, lg: 2, md: 1, sm: 1 }}>
           <div className="flex flex-col justify-center pb-4">
-            <h2 className="text-white text-6xl sm:text-5xl md:text-6xl font-bold font-['Poppins'] lg:text-7xl">
+            <h2 className="text-white text-5xl  font-bold font-['Poppins'] lg:text-7xl">
               No Perdamos Tiempo
             </h2>
-            <span className="text-white text-lg sm:text-xl font-['Poppins'] lg:text-2xl pt-6 md:pt-12">
+            <span className="text-white lg:text-lg text-md  font-['Poppins'] lg:text-2xl pt-6 md:pt-12">
             Nos dices que necesitas y nosotros nos <br className="hidden sm:block" />  encargamos de guiarte en el proceso.
             </span>
           </div>
-          <div className="flex flex-col bg-white px-10 py-28 min-h-[75vh] max-h-[100vh] overflow-y-auto">
+          <div className="flex flex-col bg-white px-10 py-28 min-h-[75vh] max-h-[100vh]">
             {enviado ? (
               <div className="flex flex-col items-center justify-center h-full">
                 <svg
@@ -145,7 +145,7 @@ const ContactoContent = () => {
                     <button
                       type="button"
                       onClick={() => toggleService("diseño-app")}
-                      className={`  h-12 hover:border-black lg:text-xl text-md font-bold ${
+                      className={`  h-12 lg:hover:border-black lg:text-xl text-md font-bold ${
                         isServiceSelected("diseño-app")
                           ? "text-black border-black border-2"
                           : "text-gray-400 border-gray-400 border-2"
@@ -156,7 +156,7 @@ const ContactoContent = () => {
                     <button
                       type="button"
                       onClick={() => toggleService("desarrollo-web")}
-                      className={`h-12 hover:border-black lg:text-xl text-md font-bold  ${
+                      className={`h-12 lg:hover:border-black lg:text-xl text-md font-bold  ${
                         isServiceSelected("desarrollo-web")
                           ? "text-black border-black border-2"
                           : "text-gray-400 border-gray-400 border-2"
@@ -167,7 +167,7 @@ const ContactoContent = () => {
                     <button
                       type="button"
                       onClick={() => toggleService("branding")}
-                      className={`w-30 ml-0 h-12 hover:border-black lg:text-xl text-md font-bold  order-last md:order-none ${
+                      className={`w-30 ml-0 h-12 lg:hover:border-black lg:text-xl text-md font-bold  order-last md:order-none ${
                         isServiceSelected("branding")
                           ? "text-black border-black border-2"
                           : "text-gray-400 border-gray-400 border-2"
@@ -178,7 +178,7 @@ const ContactoContent = () => {
                     <button
                       type="button"
                       onClick={() => toggleService("desarrollo-sistemas")}
-                      className={`lg:w-72 lg:h-12 lg:p-0 w-48 h-12 hover:border-black lg:text-xl text-md font-bold  ${
+                      className={`lg:w-72 lg:h-12 lg:p-0 w-48 h-12 lg:hover:border-black lg:text-xl text-md font-bold  ${
                         isServiceSelected("desarrollo-sistemas")
                           ? "text-black border-black border-2"
                           : "text-gray-400 border-gray-400 border-2"
@@ -262,9 +262,9 @@ const ContactoContent = () => {
                         <path
                           d="M1.41797 10.3735L9.3143 2.4772C9.72359 2.05923 10.2117 1.72656 10.7504 1.49845C11.2891 1.27033 11.8676 1.15129 12.4526 1.14822C13.0376 1.14515 13.6174 1.25811 14.1584 1.48056C14.6995 1.70301 15.1911 2.03053 15.6047 2.44418C16.0184 2.85784 16.3459 3.34941 16.5683 3.89046C16.7908 4.4315 16.9037 5.01129 16.9007 5.59628C16.8976 6.18126 16.7786 6.75983 16.5504 7.29852C16.3223 7.8372 15.9897 8.32531 15.5717 8.73459L8.19604 16.1086C7.73912 16.5507 7.12675 16.7955 6.49098 16.7903C5.85521 16.785 5.24696 16.5301 4.79739 16.0806C4.34781 15.631 4.09293 15.0227 4.08769 14.387C4.08245 13.7512 4.32728 13.1388 4.76939 12.6819L11.8458 5.60463"
                           stroke="black"
-                          stroke-width="1.25"
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
+                          strokeWidth="1.25"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
                         />
                       </svg>
 
