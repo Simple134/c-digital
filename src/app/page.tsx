@@ -1107,7 +1107,7 @@ export default function Home() {
           </div>
         </Grid>
       </Container>
-      <div className="h-48 hidden"></div>
+      <div className="h-48"></div>
       <Container className="h-[80vh] ">
         <div className="flex flex-col items-center justify-center w-full">
           <span className="bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] text-transparent bg-clip-text text-2xl w-fit">¿Cómo trabajamos?</span>
