@@ -12,7 +12,7 @@ export default function Home() {
   const [showNewProjects, setShowNewProjects] = useState(false);
   const [currentMarcasSet, setCurrentMarcasSet] = useState(0);
   const [currentSupportSet, setSupportSet] = useState(0);
-  const [selectedProcess, setSelectedProcess] = useState<number | null>(null);
+  const [selectedProcess, setSelectedProcess] = useState<number | null>(1);
 
   const initialProjects = [
     {
