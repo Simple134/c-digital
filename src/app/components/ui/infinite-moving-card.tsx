@@ -27,9 +27,7 @@ export const InfiniteMovingCards = ({
 
 
 
-  useEffect(() => {
-    addAnimation();
-  }, [addAnimation]);
+
   
   const getDirection = () => {
     if (containerRef.current) {
@@ -74,6 +72,10 @@ export const InfiniteMovingCards = ({
       setStart(true);
     }
   }, [getDirection, getSpeed]);
+
+  useEffect(() => {
+    addAnimation();
+  }, [addAnimation]);
   return (
     <div
       ref={containerRef}
