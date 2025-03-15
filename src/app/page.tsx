@@ -6,9 +6,13 @@ import { useState } from "react";
 import InfiniteLogo from "./components/infiniteLogo";
 import Link from "next/link";
 import { RedirectButton } from '@/components/RedirectButton';
+import { Diseño, Entrega, Propuesta, Reunion } from "./components/icons";
 
 export default function Home() {
   const [showNewProjects, setShowNewProjects] = useState(false);
+  const [currentMarcasSet, setCurrentMarcasSet] = useState(0);
+  const [currentSupportSet, setSupportSet] = useState(0);
+  const [selectedProcess, setSelectedProcess] = useState<number | null>(null);
 
   const initialProjects = [
     {
@@ -52,6 +56,107 @@ export default function Home() {
     },
   ];
 
+  const diseñoDeMarcas1 = [
+    {
+      image: "/trabajos/7.png",
+    },
+    {
+      image: "/trabajos/8.png",
+    },
+    {
+      image: "/trabajos/9.png",
+    },
+    {
+      image: "/trabajos/10.png",
+    },
+    {
+      image: "/trabajos/12.png",
+    },
+  ];
+
+  const diseñoDeMarcas2 = [
+    {
+      image: "/disenoMarcas/mbWise1.png",
+    },
+    {
+      image: "/disenoMarcas/mbWise2.png",
+    },
+    {
+      image: "/disenoMarcas/mbWise3.png",
+    },
+    {
+      image: "/disenoMarcas/mbWiseLogo.png",
+    },
+    {
+      image: "/disenoMarcas/mbWiseColor.png",
+    },
+  ];
+
+  const diseñoDeMarcas3 = [
+    {
+      image: "/disenoMarcas/yedoza1.png",
+    },
+    {
+      image: "/disenoMarcas/yedoza2.png",
+    },
+    {
+      image: "/disenoMarcas/yedoza3.png",
+    },
+    {
+      image: "/disenoMarcas/yedozaLogo.png",
+    },
+    {
+      image: "/disenoMarcas/yedoza4.png",
+    },
+  ];
+
+  const supportImages1 = [
+    {
+      image: "/support/support1.png",
+    },
+    {
+      image: "/support/support2.png",
+    },
+    {
+      image: "/support/support3.png",
+    },
+  ];
+
+  const supportImages2 = [
+    {
+      image: "/support/support4.png",
+    },
+    {
+      image: "/support/support5.png",
+    },
+    {
+      image: "/support/support6.png",
+    },
+  ];
+
+  const processText = [
+    {
+      title: "Reunión Inicial",
+      text: "Nos reunimos contigo para entender tus necesidades, objetivos y expectativas. Analizamos la identidad de tu marca, el público objetivo y los requisitos del proyecto. Además, establecemos un presupuesto y un cronograma preliminar." 
+     },
+    {
+      title: "Propuesta",
+      text: "Basándonos en la información recopilada, creamos una propuesta detallada que incluye el alcance del proyecto, tiempos de entrega, costos y metodología de trabajo. Incluimos moodboards, referencias visuales o bocetos iniciales para alinear nuestra visión con la tuya."
+    },
+    {
+      title: "Diseño y Desarrollo",
+      text: "Una vez aprobada la propuesta, nuestro equipo de diseño gráfico y desarrollo web comienza a trabajar en soluciones creativas. Desarrollamos conceptos, bocetos y prototipos, realizando iteraciones y pruebas para garantizar un diseño funcional y atractivo."
+    },
+    {
+      title: "Presentación y Ajustes",
+      text: "Presentamos el diseño final, explicando el proceso creativo y las decisiones detrás de cada elemento. Recibimos tus comentarios y realizamos ajustes o refinamientos hasta lograr un resultado que supere tus expectativas."
+    },
+    {
+      title: "Entrega y Soporte",
+      text: "Una vez aprobado, entregamos el material en los formatos adecuados (archivos digitales, especificaciones técnicas, guías de uso o productos impresos). Además, ofrecemos soporte posterior para asegurar una implementación exitosa."
+    }
+  ]
+
   const handleVerMas = () => {
     setShowNewProjects(!showNewProjects);
 
@@ -61,24 +166,32 @@ export default function Home() {
       projectsElement.scrollIntoView({ behavior: "smooth" });
     }
   };
-  const handleMarcasClick = () => {
+
+  const handleVerMasMarcas = () => {
+    setCurrentMarcasSet((prevSet) => (prevSet + 1) % 3);
+
+    // Desplazarse al elemento con ID "marcas"
     const marcasElement = document.getElementById("marcas");
     if (marcasElement) {
       marcasElement.scrollIntoView({ behavior: "smooth" });
     }
   };
+
+
   const handleConectaClick = () => {
     const conectaElement = document.getElementById("conecta-1");
     if (conectaElement) {
       conectaElement.scrollIntoView({ behavior: "smooth" });
     }
   };
+
   const handleCreaClick = () => {
     const creaElement = document.getElementById("crea-2");
     if (creaElement) {
       creaElement.scrollIntoView({ behavior: "smooth" });
     }
   };
+
   const handleCreceClick = () => {
     const creceElement = document.getElementById("crece-3");
     if (creceElement) {
@@ -92,14 +205,25 @@ export default function Home() {
       contactElement.scrollIntoView({ behavior: "smooth" });
     }
   };
-  
-  
-  
 
   const projectVariants = {
-    initial: { opacity: 0, scale: 0.5 },
-    animate: { opacity: 1, scale: 1, transition: { duration: 1 } },
-    exit: { opacity: 0, scale: 0.9, transition: { duration: 1 } },
+    initial: { opacity: 0, scale: 0.8 },
+    animate: { 
+      opacity: 1, 
+      scale: 1, 
+      transition: { 
+        duration: 1.2,
+        ease: "easeOut"
+      } 
+    },
+    exit: { 
+      opacity: 0, 
+      scale: 0.8, 
+      transition: { 
+        duration: 1.2,
+        ease: "easeIn"
+      } 
+    },
   };
 
   const handleWhatsAppClick = () => {
@@ -126,6 +250,55 @@ export default function Home() {
         duration: 0.8,
       },
     },
+  };
+
+  const marcasVariants = {
+    initial: { opacity: 0, y: 50 },
+    animate: { 
+      opacity: 1, 
+      y: 0, 
+      transition: { 
+        duration: 1.2,
+        ease: "easeOut"
+      } 
+    },
+    exit: { 
+      opacity: 0, 
+      y: -50,
+      transition: { 
+        duration: 1.2,
+        ease: "easeIn"
+      } 
+    },
+  };
+
+  const handleVerMasSupport = () => {
+    setSupportSet((prevSet) => (prevSet + 1) % 2);
+
+    const supportElement = document.getElementById("support");
+    if (supportElement) {
+      supportElement.scrollIntoView({ behavior: "smooth" });
+    }
+  };
+
+  const handleReunionClick = () => {
+    setSelectedProcess(0);
+  };
+
+  const handlePropuestaClick = () => {
+    setSelectedProcess(1);
+  };
+
+  const handleDiseñoClick = () => {
+    setSelectedProcess(2);
+  };
+
+  const handlePresentacionClick = () => {
+    setSelectedProcess(3);
+  };
+
+  const handleEntregaClick = () => {
+    setSelectedProcess(4);
   };
 
   return (
@@ -170,7 +343,7 @@ export default function Home() {
                 style={{
                   borderImage: "linear-gradient(to right, #00C5FF, #00FF7C) 1",
                 }}
-              onClick={handleContactClick}
+                onClick={handleContactClick}
               >
                 <span className="font-semibold">¿Quienes somos?</span>
               </button>
@@ -204,19 +377,27 @@ export default function Home() {
           <div className="md:w-[60%] w-full h-full flex justify-end items-end   ">
             <p className="text-white text-md md:text-2xl pl-20 md:pl-0 text-left">
               Somos un estudio de diseño gráfico en La Vega, Rep. Dom.
-              especializado en brindar soluciones digitales a medida para 
-              empresas en todo el mundo en sus diferentes etapas. Más que vendedores de 
+              especializado en brindar soluciones digitales a medida para
+              empresas en todo el mundo en sus diferentes etapas. Más que vendedores de
               servicios de diseño, somos asesores que te ayudarán a resolver
               problemas y alcanzar tus objetivos. Contamos con un equipo de
               expertos en cada uno de nuestros servicios para ofrecerte
               un servicio integral y de alta calidad.
-              
+
             </p>
           </div>
         </div>
       </Container>
       <div className="h-64"></div>
       <Container id="cont-1">
+        <div className="flex flex-col mb-36">
+          <span className="bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] text-transparent bg-clip-text font-bold text-2xl w-fit">
+            Servicios Destacados
+          </span>
+          <h2 className="text-white text-6xl lg:text-7xl font-bold font-['Poppins'] whitespace-normal leading-[1.1]">
+            Somos Especialistas En
+          </h2>
+        </div>
         <AnimatePresence mode="wait">
           <Grid
             key={showNewProjects ? "new-projects" : "initial-projects"}
@@ -259,105 +440,292 @@ export default function Home() {
               )
             )}
           </Grid>
-          </AnimatePresence>
-          <div
-            className="mt-6 w-full ">
-            <Grid columns={{ xl: 2, lg: 2, md: 1, sm: 1 }}>
-              <div>
-                <span className="bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] text-transparent bg-clip-text font-bold text-2xl">
-                  {" "}
-                  UX/UI Design
-                </span>
-                <h2 className="text-white text-6xl lg:text-8xl font-bold font-['Poppins'] whitespace-normal leading-[1.1]">
-                  Diseño De <br className="leading-[0.3]" /> Productos
-                </h2>
+        </AnimatePresence>
+        <div
+          className="mt-6 w-full ">
+
+          <Grid columns={{ xl: 2, lg: 2, md: 1, sm: 1 }}>
+            <div>
+              <span className="bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] text-transparent bg-clip-text font-bold text-2xl">
+                {" "}
+                UX/UI Design
+              </span>
+              <h2 className="text-white text-6xl lg:text-8xl font-bold font-['Poppins'] whitespace-normal leading-[1.1]">
+                Diseño De <br className="leading-[0.3]" /> Productos
+              </h2>
+            </div>
+            <div className="lg:mt-6 w-full h-full justify-center flex flex-col">
+              <p className="text-white text-2xl font-['Poppins'] hidden lg:block md:hidden">
+                Creamos Webs y Aplicaciones desde cero; <br /> que generan
+                impacto con diseños a la <br /> vanguardia. Para personas
+                ambiciosas.
+              </p>
+              <p className="text-white text-2xl font-['Poppins'] block lg:hidden md:hidden">
+                Creamos Webs y Aplicaciones desde cero; que generan impacto
+                con diseños a la vanguardia. Para personas ambiciosas.
+              </p>
+              <div className="flex gap-4">
+                <button
+                  onClick={handleVerMas}
+                  className={`border-2 border-white w-fit px-4 py-2 mt-10 font-['Poppins'] lg:text-2xl text-white hover:text-transparent bg-clip-text hover:bg-gradient-to-r hover:from-[#00C5FF] hover:to-[#00FF7C]`}
+                  style={{
+                    borderImage:
+                      "linear-gradient(to right, #00C5FF, #00FF7C) 1",
+                  }}
+                >
+                  <span className="font-semibold text-xl">Ver más</span>
+                </button>
+                <RedirectButton
+                  className="bg-white text-black px-4 py-2 mt-10 font-['Poppins'] lg:text-2xl flex gap-2 items-center"
+                  whatsappLink={handleWhatsAppClick}
+                  service="diseño-app"
+                >
+                  <span className="font-semibold text-xl">Hablemos</span>
+                </RedirectButton>
               </div>
-              <div className="lg:mt-6 w-full h-full justify-center flex flex-col">
-                <p className="text-white text-2xl font-['Poppins'] hidden lg:block md:hidden">
-                  Creamos Webs y Aplicaciones desde cero; <br /> que generan
-                  impacto con diseños a la <br /> vanguardia. Para personas
-                  ambiciosas.
-                </p>
-                <p className="text-white text-2xl font-['Poppins'] block lg:hidden md:hidden">
-                  Creamos Webs y Aplicaciones desde cero; que generan impacto
-                  con diseños a la vanguardia. Para personas ambiciosas.
-                </p>
-                <div className="flex gap-4">
-                  <button
-                    onClick={handleVerMas}
-                    className={`border-2 border-white w-fit px-4 py-2 mt-10 font-['Poppins'] lg:text-2xl text-white hover:text-transparent bg-clip-text hover:bg-gradient-to-r hover:from-[#00C5FF] hover:to-[#00FF7C]`}
-                    style={{
-                      borderImage:
-                        "linear-gradient(to right, #00C5FF, #00FF7C) 1",
-                    }}
-                  >
-                    <span className="font-semibold text-xl">Ver más</span>
-                  </button>
-                  <RedirectButton 
-                    className="bg-white text-black px-4 py-2 mt-10 font-['Poppins'] lg:text-2xl flex gap-2 items-center"
-                    whatsappLink={handleWhatsAppClick}
-                    service="diseño-app"
-                  >
-                    <span className="font-semibold text-xl">Hablemos</span>
-                  </RedirectButton>
-                </div>
-              </div>
-            </Grid>
-          </div>
+            </div>
+          </Grid>
+        </div>
       </Container>
       <div className="h-64"></div>
       <Container id="cont-2">
         <Grid columns={{ xl: 4, lg: 4, md: 1, sm: 1 }} id="marcas">
-          <Column columns={{ xl: { width: 2 }, md: { width: 1 } }}>
-            <div className="flex h-full">
-              <Image
-                src="/trabajos/7.png"
-                alt="Project 1"
-                width={650}
-                height={650}
-                className="w-full h-full"
-              />
-            </div>
-          </Column>
-          <Column columns={{ xl: { width: 2 }, md: { width: 1 } }}>
-            <div className="flex">
-              <Image
-                src="/trabajos/8.png"
-                alt="Project 1"
-                width={545}
-                height={520}
-                className="w-full h-full"
-              />
-            </div>
-          </Column>
-          <Column columns={{ xl: { width: 2 }, md: { width: 1 } }}>
-            <div className="flex flex-col gap-4">
-              <Image
-                src="/trabajos/9.png"
-                alt="Project 1"
-                width={630}
-                height={650}
-                className="w-full h-full"
-              />
-              <div className="flex gap-4">
-                <Image
-                  src="/trabajos/10.png"
-                  alt="Project 1"
-                  width={200}
-                  height={200}
-                  priority
-                />
-                <div className="bg-[#1A1D1F] w-[80%]  flex items-center justify-center">
-                  <Image
-                    src="/trabajos/12.png"
-                    alt="Project 1"
-                    width={100}
-                    height={100}
-                  />
-                </div>
-              </div>
-            </div>
-          </Column>
+          <AnimatePresence mode="wait">
+            {currentMarcasSet === 0 && (
+              <>
+                <Column columns={{ xl: { width: 2 }, md: { width: 1 } }}>
+                  <motion.div 
+                    className="flex h-full"
+                    key="marca1-1"
+                    variants={marcasVariants}
+                    initial="initial"
+                    animate="animate"
+                    exit="exit"
+                    transition={{ duration: 1 }}
+                  >
+                    <Image
+                      src={diseñoDeMarcas1[0].image}
+                      alt="Project 1"
+                      width={650}
+                      height={650}
+                      className="w-full h-full"
+                    />
+                  </motion.div>
+                </Column>
+                <Column columns={{ xl: { width: 2 }, md: { width: 1 } }}>
+                  <motion.div 
+                    className="flex"
+                    key="marca1-2"
+                    variants={marcasVariants}
+                    initial="initial"
+                    animate="animate"
+                    exit="exit"
+                    transition={{ duration: 1 }}
+                  >
+                    <Image
+                      src={diseñoDeMarcas1[1].image}
+                      alt="Project 1"
+                      width={545}
+                      height={520}
+                      className="w-full h-full"
+                    />
+                  </motion.div>
+                </Column>
+                <Column columns={{ xl: { width: 2 }, md: { width: 1 } }}>
+                  <motion.div 
+                    className="flex flex-col gap-4"
+                    key="marca1-3"
+                    variants={marcasVariants}
+                    initial="initial"
+                    animate="animate"
+                    exit="exit"
+                    transition={{ duration: 1 }}
+                  >
+                    <Image
+                      src={diseñoDeMarcas1[2].image}
+                      alt="Project 1"
+                      width={630}
+                      height={650}
+                      className="w-full h-full"
+                    />
+                    <div className="flex gap-4">
+                      <Image
+                        src={diseñoDeMarcas1[3].image}
+                        alt="Project 1"
+                        width={200}
+                        height={200}
+                        priority
+                      />
+                      <div className="bg-[#1A1D1F] w-[80%] flex items-center justify-center">
+                        <Image
+                          src={diseñoDeMarcas1[4].image}
+                          alt="Project 1"
+                          width={100}
+                          height={100}
+                        />
+                      </div>
+                    </div>
+                  </motion.div>
+                </Column>
+              </>
+            )}
+
+            {currentMarcasSet === 1 && (
+              <>
+                <Column columns={{ xl: { width: 2 }, md: { width: 1 } }}>
+                  <motion.div 
+                    className="flex h-full"
+                    key="marca2-1"
+                    variants={marcasVariants}
+                    initial="initial"
+                    animate="animate"
+                    exit="exit"
+                    transition={{ duration: 1 }}
+                  >
+                    <Image
+                      src={diseñoDeMarcas2[0].image}
+                      alt="Project 1"
+                      width={620}
+                      height={620}
+                      className="w-full h-full "
+                    />
+                  </motion.div>
+                </Column>
+                <Column columns={{ xl: { width: 2 }, md: { width: 1 } }}>
+                  <motion.div 
+                    className="flex"
+                    key="marca2-2"
+                    variants={marcasVariants}
+                    initial="initial"
+                    animate="animate"
+                    exit="exit"
+                    transition={{ duration: 1 }}
+                  >
+                    <Image
+                      src={diseñoDeMarcas2[1].image}
+                      alt="Project 1"
+                      width={500}
+                      height={500}
+                      className="w-full h-full object-contain "
+                    />
+                  </motion.div>
+                </Column>
+                <Column columns={{ xl: { width: 2 }, md: { width: 1 } }}>
+                  <motion.div 
+                    className="flex flex-col gap-4"
+                    key="marca2-3"
+                    variants={marcasVariants}
+                    initial="initial"
+                    animate="animate"
+                    exit="exit"
+                    transition={{ duration: 1 }}
+                  >
+                    <Image
+                      src={diseñoDeMarcas2[2].image}
+                      alt="Project 1"
+                      width={600}
+                      height={600}
+                      className="w-full h-full"
+                    />
+                    <div className="flex gap-4">
+                      <Image
+                        src={diseñoDeMarcas2[3].image}
+                        alt="Project 1"
+                        width={200}
+                        height={200}
+                        priority
+                      />
+                      <div className="flex gap-4">
+                        <Image
+                          src={diseñoDeMarcas2[4].image}
+                          alt="Project 1"
+                          width={540}
+                          height={540}
+                        />
+                      </div>
+                    </div>
+                  </motion.div>
+                </Column>
+              </>
+            )}
+
+            {currentMarcasSet === 2 && (
+              <>
+                <Column columns={{ xl: { width: 2 }, md: { width: 1 } }}>
+                  <motion.div 
+                    className="flex h-full"
+                    key="marca3-1"
+                    variants={marcasVariants}
+                    initial="initial"
+                    animate="animate"
+                    exit="exit"
+                  >
+                    <Image
+                      src={diseñoDeMarcas3[0].image}
+                      alt="Project 1"
+                      width={650}
+                      height={650}
+                      className="w-full h-full"
+                    />
+                  </motion.div>
+                </Column>
+                <Column columns={{ xl: { width: 2 }, md: { width: 1 } }}>
+                  <motion.div 
+                    className="flex"
+                    key="marca3-2"
+                    variants={marcasVariants}
+                    initial="initial"
+                    animate="animate"
+                    exit="exit"
+                  >
+                    <Image
+                      src={diseñoDeMarcas3[1].image}
+                      alt="Project 1"
+                      width={545}
+                      height={520}
+                      className="w-full h-full"
+                    />
+                  </motion.div>
+                </Column>
+                <Column columns={{ xl: { width: 2 }, md: { width: 1 } }}>
+                  <motion.div 
+                    className="flex flex-col gap-4"
+                    key="marca3-3"
+                    variants={marcasVariants}
+                    initial="initial"
+                    animate="animate"
+                    exit="exit"
+                  >
+                    <Image
+                      src={diseñoDeMarcas3[2].image}
+                      alt="Project 1"
+                      width={630}
+                      height={650}
+                      className="w-full h-full"
+                    />
+                    <div className="flex gap-4">
+                      <Image
+                        src={diseñoDeMarcas3[3].image}
+                        alt="Project 1"
+                        width={200}
+                        height={200}
+                        priority
+                      />
+                      <div className="flex gap-4">
+                        <Image
+                          src={diseñoDeMarcas3[4].image}
+                          alt="Project 1"
+                          width={540}
+                          height={540}
+                        />
+                      </div>
+                    </div>
+                  </motion.div>
+                </Column>
+              </>
+            )}
+          </AnimatePresence>
+
           <Column columns={{ xl: { width: 2 }, md: { width: 1 } }}>
             <div className="lg:ml-4 w-full">
               <span className="bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] text-transparent bg-clip-text font-bold text-2xl">
@@ -383,14 +751,14 @@ export default function Home() {
                       borderImage:
                         "linear-gradient(to right, #00C5FF, #00FF7C) 1",
                     }}
-                    onClick={handleMarcasClick}
+                    onClick={handleVerMasMarcas}
                   >
                     <span className="font-semibold text-xl">Ver más</span>
                   </button>
-                  <RedirectButton 
+                  <RedirectButton
                     className="bg-white text-black px-4 py-2 mt-10 font-['Poppins'] lg:text-2xl flex gap-2 items-center"
                     whatsappLink={handleWhatsAppClick}
-                    service="desarrollo-web"
+                    service="branding"
                   >
                     <span className="font-semibold text-xl">Hablemos</span>
                   </RedirectButton>
@@ -401,36 +769,55 @@ export default function Home() {
         </Grid>
       </Container>
       <div className="h-64"></div>
-      <Container className="pb-12">
-        <Grid columns={{ xl: 3, lg: 3, md: 1, sm: 1 }}>
-          <div>
-            <Image
-              src="/support/support1.png"
-              alt="Project 1"
-              width={650}
-              height={650}
-              className="w-full h-full"
-            />
-          </div>
-          <div>
-            <Image
-              src="/support/support2.png"
-              alt="Project 1"
-              width={650}
-              height={650}
-              className="w-full h-full"
-            />
-          </div>
-          <div>
-            <Image
-              src="/support/support3.png"
-              alt="Project 1"
-              width={650}
-              height={650}
-              className="w-full h-full"
-            />
-          </div>
-        </Grid>
+      <Container className="pb-12" id="support">
+        <AnimatePresence mode="wait">
+          <Grid columns={{ xl: 3, lg: 3, md: 1, sm: 1 }}>
+            {currentSupportSet === 0 && (
+              <>
+                {supportImages1.map((image, index) => (
+                  <motion.div
+                    key={`support1-${index}`}
+                    variants={marcasVariants}
+                    initial="initial"
+                    animate="animate"
+                    exit="exit"
+                  >
+                    <Image
+                      src={image.image}
+                      alt="Project 1"
+                      width={650}
+                      height={650}
+                      className="w-full h-full"
+                    />
+                  </motion.div>
+                ))}
+              </>
+            )}
+
+            {currentSupportSet === 1 && (
+              <>
+                {supportImages2.map((image, index) => (
+                  <motion.div
+                    key={`support2-${index}`}
+                    variants={marcasVariants}
+                    initial="initial"
+                    animate="animate"
+                    exit="exit"
+                  >
+                    <Image
+                      src={image.image}
+                      alt="Project 1"
+                      width={650}
+                      height={650}
+                      className="w-full h-full"
+                    />
+                  </motion.div>
+                ))}
+              </>
+            )}
+          </Grid>
+        </AnimatePresence>
+
         <Grid columns={{ xl: 2, lg: 2, md: 1, sm: 1 }} className="!p-0">
           <div className="mt-10 !p-0">
             <span className="bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] text-transparent bg-clip-text font-bold text-2xl">
@@ -456,13 +843,14 @@ export default function Home() {
                 style={{
                   borderImage: "linear-gradient(to right, #00C5FF, #00FF7C) 1",
                 }}
+                onClick={handleVerMasSupport}
               >
                 <span className="font-semibold text-xl">Ver más</span>
               </button>
-              <RedirectButton 
+              <RedirectButton
                 className="bg-white text-black px-4 py-2 mt-10 font-['Poppins'] lg:text-2xl flex gap-2 items-center"
                 whatsappLink={handleWhatsAppClick}
-                service="branding"
+                service="marketing"
               >
                 <span className="font-semibold text-xl">Hablemos</span>
               </RedirectButton>
@@ -569,7 +957,7 @@ export default function Home() {
               diferenciarte y conectar con tu público objetivo.
             </span>
             <div className=" mt-8">
-              <RedirectButton 
+              <RedirectButton
                 className={`border-2 border-white px-6 py-2 mt-10 font-['Poppins'] lg:text-2xl text-white hover:text-transparent bg-clip-text hover:bg-gradient-to-r hover:from-[#00C5FF] hover:to-[#00FF7C]`}
                 whatsappLink={handleWhatsAppClick}
               >
@@ -645,7 +1033,7 @@ export default function Home() {
               impacto positivo en tu audiencia.
             </span>
             <div className=" mt-8">
-              <RedirectButton 
+              <RedirectButton
                 className={`border-2 border-white px-6 py-2 mt-10 font-['Poppins'] lg:text-2xl text-white hover:text-transparent bg-clip-text hover:bg-gradient-to-r hover:from-[#00C5FF] hover:to-[#00FF7C]`}
                 whatsappLink={handleWhatsAppClick}
               >
@@ -709,7 +1097,7 @@ export default function Home() {
               cualificados y posicionarte en un mercado competitivo.
             </span>
             <div className=" mt-8">
-              <RedirectButton 
+              <RedirectButton
                 className={`border-2 border-white px-6 py-2 mt-10 font-['Poppins'] lg:text-2xl text-white hover:text-transparent bg-clip-text hover:bg-gradient-to-r hover:from-[#00C5FF] hover:to-[#00FF7C]`}
                 whatsappLink={handleWhatsAppClick}
               >
@@ -720,11 +1108,43 @@ export default function Home() {
         </Grid>
       </Container>
       <div className="h-48 hidden"></div>
-      <Container className="h-[80vh] hidden">
-          <div className="flex flex-col items-center justify-center w-full">
-                <span className="bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] text-transparent bg-clip-text text-2xl w-fit">¿Cómo trabajamos?</span>
-                <h2 className="text-white text-4xl md:text-6xl text-center font-bold font-['Poppins'] lg:text-9xl">Nuestro Proceso</h2>
+      <Container className="h-[80vh] ">
+        <div className="flex flex-col items-center justify-center w-full">
+          <span className="bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] text-transparent bg-clip-text text-2xl w-fit">¿Cómo trabajamos?</span>
+          <h2 className="text-white text-4xl md:text-6xl text-center font-bold font-['Poppins'] lg:text-9xl">Nuestro Proceso</h2>
+        </div>
+        <div className="flex gap-4 items-center w-full h-[40vh] justify-between px-10 overflow-x-auto space-x-12 md:space-x-0">
+          <div className="flex flex-col items-center justify-center gap-4 cursor-pointer" onClick={handleReunionClick}>
+            <Reunion />
+            <span className="text-white text-xl font-bold">Reunión</span>
           </div>
+          <div className="flex flex-col items-center justify-center gap-4 cursor-pointer" onClick={handlePropuestaClick}>
+            <Propuesta />
+            <span className="text-white text-xl font-bold">Propuesta</span>
+          </div>
+          <div className="flex flex-col items-center justify-center gap-4 cursor-pointer" onClick={handleDiseñoClick}>
+            <Diseño />
+            <span className="text-white text-xl font-bold">Diseño</span>
+          </div>
+          <div className="flex flex-col items-center justify-center gap-4 cursor-pointer" onClick={handlePresentacionClick}>
+            <Reunion />
+            <span className="text-white text-xl font-bold">Presentacion</span>
+          </div>
+          <div className="flex flex-col items-center justify-center gap-4 cursor-pointer" onClick={handleEntregaClick}>
+            <Entrega />
+            <span className="text-white text-xl font-bold">Entrega</span>
+          </div>
+        </div>
+        {selectedProcess !== null && (
+          <div className="flex flex-col gap-4 mt-8">
+            <span className="bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] text-transparent bg-clip-text font-bold text-3xl w-fit">
+              {processText[selectedProcess].title}
+            </span>
+            <span className="text-white text-xl w-1/2">
+              {processText[selectedProcess].text}
+            </span>
+          </div>
+        )}
 
       </Container>
       <div className="h-48"></div>
@@ -795,6 +1215,6 @@ export default function Home() {
           </div>
         </Grid>
       </Container>
-      </div>
+    </div>
   );
 }

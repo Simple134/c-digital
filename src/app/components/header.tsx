@@ -15,11 +15,11 @@ const Header = () => {
                 <div className="cursor-pointer top-0 left-0 relative z-50" onClick={() => router.push("/")}>
                     <Image src="/Layer_1.png" alt="logo" className="object-cover lg:w-64 w-44 h-full" width={256} height={256} />
                 </div>
-                <div className="flex space-x-8 lg:block hidden relative z-50">
-                    <Link href="/" className={` ${pathname === "/" ? "bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] text-transparent bg-clip-text font-bold" : "hover:text-[#9F9F9F] font-normal"} font-['Poppins']`}>Home</Link>
-                    <Link href="/construction" className={` ${pathname === "" ? "text-[#01aaa8] font-bold" : "hover:text-[#9F9F9F] font-normal"} font-['Poppins']`}>Servicios</Link>
-                    <Link href="/construction" className={` ${pathname === "" ? "text-[#01aaa8] font-bold" : "hover:text-[#9F9F9F] font-normal"} font-['Poppins']`}>Nosotros</Link>
-                    <Link href="/contacto" className={` ${pathname === "/contacto" ? "bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] text-transparent bg-clip-text font-bold" : "hover:text-[#9F9F9F] font-normal"} font-['Poppins']`}>Contacto</Link>
+                <div className=" space-x-8 lg:block hidden relative z-50">
+                    <Link href="/" className={` ${pathname === "/" ? "bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] text-transparent bg-clip-text font-bold" : "hover:text-[#9F9F9F] font-normal"} `}>Inicio</Link>
+                    {/*<Link href="/construction" className={` ${pathname === "" ? "text-[#01aaa8] font-bold" : "hover:text-[#9F9F9F] font-normal"} `}>Servicios</Link>
+                    <Link href="/construction" className={` ${pathname === "" ? "text-[#01aaa8] font-bold" : "hover:text-[#9F9F9F] font-normal"} `}>Nosotros</Link>*/}
+                    <Link href="/contacto" className={` ${pathname === "/contacto" ? "bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] text-transparent bg-clip-text font-bold" : "hover:text-[#9F9F9F] font-normal"} `}>Contacto</Link>
                 </div>
             </div>
         </Container>
