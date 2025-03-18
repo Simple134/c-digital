@@ -6,13 +6,13 @@ import { useState } from "react";
 import InfiniteLogo from "./components/infiniteLogo";
 import Link from "next/link";
 import { RedirectButton } from '@/components/RedirectButton';
-import { Diseño, Entrega, Propuesta, Reunion } from "./components/icons";
+import { Diseño, DiseñoColor, Entrega, EntregaColor, Propuesta, PropuestaColor, Reunion, ReunionColor } from "./components/icons";
 
 export default function Home() {
   const [showNewProjects, setShowNewProjects] = useState(false);
   const [currentMarcasSet, setCurrentMarcasSet] = useState(0);
   const [currentSupportSet, setSupportSet] = useState(0);
-  const [selectedProcess, setSelectedProcess] = useState<number | null>(1);
+  const [selectedProcess, setSelectedProcess] = useState<number | null>(0);
 
   const initialProjects = [
     {
@@ -132,13 +132,28 @@ export default function Home() {
     {
       image: "/support/support6.png",
     },
+    {
+      image: "/support/support7.png",
+    },
+  ];
+
+  const supportImages3 = [
+    {
+      image: "/support/support8.png",
+    },
+    {
+      image: "/support/support9.png",
+    },
+    {
+      image: "/support/support10.png",
+    },
   ];
 
   const processText = [
     {
       title: "Reunión Inicial",
-      text: "Nos reunimos contigo para entender tus necesidades, objetivos y expectativas. Analizamos la identidad de tu marca, el público objetivo y los requisitos del proyecto. Además, establecemos un presupuesto y un cronograma preliminar." 
-     },
+      text: "Nos reunimos contigo para entender tus necesidades, objetivos y expectativas. Analizamos la identidad de tu marca, el público objetivo y los requisitos del proyecto. Además, establecemos un presupuesto y un cronograma preliminar."
+    },
     {
       title: "Propuesta",
       text: "Basándonos en la información recopilada, creamos una propuesta detallada que incluye el alcance del proyecto, tiempos de entrega, costos y metodología de trabajo. Incluimos moodboards, referencias visuales o bocetos iniciales para alinear nuestra visión con la tuya."
@@ -208,21 +223,21 @@ export default function Home() {
 
   const projectVariants = {
     initial: { opacity: 0, scale: 0.8 },
-    animate: { 
-      opacity: 1, 
-      scale: 1, 
-      transition: { 
+    animate: {
+      opacity: 1,
+      scale: 1,
+      transition: {
         duration: 1.2,
         ease: "easeOut"
-      } 
+      }
     },
-    exit: { 
-      opacity: 0, 
-      scale: 0.8, 
-      transition: { 
+    exit: {
+      opacity: 0,
+      scale: 0.8,
+      transition: {
         duration: 1.2,
         ease: "easeIn"
-      } 
+      }
     },
   };
 
@@ -253,27 +268,30 @@ export default function Home() {
   };
 
   const marcasVariants = {
-    initial: { opacity: 0, y: 50 },
+    initial: { 
+      opacity: 0, 
+      y: 50 
+    },
     animate: { 
       opacity: 1, 
-      y: 0, 
-      transition: { 
-        duration: 1.2,
+      y: 0,
+      transition: {
+        duration: 1,
         ease: "easeOut"
-      } 
+      }
     },
     exit: { 
-      opacity: 0, 
+      opacity: 0,
       y: -50,
-      transition: { 
-        duration: 1.2,
+      transition: {
+        duration: 1,
         ease: "easeIn"
-      } 
-    },
+      }
+    }
   };
 
   const handleVerMasSupport = () => {
-    setSupportSet((prevSet) => (prevSet + 1) % 2);
+    setSupportSet((prevSet) => (prevSet + 1) % 3);
 
     const supportElement = document.getElementById("support");
     if (supportElement) {
@@ -494,59 +512,56 @@ export default function Home() {
             {currentMarcasSet === 0 && (
               <>
                 <Column columns={{ xl: { width: 2 }, md: { width: 1 } }}>
-                  <motion.div 
+                  <motion.div
                     className="flex h-full"
                     key="marca1-1"
                     variants={marcasVariants}
                     initial="initial"
                     animate="animate"
                     exit="exit"
-                    transition={{ duration: 1 }}
                   >
                     <Image
                       src={diseñoDeMarcas1[0].image}
                       alt="Project 1"
-                      width={650}
-                      height={650}
-                      className="w-full h-full"
+                      width={700}
+                      height={700}
+                      className="w-full h-full object-cover"
                     />
                   </motion.div>
                 </Column>
                 <Column columns={{ xl: { width: 2 }, md: { width: 1 } }}>
-                  <motion.div 
-                    className="flex"
+                  <motion.div
+                    className="flex h-full"
                     key="marca1-2"
                     variants={marcasVariants}
                     initial="initial"
                     animate="animate"
                     exit="exit"
-                    transition={{ duration: 1 }}
                   >
                     <Image
                       src={diseñoDeMarcas1[1].image}
                       alt="Project 1"
-                      width={545}
-                      height={520}
-                      className="w-full h-full"
+                      width={700}
+                      height={700}
+                      className="w-full h-full object-cover"
                     />
                   </motion.div>
                 </Column>
                 <Column columns={{ xl: { width: 2 }, md: { width: 1 } }}>
-                  <motion.div 
-                    className="flex flex-col gap-4"
+                  <motion.div
+                    className="flex flex-col gap-4 h-full"
                     key="marca1-3"
                     variants={marcasVariants}
                     initial="initial"
                     animate="animate"
                     exit="exit"
-                    transition={{ duration: 1 }}
                   >
                     <Image
                       src={diseñoDeMarcas1[2].image}
                       alt="Project 1"
-                      width={630}
-                      height={650}
-                      className="w-full h-full"
+                      width={700}
+                      height={700}
+                      className="w-full h-full object-cover"
                     />
                     <div className="flex gap-4">
                       <Image
@@ -555,6 +570,7 @@ export default function Home() {
                         width={200}
                         height={200}
                         priority
+                        className="object-cover"
                       />
                       <div className="bg-[#1A1D1F] w-[80%] flex items-center justify-center">
                         <Image
@@ -562,6 +578,7 @@ export default function Home() {
                           alt="Project 1"
                           width={100}
                           height={100}
+                          className="object-contain"
                         />
                       </div>
                     </div>
@@ -573,74 +590,73 @@ export default function Home() {
             {currentMarcasSet === 1 && (
               <>
                 <Column columns={{ xl: { width: 2 }, md: { width: 1 } }}>
-                  <motion.div 
+                  <motion.div
                     className="flex h-full"
                     key="marca2-1"
                     variants={marcasVariants}
                     initial="initial"
                     animate="animate"
                     exit="exit"
-                    transition={{ duration: 1 }}
                   >
                     <Image
                       src={diseñoDeMarcas2[0].image}
                       alt="Project 1"
-                      width={620}
-                      height={620}
-                      className="w-full h-full "
+                      width={700}
+                      height={700}
+                      className="w-full h-full object-cover"
                     />
                   </motion.div>
                 </Column>
                 <Column columns={{ xl: { width: 2 }, md: { width: 1 } }}>
-                  <motion.div 
-                    className="flex"
+                  <motion.div
+                    className="flex h-full"
                     key="marca2-2"
                     variants={marcasVariants}
                     initial="initial"
                     animate="animate"
                     exit="exit"
-                    transition={{ duration: 1 }}
                   >
                     <Image
                       src={diseñoDeMarcas2[1].image}
                       alt="Project 1"
-                      width={500}
-                      height={500}
-                      className="w-full h-full object-contain "
+                      width={700}
+                      height={700}
+                      className="w-full h-full object-cover"
                     />
                   </motion.div>
                 </Column>
                 <Column columns={{ xl: { width: 2 }, md: { width: 1 } }}>
-                  <motion.div 
-                    className="flex flex-col gap-4"
+                  <motion.div
+                    className="flex flex-col gap-4 h-full"
                     key="marca2-3"
                     variants={marcasVariants}
                     initial="initial"
                     animate="animate"
                     exit="exit"
-                    transition={{ duration: 1 }}
                   >
                     <Image
                       src={diseñoDeMarcas2[2].image}
                       alt="Project 1"
-                      width={600}
-                      height={600}
-                      className="w-full h-full"
+                      width={700}
+                      height={700}
+                      className="w-full h-full object-cover"
                     />
                     <div className="flex gap-4">
                       <Image
                         src={diseñoDeMarcas2[3].image}
                         alt="Project 1"
-                        width={200}
-                        height={200}
+                        width={250}
+                        height={250}
                         priority
+                        className="object-cover"
                       />
                       <div className="flex gap-4">
                         <Image
                           src={diseñoDeMarcas2[4].image}
                           alt="Project 1"
-                          width={540}
-                          height={540}
+                          width={600}
+                          height={600}
+                          className="object-cover"
                         />
                       </div>
                     </div>
@@ -652,7 +668,7 @@ export default function Home() {
             {currentMarcasSet === 2 && (
               <>
                 <Column columns={{ xl: { width: 2 }, md: { width: 1 } }}>
-                  <motion.div 
+                  <motion.div
                     className="flex h-full"
                     key="marca3-1"
                     variants={marcasVariants}
@@ -665,13 +681,13 @@ export default function Home() {
                       alt="Project 1"
                       width={650}
                       height={650}
-                      className="w-full h-full"
+                      className="w-full h-full object-cover"
                     />
                   </motion.div>
                 </Column>
                 <Column columns={{ xl: { width: 2 }, md: { width: 1 } }}>
-                  <motion.div 
-                    className="flex"
+                  <motion.div
+                    className="flex h-full"
                     key="marca3-2"
                     variants={marcasVariants}
                     initial="initial"
@@ -683,13 +699,13 @@ export default function Home() {
                       alt="Project 1"
                       width={545}
                       height={520}
-                      className="w-full h-full"
+                      className="w-full h-full object-cover"
                     />
                   </motion.div>
                 </Column>
                 <Column columns={{ xl: { width: 2 }, md: { width: 1 } }}>
-                  <motion.div 
-                    className="flex flex-col gap-4"
+                  <motion.div
+                    className="flex flex-col gap-4 h-full"
                     key="marca3-3"
                     variants={marcasVariants}
                     initial="initial"
@@ -701,7 +717,7 @@ export default function Home() {
                       alt="Project 1"
                       width={630}
                       height={650}
-                      className="w-full h-full"
+                      className="w-full h-full object-cover"
                     />
                     <div className="flex gap-4">
                       <Image
@@ -710,6 +726,7 @@ export default function Home() {
                         width={200}
                         height={200}
                         priority
+                        className="object-cover"
                       />
                       <div className="flex gap-4">
                         <Image
@@ -717,6 +734,7 @@ export default function Home() {
                           alt="Project 1"
                           width={540}
                           height={540}
+                          className="object-cover"
                         />
                       </div>
                     </div>
@@ -732,7 +750,7 @@ export default function Home() {
                 {" "}
                 Branding / Rebranding
               </span>
-              <h2 className="text-white lg:text-8xl text-6xl font-bold font-['Poppins'] whitespace-normal leading-[1.1]">
+              <h2 className="text-white text-6xl lg:text-8xl font-bold font-['Poppins'] whitespace-normal leading-[1.1] pb-2">
                 Diseño De <br className="leading-[0.3]" /> Marcas
               </h2>
               <div className="lg:mt-6 w-full h-full justify-center flex flex-col">
@@ -771,51 +789,121 @@ export default function Home() {
       <div className="h-64"></div>
       <Container className="pb-12" id="support">
         <AnimatePresence mode="wait">
-          <Grid columns={{ xl: 3, lg: 3, md: 1, sm: 1 }}>
-            {currentSupportSet === 0 && (
-              <>
-                {supportImages1.map((image, index) => (
-                  <motion.div
-                    key={`support1-${index}`}
-                    variants={marcasVariants}
-                    initial="initial"
-                    animate="animate"
-                    exit="exit"
-                  >
-                    <Image
-                      src={image.image}
-                      alt="Project 1"
-                      width={650}
-                      height={650}
-                      className="w-full h-full"
-                    />
-                  </motion.div>
-                ))}
-              </>
-            )}
+          <motion.div
+            key={`support-set-${currentSupportSet}`}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            <div className={`hidden md:grid grid-cols-3 gap-4 ${currentSupportSet === 1 ? 'grid-cols-4' : ''}`}>
+              {currentSupportSet === 0 && (
+                <>
+                  {supportImages1.map((image, index) => (
+                    <Column key={`support1-${index}`}>
+                      <motion.div
+                        variants={marcasVariants}
+                        initial="initial"
+                        animate="animate"
+                        exit="exit"
+                        className="flex h-full relative group"
+                      >
+                        <Image
+                          src={image.image}
+                          alt="Project 1"
+                          width={650}
+                          height={650}
+                          className="w-full h-full object-cover rounded-lg"
+                        />
+                        <div className="absolute inset-0 bg-black/50 transition-opacity duration-300 group-hover:opacity-0 rounded-lg" />
+                      </motion.div>
+                    </Column>
+                  ))}
+                </>
+              )}
 
-            {currentSupportSet === 1 && (
-              <>
-                {supportImages2.map((image, index) => (
-                  <motion.div
-                    key={`support2-${index}`}
-                    variants={marcasVariants}
-                    initial="initial"
-                    animate="animate"
-                    exit="exit"
-                  >
-                    <Image
-                      src={image.image}
-                      alt="Project 1"
-                      width={650}
-                      height={650}
-                      className="w-full h-full"
-                    />
-                  </motion.div>
+              {currentSupportSet === 1 && (
+                <>
+                  {supportImages2.map((image, index) => (
+                    <Column key={`support2-${index}`}>
+                      <motion.div
+                        variants={marcasVariants}
+                        initial="initial"
+                        animate="animate"
+                        exit="exit"
+                        className="flex h-full relative group"
+                      >
+                        <Image
+                          src={image.image}
+                          alt="Project 1"
+                          width={650}
+                          height={650}
+                          className="w-full h-full object-cover rounded-lg"
+                        />
+                        <div className="absolute inset-0 bg-black/50 transition-opacity duration-300 group-hover:opacity-0 rounded-lg" />
+                      </motion.div>
+                    </Column>
+                  ))}
+                </>
+              )}
+
+              {currentSupportSet === 2 && (
+                <>
+                  {supportImages3.map((image, index) => (
+                    <Column key={`support3-${index}`}>
+                      <motion.div
+                        variants={marcasVariants}
+                        initial="initial"
+                        animate="animate"
+                        exit="exit"
+                        className="flex h-full relative group"
+                      >
+                        <Image
+                          src={image.image}
+                          alt="Project 1"
+                          width={650}
+                          height={650}
+                          className="w-full h-full object-cover rounded-lg"
+                        />
+                        <div className="absolute inset-0 bg-black/50 transition-opacity duration-300 group-hover:opacity-0 rounded-lg" />
+                      </motion.div>
+                    </Column>
+                  ))}
+                </>
+              )}
+            </div>
+
+            {/* Versión móvil con scroll horizontal */}
+            <div className="md:hidden w-full">
+              <div className="flex overflow-x-auto snap-x snap-mandatory touch-pan-x scrollbar-hide">
+                {(currentSupportSet === 0 ? supportImages1 :
+                  currentSupportSet === 1 ? supportImages2 :
+                  supportImages3).map((image, index) => (
+                  <div 
+                    key={`support-mobile-${index}`}
+                    className="flex-none w-full snap-center">
+                    <motion.div
+                      variants={marcasVariants}
+                      initial="initial"
+                      animate="animate"
+                      exit="exit"
+                      className="relative group h-[50vh]"
+                    >
+                      <Image
+                        src={image.image}
+                        alt="Project 1"
+                        width={500}
+                        height={500}
+                        className="h-full object-contain rounded-lg"
+                      />
+                      <div className="hidden md:block absolute inset-0 bg-black/50 transition-opacity duration-300 group-hover:opacity-0 rounded-lg" />
+                    </motion.div>
+                  </div>
                 ))}
-              </>
-            )}
-          </Grid>
+              </div>
+
+            </div>
+          </motion.div>
         </AnimatePresence>
 
         <Grid columns={{ xl: 2, lg: 2, md: 1, sm: 1 }} className="!p-0">
@@ -824,8 +912,8 @@ export default function Home() {
               {" "}
               Diseño gráfico
             </span>
-            <h2 className="text-white text-[65px] lg:text-[120px] font-bold font-['Poppins'] whitespace-normal leading-[0.9] w-fit">
-              Content <br className="leading-[0.3]" /> Design
+            <h2 className="text-white lg:text-8xl text-6xl font-bold font-['Poppins'] whitespace-normal leading-[1.1] pb-2">
+              Content <br/> Design
             </h2>
           </div>
           <div className="lg:mt-6 h-full justify-center flex flex-col">
@@ -1109,45 +1197,57 @@ export default function Home() {
       </Container>
       <div className="h-48"></div>
       <Container className="h-[80vh] ">
-        <div className="flex flex-col items-center justify-center w-full">
-          <span className="bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] text-transparent bg-clip-text text-2xl w-fit">¿Cómo trabajamos?</span>
-          <h2 className="text-white text-4xl md:text-6xl text-center font-bold font-['Poppins'] lg:text-9xl">Nuestro Proceso</h2>
+        <div className="flex flex-col w-full items-start justify-start md:items-center md:justify-center">
+          <span className="bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] text-transparent bg-clip-text text-2xl w-fit font-bold">¿Cómo trabajamos?</span>
+          <h2 className="text-white text-4xl md:text-6xl  font-bold font-['Poppins'] lg:text-9xl">Nuestro Proceso</h2>
         </div>
-        <div className="flex gap-4 items-center w-full h-[40vh] justify-between px-10 overflow-x-auto space-x-12 md:space-x-0">
+        <div className="flex items-center w-full h-[40vh] justify-between px-20 overflow-x-auto">
           <div className="flex flex-col items-center justify-center gap-4 cursor-pointer" onClick={handleReunionClick}>
-            <Reunion />
+            {selectedProcess === 0 ? <ReunionColor /> : <Reunion />}
             <span className="text-white text-xl font-bold">Reunión</span>
           </div>
+          <div className="h-16 flex px-4">
+            <div className="flex-shrink-0 gap-4 bg-[#343434] w-8 h-[1px] items-center justify-center"></div>
+          </div>
           <div className="flex flex-col items-center justify-center gap-4 cursor-pointer" onClick={handlePropuestaClick}>
-            <Propuesta />
+            {selectedProcess === 1 ? <PropuestaColor /> : <Propuesta />}
             <span className="text-white text-xl font-bold">Propuesta</span>
           </div>
+          <div className="h-16 flex px-4">
+            <div className="flex-shrink gap-4 bg-[#343434] w-8 h-[1px] items-center justify-center"></div>
+          </div>
           <div className="flex flex-col items-center justify-center gap-4 cursor-pointer" onClick={handleDiseñoClick}>
-            <Diseño />
+            {selectedProcess === 2 ? <DiseñoColor /> : <Diseño />}
             <span className="text-white text-xl font-bold">Diseño</span>
           </div>
+          <div className="h-16 flex px-4">
+            <div className="flex-shrink-0 gap-4 bg-[#343434] w-8 h-[1px] items-center justify-center"></div>
+          </div>
           <div className="flex flex-col items-center justify-center gap-4 cursor-pointer" onClick={handlePresentacionClick}>
-            <Reunion />
+            {selectedProcess === 3 ? <ReunionColor /> : <Reunion />}
             <span className="text-white text-xl font-bold">Presentacion</span>
           </div>
+          <div className="h-16 flex px-4">
+            <div className="flex-shrink-0 gap-4 bg-[#343434] w-8 h-[1px] items-center justify-center"></div>
+          </div>
           <div className="flex flex-col items-center justify-center gap-4 cursor-pointer" onClick={handleEntregaClick}>
-            <Entrega />
+            {selectedProcess === 4 ? <EntregaColor /> : <Entrega />}
             <span className="text-white text-xl font-bold">Entrega</span>
           </div>
         </div>
         {selectedProcess !== null && (
-          <div className="flex flex-col gap-4 mt-8">
-            <span className="bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] text-transparent bg-clip-text font-bold text-3xl w-fit">
+          <div className="flex flex-col gap-4 mt-8 w-full">
+            <span className="bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] text-transparent bg-clip-text font-bold text-3xl w-fit ">
               {processText[selectedProcess].title}
             </span>
-            <span className="text-white text-xl w-1/2">
+            <span className="text-white text-xl w-full md:w-1/2">
               {processText[selectedProcess].text}
             </span>
           </div>
         )}
 
       </Container>
-      <div className="h-48"></div>
+      <div className="h-48 mt-28 md:mt-0"></div>
       <Container className="h-[80vh]">
         <Grid columns={{ xl: 2, lg: 2, md: 1, sm: 1 }}>
           <div className="flex items-start justify-start">

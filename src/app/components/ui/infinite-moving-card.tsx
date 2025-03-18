@@ -112,8 +112,8 @@ export const InfiniteMovingCards = ({
               <Image
                 src={item.image}
                 alt={item?.name || ""}
-                width={100}
-                height={100}
+                width={200}
+                height={200}
                 className="w-fit h-fit object-cover overflow-hidden"
               />
             </blockquote>
