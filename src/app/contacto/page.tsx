@@ -506,7 +506,7 @@ const ContactoContent = () => {
         </Grid>
       </Container>
       <div className="h-48"></div>
-      <Container className="h-[30vh]">
+      <Container className="h-[40vh]">
         <div className="flex flex-col items-center justify-center pb-8">
           <span className="text-2xl font-bold bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] text-transparent bg-clip-text">
             Follow Our Works
@@ -540,7 +540,7 @@ const ContactoContent = () => {
           </div>
         </Grid>
       </Container>
-      <Container className="h-[70vh] pb-12">
+      <Container className="h-[90vh] pb-12">
         <Grid columns={{ xl: 2, lg: 2, md: 1, sm: 1 }}>
           <div className="flex items-start justify-start">
             <Image src="/carlos.png" alt="carlos" width={500} height={500} />
