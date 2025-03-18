@@ -4,6 +4,8 @@ import { useSearchParams } from "next/navigation";
 import { useForm, SubmitHandler, FieldValues } from "react-hook-form";
 import { useState, Suspense } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import Image from "next/image";
+import { Camara } from "../components/icons";
 
 // Componente wrapper con Suspense
 const ContactoContent = () => {
@@ -298,7 +300,7 @@ const ContactoContent = () => {
                       <motion.button
                         type="button"
                         onClick={() => toggleService("otros")}
-                        className={`lg:w-36 w-2 h-12 ml-12 hover:border-black lg:text-xl text-md font-bold ${
+                        className={`lg:w-36 w-28 h-12 lg:ml-12 ml-0 hover:border-black lg:text-xl text-md font-bold ${
                           isServiceSelected("otros")
                             ? "text-black border-black border-2"
                             : "text-gray-400 border-gray-400 border-2"
@@ -501,6 +503,76 @@ const ContactoContent = () => {
               )}
             </AnimatePresence>
           </motion.div>
+        </Grid>
+      </Container>
+      <div className="h-48"></div>
+      <Container className="h-[30vh]">
+        <div className="flex flex-col items-center justify-center pb-8">
+          <span className="text-2xl font-bold bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] text-transparent bg-clip-text">
+            Follow Our Works
+          </span>
+        </div>
+        <Grid columns={{ xl: 5, lg: 5, md: 1, sm: 1 }}>
+          <div className="flex flex-col items-center justify-center">
+            <a href="https://www.linkedin.com/company/c-digital-estudio/" target="_blank" className="text-3xl font-bold text-[#AFAFAF] hover:text-[#0B7BD6] hover:cursor-pointer">
+              Linkedin
+            </a>
+          </div>
+          <div className="flex flex-col items-center justify-center">
+            <a href="https://www.youtube.com/@cdigitalestudio/videos" target="_blank" className="text-3xl font-bold text-[#AFAFAF] hover:text-[#E8003E] hover:cursor-pointer">
+              Youtube
+            </a>
+          </div>
+          <div className="flex flex-col items-center justify-center">
+            <a href="https://www.instagram.com/cdigitalestudio/" target="_blank" className="text-3xl text-[#AFAFAF] font-bold hover:bg-gradient-to-r hover:from-[#FFB42F] hover:to-[#FA0FB2] hover:text-transparent bg-clip-text hover:cursor-pointer">
+              Instagram
+            </a>
+          </div>
+          <div className="flex flex-col items-center justify-center">
+            <a href="https://dribbble.com/CDigitalEstudio" target="_blank" className="text-3xl font-bold text-[#AFAFAF] hover:text-[#FF6CCB] hover:cursor-pointer">
+              Dribbble
+            </a>
+          </div>
+          <div className="flex flex-col items-center justify-center">
+            <a href="https://x.com/CarlosDiaz_rd" target="_blank" className="text-3xl font-bold text-[#AFAFAF] hover:text-[#FFFFFF] hover:cursor-pointer">
+              X
+            </a>
+          </div>
+        </Grid>
+      </Container>
+      <Container className="h-[70vh] pb-12">
+        <Grid columns={{ xl: 2, lg: 2, md: 1, sm: 1 }}>
+          <div className="flex items-start justify-start">
+            <Image src="/carlos.png" alt="carlos" width={500} height={500} />
+          </div>
+          <div className="flex flex-col items-start justify-start space-y-2">
+            <span className="bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] text-transparent bg-clip-text font-bold text-2xl w-fit">
+              Dudas o Preguntas?
+            </span>
+            <h2 className="text-white text-4xl md:text-6xl text-center font-bold font-['Poppins'] lg:text-9xl">
+              Hablemos
+            </h2>
+            <p className="text-white text-xl">
+              Tu proyecto solo necesita un estudio de diseño responsable para
+              escalar; agenda una llamada ahora y no procrastines.{" "}
+              <span className="font-bold">Auditoria gratis.</span>
+            </p>
+            <div className="">
+              <a
+                target="_blank"
+                className={`flex items-center justify-center  border-2 border-white px-6 py-2 mt-10 font-['Poppins'] lg:text-2xl text-white hover:text-transparent bg-clip-text hover:bg-gradient-to-r hover:from-[#00C5FF] hover:to-[#00FF7C]`}
+                style={{
+                  borderImage: "linear-gradient(to right, #00C5FF, #00FF7C) 1",
+                }}
+                href="https://calendly.com/diazc6001-5azn/consultoria-cdigital?month=2025-03"
+              >
+                <span className="font-semibold">Agendar ahora</span>
+                <div className="bg-black rounded-full  ml-4">
+                  <Camara />
+                </div>
+              </a>
+            </div>
+          </div>
         </Grid>
       </Container>
     </div>

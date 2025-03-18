@@ -6,15 +6,15 @@ import { useState } from "react";
 import InfiniteLogo from "./components/infiniteLogo";
 import Link from "next/link";
 import { RedirectButton } from '@/components/RedirectButton';
-import { Diseño, DiseñoColor, Entrega, EntregaColor, Propuesta, PropuestaColor, Reunion, ReunionColor } from "./components/icons";
+import { Camara, Diseño, DiseñoColor, Entrega, EntregaColor, Propuesta, PropuestaColor, Reunion, ReunionColor } from "./components/icons";
 
 export default function Home() {
-  const [showNewProjects, setShowNewProjects] = useState(false);
+  const [currentProjectSet, setCurrentProjectSet] = useState(0);
   const [currentMarcasSet, setCurrentMarcasSet] = useState(0);
   const [currentSupportSet, setSupportSet] = useState(0);
   const [selectedProcess, setSelectedProcess] = useState<number | null>(0);
 
-  const initialProjects = [
+  const firstProjects = [
     {
       image: "/trabajos/1.png",
       title: "AutoServicio",
@@ -35,7 +35,7 @@ export default function Home() {
     },
   ];
 
-  const newProjects = [
+  const secondProjects = [
     {
       image: "/trabajos/4.png",
       title: "Web de Real State",
@@ -54,6 +54,27 @@ export default function Home() {
       description: "Website creada para encontrar tutores en Rep. Dom.",
       location: "Rep. Dom.",
     },
+  ];
+
+  const thirdProjects = [
+    {
+      image: "/trabajos/15.png",
+      title: "Agendado",
+      description: "App de agendas con asistencia de IA.",
+      location: "Rep. Dom.",
+    },
+    {
+      image: "/trabajos/14.png",
+      title: "Gestiono",
+      description: "Sistema de facturación avanzado con IA.",
+      location: "Rep. Dom.",
+    },
+    {
+      image: "/trabajos/13.png",
+      title: "Prestapp",
+      description: "App de préstamos y control de capital",
+      location: "Rep. Dom.",
+    }
   ];
 
   const diseñoDeMarcas1 = [
@@ -173,9 +194,8 @@ export default function Home() {
   ]
 
   const handleVerMas = () => {
-    setShowNewProjects(!showNewProjects);
+    setCurrentProjectSet((prev) => (prev + 1) % 3);
 
-    // Desplazarse al elemento con ID "projects"
     const projectsElement = document.getElementById("projects");
     if (projectsElement) {
       projectsElement.scrollIntoView({ behavior: "smooth" });
@@ -363,7 +383,7 @@ export default function Home() {
                 }}
                 onClick={handleContactClick}
               >
-                <span className="font-semibold">¿Quienes somos?</span>
+                <span className="font-semibold text-sm lg:text-xl">¿Quienes somos?</span>
               </button>
               <Link
                 href="/contacto"
@@ -418,47 +438,60 @@ export default function Home() {
         </div>
         <AnimatePresence mode="wait">
           <Grid
-            key={showNewProjects ? "new-projects" : "initial-projects"}
+            key={`projects-set-${currentProjectSet}`}
             columns={{ xl: 3, lg: 3, md: 1, sm: 1 }}
             className="!m-0 !p-0"
             behavior="media"
             id="projects"
           >
-            {(showNewProjects ? newProjects : initialProjects).map(
-              (project) => (
-                <motion.div
-                  key={project.image}
-                  className="relative flex justify-center items-center group"
-                  style={{ aspectRatio: "16/9" }}
-                  variants={projectVariants}
-                  initial="initial"
-                  animate="animate"
-                  exit="exit"
-                >
-                  <Image
-                    src={project.image}
-                    alt=""
-                    width={500}
-                    height={500}
-                    className="transition-all duration-300"
-                  />
-                  <div className="absolute inset-0 bg-black/70 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end w-[60%] pb-12 px-4 cursor-pointer">
-                    <div className="mb-8">
-                      <p>
-                        <span className="text-white text-2xl font-bold flex h-full">
-                          {project.title}:
-                          <br />
-                        </span>{" "}
-                        {project.description}
-                      </p>
-                    </div>
-                    <p className="text-[#00C5FF]">{project.location}</p>
+            {(currentProjectSet === 0 ? firstProjects :
+              currentProjectSet === 1 ? secondProjects :
+              thirdProjects).map((project) => (
+              <motion.div
+                key={project.image}
+                className="relative flex justify-center items-center group"
+                style={{ aspectRatio: "16/9" }}
+                variants={projectVariants}
+                initial="initial"
+                animate="animate"
+                exit="exit"
+              >
+                <Image
+                  src={project.image}
+                  alt=""
+                  width={500}
+                  height={500}
+                  className="transition-all duration-300"
+                />
+                <div className="absolute inset-0 bg-black/70 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end w-[60%] pb-12 px-4 cursor-pointer">
+                  <div className="mb-8">
+                    <p>
+                      <span className="text-white text-2xl font-bold flex h-full">
+                        {project.title}:
+                        <br />
+                      </span>{" "}
+                      {project.description}
+                    </p>
                   </div>
-                </motion.div>
-              )
-            )}
+                  <p className="text-[#00C5FF]">{project.location}</p>
+                </div>
+              </motion.div>
+            ))}
           </Grid>
         </AnimatePresence>
+        {/*<div className="flex justify-center space-x-2 mt-4">
+          {[0, 1, 2].map((index) => (
+            <button
+              key={index}
+              onClick={() => setCurrentProjectSet(index)}
+              className={`w-2 h-2 rounded-full transition-all ${
+                currentProjectSet === index 
+                  ? 'bg-[#00C5FF]' 
+                  : 'bg-white/30'
+              }`}
+            />
+          ))}
+        </div>*/}
         <div
           className="mt-6 w-full ">
 
@@ -1268,13 +1301,16 @@ export default function Home() {
             <div className="pt-8">
               <a
                 target="_blank"
-                className={`border-2 border-white px-6 py-2 mt-10 font-['Poppins'] lg:text-2xl text-white hover:text-transparent bg-clip-text hover:bg-gradient-to-r hover:from-[#00C5FF] hover:to-[#00FF7C]`}
+                className={`flex items-center justify-center  border-2 border-white px-6 py-2 mt-10 font-['Poppins'] lg:text-2xl text-white hover:text-transparent bg-clip-text hover:bg-gradient-to-r hover:from-[#00C5FF] hover:to-[#00FF7C]`}
                 style={{
                   borderImage: "linear-gradient(to right, #00C5FF, #00FF7C) 1",
                 }}
                 href="https://calendly.com/diazc6001-5azn/consultoria-cdigital?month=2025-03"
               >
                 <span className="font-semibold">Agendar ahora</span>
+                <div className="bg-black rounded-full  ml-4">
+                  <Camara />
+                </div>
               </a>
             </div>
           </div>
