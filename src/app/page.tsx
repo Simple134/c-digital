@@ -394,7 +394,7 @@ export default function Home() {
           <span className="bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] text-transparent bg-clip-text font-bold text-2xl w-fit">
             Servicios Destacados
           </span>
-          <h2 className="text-white text-6xl lg:text-7xl font-bold font-['Poppins'] whitespace-normal leading-[1.1]">
+          <h2 className="text-white text-5xl lg:text-7xl font-bold font-['Poppins'] whitespace-normal leading-[1.1]">
             Somos Especialistas En
           </h2>
         </div>

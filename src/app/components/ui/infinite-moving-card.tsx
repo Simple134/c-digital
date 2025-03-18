@@ -2,7 +2,7 @@
 
 import { cn } from "@/app/lib/utils";
 import Image from "next/image";
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 
 export const InfiniteMovingCards = ({
   items,
@@ -21,98 +21,101 @@ export const InfiniteMovingCards = ({
   pauseOnHover?: boolean;
   className?: string;
 }) => {
-  const containerRef = React.useRef<HTMLDivElement>(null);
-  const scrollerRef = React.useRef<HTMLUListElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const scrollerRef = useRef<HTMLUListElement>(null);
   const [start, setStart] = useState(false);
+  const animationCreated = useRef(false);
 
-
-
-
-  
-  const getDirection = () => {
+  const getDirection = useCallback(() => {
     if (containerRef.current) {
-      if (direction === "left") {
-        containerRef.current.style.setProperty(
-          "--animation-direction",
-          "forwards"
-        );
-      } else {
-        containerRef.current.style.setProperty(
-          "--animation-direction",
-          "reverse"
-        );
-      }
+      containerRef.current.style.setProperty(
+        "--animation-direction",
+        direction === "left" ? "forwards" : "reverse"
+      );
     }
-  };
-  const getSpeed = () => {
+  }, [direction]);
+
+  const getSpeed = useCallback(() => {
     if (containerRef.current) {
-      if (speed === "fast") {
-        containerRef.current.style.setProperty("--animation-duration", "20s");
-      } else if (speed === "normal") {
-        containerRef.current.style.setProperty("--animation-duration", "40s");
-      } else {
-        containerRef.current.style.setProperty("--animation-duration", "100s");
-      }
+      const speeds = {
+        fast: "20s",
+        normal: "40s",
+        slow: "100s"
+      };
+      containerRef.current.style.setProperty("--animation-duration", speeds[speed]);
     }
-  };
+  }, [speed]);
 
   const addAnimation = useCallback(() => {
-    if (containerRef.current && scrollerRef.current) {
-      const scrollerContent = Array.from(scrollerRef.current.children);
+    if (containerRef.current && scrollerRef.current && !animationCreated.current) {
+      // Limpiar contenido duplicado existente
+      const originalChildren = Array.from(scrollerRef.current.children).slice(0, items.length);
+      scrollerRef.current.innerHTML = '';
+      originalChildren.forEach(child => scrollerRef.current?.appendChild(child));
 
-      scrollerContent.forEach((item) => {
+      // Duplicar contenido una sola vez
+      originalChildren.forEach((item) => {
         const duplicatedItem = item.cloneNode(true);
-        if (scrollerRef.current) {
-          scrollerRef.current.appendChild(duplicatedItem);
-        }
+        scrollerRef.current?.appendChild(duplicatedItem);
       });
 
       getDirection();
       getSpeed();
       setStart(true);
+      animationCreated.current = true;
     }
-  }, [getDirection, getSpeed]);
+  }, [items.length, getDirection, getSpeed]);
 
   useEffect(() => {
     addAnimation();
+
+    return () => {
+      animationCreated.current = false;
+    };
   }, [addAnimation]);
+
+  // Actualizar dirección y velocidad cuando cambien las props
+  useEffect(() => {
+    getDirection();
+    getSpeed();
+  }, [direction, speed, getDirection, getSpeed]);
+
   return (
     <div
       ref={containerRef}
       className={cn(
-        "scroller relative z-20 overflow-hidden  max-w-[95vw] flex items-center justify-center [mask-image:linear-gradient(to_right,transparent,white_20%,white_80%,transparent)]",
+        "scroller relative z-20 overflow-hidden max-w-[95vw] flex items-center justify-center [mask-image:linear-gradient(to_right,transparent,white_20%,white_80%,transparent)]",
         className
       )}
     >
       <ul
         ref={scrollerRef}
         className={cn(
-          " flex min-w-full shrink-0 gap-4 py-4 w-max flex-nowrap overflow-hidden ",
-          start && "animate-scroll ",
+          "flex min-w-full shrink-0 gap-4 py-4 w-max flex-nowrap overflow-hidden",
+          start && "animate-scroll",
           pauseOnHover && "hover:[animation-play-state:paused]"
         )}
       >
-        {items.map((item, ) => (
+        {items.map((item, idx) => (
           <li
-            className="w-[350px] max-w-full relative rounded-2xl flex items-center justify-center overflow-hidden flex-shrink-0  px-8 py-6 md:w-[450px] "
+            className="w-[350px] max-w-full relative rounded-2xl flex items-center justify-center overflow-hidden flex-shrink-0 px-8 py-6 md:w-[450px]"
             style={{
-              background:
-                "linear-gradient(180deg, var(--slate-800), var(--slate-900)",
+              background: "linear-gradient(180deg, var(--slate-800), var(--slate-900)"
             }}
-            key={item.name}
+            key={`${item.name}-${idx}`}
           >
             <blockquote>
               <div
                 aria-hidden="true"
                 className="user-select-none overflow-hidden -z-1 pointer-events-none absolute -left-0.5 -top-0.5 h-[calc(100%_+_4px)] w-[calc(100%_+_4px)] flex items-center justify-center"
               ></div>
-                <Image
-                  src={item.image}
-                  alt={item?.name || ""}
-                  width={100}
-                  height={100}
-                  className="w-fit h-fit object-cover overflow-hidden"
-                />
+              <Image
+                src={item.image}
+                alt={item?.name || ""}
+                width={100}
+                height={100}
+                className="w-fit h-fit object-cover overflow-hidden"
+              />
             </blockquote>
           </li>
         ))}
