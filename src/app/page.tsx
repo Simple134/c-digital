@@ -204,11 +204,17 @@ export default function Home() {
 
   const handleVerMasMarcas = () => {
     setCurrentMarcasSet((prevSet) => (prevSet + 1) % 3);
-
-    // Desplazarse al elemento con ID "marcas"
     const marcasElement = document.getElementById("marcas");
     if (marcasElement) {
       marcasElement.scrollIntoView({ behavior: "smooth" });
+    }
+  };
+
+  const handleVerMasSupport = () => {
+    setSupportSet((prevSet) => (prevSet + 1) % 3);
+    const supportElement = document.getElementById("support");
+    if (supportElement) {
+      supportElement.scrollIntoView({ behavior: "smooth" });
     }
   };
 
@@ -219,6 +225,8 @@ export default function Home() {
       conectaElement.scrollIntoView({ behavior: "smooth" });
     }
   };
+
+
 
   const handleCreaClick = () => {
     const creaElement = document.getElementById("crea-2");
@@ -271,7 +279,7 @@ export default function Home() {
       opacity: 1,
       transition: {
         delayChildren: 0.5,
-        staggerChildren: 0.2,
+        staggerChildren: 0.8,
       },
     },
   };
@@ -290,11 +298,11 @@ export default function Home() {
   const marcasVariants = {
     initial: { 
       opacity: 0, 
-      y: 50 
+      scale: 0.8
     },
     animate: { 
       opacity: 1, 
-      y: 0,
+      scale: 1,
       transition: {
         duration: 1,
         ease: "easeOut"
@@ -302,7 +310,7 @@ export default function Home() {
     },
     exit: { 
       opacity: 0,
-      y: -50,
+      scale: 0.8,
       transition: {
         duration: 1,
         ease: "easeIn"
@@ -310,14 +318,7 @@ export default function Home() {
     }
   };
 
-  const handleVerMasSupport = () => {
-    setSupportSet((prevSet) => (prevSet + 1) % 3);
 
-    const supportElement = document.getElementById("support");
-    if (supportElement) {
-      supportElement.scrollIntoView({ behavior: "smooth" });
-    }
-  };
 
   const handleReunionClick = () => {
     setSelectedProcess(0);

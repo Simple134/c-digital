@@ -171,7 +171,7 @@ const ContactoContent = () => {
             </motion.span>
           </motion.div>
           <motion.div 
-            className="flex flex-col bg-white px-10 py-28 min-h-[75vh] max-h-[100vh]"
+            className="flex flex-col bg-white px-10 py-28 "
             initial="hidden"
             animate="visible"
             variants={formVariants}
@@ -224,13 +224,13 @@ const ContactoContent = () => {
                       Selecciona los Servicios de interés
                     </motion.span>
                     <Grid
-                      columns={{ xl: 3, lg: 3, md: 2, sm: 2 }}
+                      columns={{ xl: 3, lg: 2, md: 2, sm: 2 }}
                       className="mb-4"
                     >
                       <motion.button
                         type="button"
                         onClick={() => toggleService("diseño-app")}
-                        className={`h-12 lg:hover:border-black lg:text-xl text-md font-bold ${
+                        className={`p-2 lg:hover:border-black lg:text-xl text-sm font-bold ${
                           isServiceSelected("diseño-app")
                             ? "text-black border-black border-2"
                             : "text-gray-400 border-gray-400 border-2"
@@ -244,7 +244,7 @@ const ContactoContent = () => {
                       <motion.button
                         type="button"
                         onClick={() => toggleService("desarrollo-web")}
-                        className={`h-12 lg:hover:border-black lg:text-xl text-md font-bold ${
+                        className={`p-2 lg:hover:border-black lg:text-xl text-sm font-bold ${
                           isServiceSelected("desarrollo-web")
                             ? "text-black border-black border-2"
                             : "text-gray-400 border-gray-400 border-2"
@@ -258,7 +258,7 @@ const ContactoContent = () => {
                       <motion.button
                         type="button"
                         onClick={() => toggleService("branding")}
-                        className={`w-30 ml-0 h-12 lg:hover:border-black lg:text-xl text-md font-bold order-last md:order-none ${
+                        className={`p-2 lg:hover:border-black lg:text-xl text-sm font-bold ${
                           isServiceSelected("branding")
                             ? "text-black border-black border-2"
                             : "text-gray-400 border-gray-400 border-2"
@@ -272,7 +272,7 @@ const ContactoContent = () => {
                       <motion.button
                         type="button"
                         onClick={() => toggleService("desarrollo-sistemas")}
-                        className={`lg:w-72 lg:h-12 lg:p-0 w-48 h-12 lg:hover:border-black lg:text-xl text-md font-bold ${
+                        className={`p-2 lg:hover:border-black lg:text-xl text-sm  font-bold ${
                           isServiceSelected("desarrollo-sistemas")
                             ? "text-black border-black border-2"
                             : "text-gray-400 border-gray-400 border-2"
@@ -286,7 +286,7 @@ const ContactoContent = () => {
                       <motion.button
                         type="button"
                         onClick={() => toggleService("marketing")}
-                        className={`lg:w-36 w-28 lg:ml-[98px] ml-12 h-12 hover:border-black lg:text-xl text-md font-bold ${
+                        className={`p-2 lg:hover:border-black lg:text-xl text-sm font-bold ${
                           isServiceSelected("marketing")
                             ? "text-black border-black border-2"
                             : "text-gray-400 border-gray-400 border-2"
@@ -300,7 +300,7 @@ const ContactoContent = () => {
                       <motion.button
                         type="button"
                         onClick={() => toggleService("otros")}
-                        className={`lg:w-36 w-28 h-12 lg:ml-12 ml-0 hover:border-black lg:text-xl text-md font-bold ${
+                        className={`p-2 lg:hover:border-black lg:text-xl text-sm font-bold  ${
                           isServiceSelected("otros")
                             ? "text-black border-black border-2"
                             : "text-gray-400 border-gray-400 border-2"
@@ -356,7 +356,7 @@ const ContactoContent = () => {
 
                     <motion.textarea
                       placeholder="Cuentanos un poco sobre el proyecto"
-                      className="w-full h-14 border-b-2 text-black border-gray-400 my-4 p-2 resize-none lg:text-xl"
+                      className="w-full h-8 border-b-2 text-black border-gray-400 my-4 p-2 resize-none lg:text-xl"
                       {...register("descripcion", { required: true })}
                       variants={itemVariants}
                     />
@@ -489,7 +489,7 @@ const ContactoContent = () => {
                     <motion.button
                       type="submit"
                       disabled={enviando}
-                      className={`w-72 p-2 mt-14 h-14 bg-black text-white text-2xl font-bold hover:bg-gray-800 ${
+                      className={`md:w-72 p-2 mt-14 h-14 bg-black text-white  md:text-2xl font-bold hover:bg-gray-800 ${
                         enviando ? "opacity-50 cursor-not-allowed" : ""
                       }`}
                       variants={itemVariants}
@@ -506,7 +506,7 @@ const ContactoContent = () => {
         </Grid>
       </Container>
       <div className="h-48"></div>
-      <Container className="h-[40vh]">
+      <Container className="h-[60vh]">
         <div className="flex flex-col items-center justify-center pb-8">
           <span className="text-2xl font-bold bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] text-transparent bg-clip-text">
             Follow Our Works
@@ -540,7 +540,7 @@ const ContactoContent = () => {
           </div>
         </Grid>
       </Container>
-      <Container className="h-[90vh] pb-12">
+      <Container className=" pb-12">
         <Grid columns={{ xl: 2, lg: 2, md: 1, sm: 1 }}>
           <div className="flex items-start justify-start">
             <Image src="/carlos.png" alt="carlos" width={500} height={500} />
