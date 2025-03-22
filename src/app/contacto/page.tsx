@@ -4,8 +4,6 @@ import { useSearchParams } from "next/navigation";
 import { useForm, SubmitHandler, FieldValues } from "react-hook-form";
 import { useState, Suspense } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import Image from "next/image";
-import { Camara } from "../components/icons";
 import SocialMedia from "../components/socialMedia";
 import Meeting from "../components/meeting";
 

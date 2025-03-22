@@ -6,7 +6,7 @@ import { useState } from "react";
 import InfiniteLogo from "./components/infiniteLogo";
 import Link from "next/link";
 import { RedirectButton } from '@/components/RedirectButton';
-import { Camara, Diseño, DiseñoColor, Entrega, EntregaColor, Propuesta, PropuestaColor, Reunion, ReunionColor } from "./components/icons";
+import {  Diseño, DiseñoColor, Entrega, EntregaColor, Propuesta, PropuestaColor, Reunion, ReunionColor } from "./components/icons";
 import SocialMedia from "./components/socialMedia";
 import Meeting from "./components/meeting";
 
