@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Column, Container, Grid } from "@bitnation-dev/components";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
-import Background from "@/app/components/background";
+import Background from "@/components/background";
 
 const Trabajos = () => {
   const [showNewProjects, setShowNewProjects] = useState(false);

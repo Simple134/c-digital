@@ -4,8 +4,8 @@ import { useSearchParams } from "next/navigation";
 import { useForm, SubmitHandler, FieldValues } from "react-hook-form";
 import { useState, Suspense } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import SocialMedia from "../components/socialMedia";
-import Meeting from "../components/meeting";
+import SocialMedia from "@/components/socialMedia";
+import Meeting from "@/components/meeting";
 
 // Componente wrapper con Suspense
 const ContactoContent = () => {

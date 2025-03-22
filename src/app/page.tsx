@@ -1,21 +1,55 @@
 "use client"
 import { Container, Grid, Column } from "@bitnation-dev/components";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, Variants } from "framer-motion";
 import Image from "next/image";
 import { useState } from "react";
-import InfiniteLogo from "./components/infiniteLogo";
+import InfiniteLogo from "@/components/infiniteLogo";
 import Link from "next/link";
-import { RedirectButton } from '@/components/RedirectButton';
-import {  Diseño, DiseñoColor, Entrega, EntregaColor, Propuesta, PropuestaColor, Reunion, ReunionColor } from "./components/icons";
-import SocialMedia from "./components/socialMedia";
-import Meeting from "./components/meeting";
+import { RedirectButton } from "@/components/RedirectButton";
+import {  Diseño, DiseñoColor, Entrega, EntregaColor, Propuesta, PropuestaColor, Reunion, ReunionColor } from "@/components/icons";
+import SocialMedia from "@/components/socialMedia";
+import Meeting from "@/components/meeting";
+
+// Define interfaces para los tipos de animaciones
+interface AnimationTransition {
+  duration?: number;
+  ease?: string;
+  delay?: number;
+  staggerChildren?: number;
+}
+
+interface FadeScaleVariants extends Variants {
+  initial: { opacity: number; scale: number };
+  animate: { opacity: number; scale: number; transition: AnimationTransition };
+  exit: { opacity: number; scale: number; transition: AnimationTransition };
+}
+
+interface StaggerVariants extends Variants {
+  hidden: { opacity: number };
+  visible: { opacity: number; transition: { delayChildren: number; staggerChildren: number } };
+}
+
+interface FadeVariants extends Variants {
+  hidden: { opacity: number; y: number };
+  visible: { opacity: number; y: number; transition: AnimationTransition };
+}
 
 export default function Home() {
   const [currentProjectSet, setCurrentProjectSet] = useState(0);
   const [currentMarcasSet, setCurrentMarcasSet] = useState(0);
   const [currentSupportSet, setSupportSet] = useState(0);
   const [selectedProcess, setSelectedProcess] = useState<number | null>(0);
-  const createAnimationVariants = (type: 'fade' | 'fadeScale' | 'stagger', options?: any) => {
+  const createAnimationVariants = (
+    type: 'fade' | 'fadeScale' | 'stagger', 
+    options?: Partial<{
+      duration: number;
+      ease: string;
+      delay: number;
+      staggerChildren: number;
+      scale: number;
+      y: number;
+    }>
+  ) => {
     const defaults = {
       duration: 1,
       ease: "easeOut",
@@ -46,7 +80,7 @@ export default function Home() {
             ease: "easeIn"
           }
         }
-      };
+      } as FadeScaleVariants;
     } else if (type === 'stagger') {
       return {
         hidden: { opacity: 0 },
@@ -57,7 +91,7 @@ export default function Home() {
             staggerChildren: config.staggerChildren,
           },
         },
-      };
+      } as StaggerVariants;
     } else {
       // Default fade animation
       return {
@@ -69,30 +103,16 @@ export default function Home() {
             duration: config.duration,
           },
         },
-      };
+      } as FadeVariants;
     }
   };
-  const projectVariants = createAnimationVariants('fadeScale', { duration: 1.2 }) as {
-    initial: any;
-    animate: any;
-    exit: any;
-  };
+  const projectVariants = createAnimationVariants('fadeScale', { duration: 1.2 }) as FadeScaleVariants;
   
-  const containerVariants = createAnimationVariants('stagger') as {
-    hidden: any;
-    visible: any;
-  };
+  const containerVariants = createAnimationVariants('stagger') as StaggerVariants;
   
-  const itemVariants = createAnimationVariants('fade', { duration: 0.8 }) as {
-    hidden: any;
-    visible: any;
-  };
+  const itemVariants = createAnimationVariants('fade', { duration: 0.8 }) as FadeVariants;
   
-  const marcasVariants = createAnimationVariants('fadeScale') as {
-    initial: any;
-    animate: any;
-    exit: any;
-  };
+  const marcasVariants = createAnimationVariants('fadeScale') as FadeScaleVariants;
 
   const firstProjects = [
     {
