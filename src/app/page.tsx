@@ -7,12 +7,92 @@ import InfiniteLogo from "./components/infiniteLogo";
 import Link from "next/link";
 import { RedirectButton } from '@/components/RedirectButton';
 import { Camara, Diseño, DiseñoColor, Entrega, EntregaColor, Propuesta, PropuestaColor, Reunion, ReunionColor } from "./components/icons";
+import SocialMedia from "./components/socialMedia";
+import Meeting from "./components/meeting";
 
 export default function Home() {
   const [currentProjectSet, setCurrentProjectSet] = useState(0);
   const [currentMarcasSet, setCurrentMarcasSet] = useState(0);
   const [currentSupportSet, setSupportSet] = useState(0);
   const [selectedProcess, setSelectedProcess] = useState<number | null>(0);
+  const createAnimationVariants = (type: 'fade' | 'fadeScale' | 'stagger', options?: any) => {
+    const defaults = {
+      duration: 1,
+      ease: "easeOut",
+      delay: 0.5,
+      staggerChildren: 0.8,
+      scale: 0.8,
+      y: 20
+    };
+    
+    const config = { ...defaults, ...options };
+    
+    if (type === 'fadeScale') {
+      return {
+        initial: { opacity: 0, scale: config.scale },
+        animate: { 
+          opacity: 1, 
+          scale: 1,
+          transition: {
+            duration: config.duration,
+            ease: config.ease
+          }
+        },
+        exit: { 
+          opacity: 0, 
+          scale: config.scale,
+          transition: {
+            duration: config.duration,
+            ease: "easeIn"
+          }
+        }
+      };
+    } else if (type === 'stagger') {
+      return {
+        hidden: { opacity: 0 },
+        visible: {
+          opacity: 1,
+          transition: {
+            delayChildren: config.delay,
+            staggerChildren: config.staggerChildren,
+          },
+        },
+      };
+    } else {
+      // Default fade animation
+      return {
+        hidden: { opacity: 0, y: config.y },
+        visible: {
+          opacity: 1,
+          y: 0,
+          transition: {
+            duration: config.duration,
+          },
+        },
+      };
+    }
+  };
+  const projectVariants = createAnimationVariants('fadeScale', { duration: 1.2 }) as {
+    initial: any;
+    animate: any;
+    exit: any;
+  };
+  
+  const containerVariants = createAnimationVariants('stagger') as {
+    hidden: any;
+    visible: any;
+  };
+  
+  const itemVariants = createAnimationVariants('fade', { duration: 0.8 }) as {
+    hidden: any;
+    visible: any;
+  };
+  
+  const marcasVariants = createAnimationVariants('fadeScale') as {
+    initial: any;
+    animate: any;
+    exit: any;
+  };
 
   const firstProjects = [
     {
@@ -193,151 +273,33 @@ export default function Home() {
     }
   ]
 
-  const handleVerMas = () => {
-    setCurrentProjectSet((prev) => (prev + 1) % 3);
-
-    const projectsElement = document.getElementById("projects");
-    if (projectsElement) {
-      projectsElement.scrollIntoView({ behavior: "smooth" });
+  const handleNext = (
+    setter: React.Dispatch<React.SetStateAction<number>>, 
+    elementId: string
+  ) => {
+    setter((prev) => (prev + 1) % 3);
+    const element = document.getElementById(elementId);
+    if (element) {
+      element.scrollIntoView({ behavior: "smooth" });
     }
   };
 
-  const handleVerMasMarcas = () => {
-    setCurrentMarcasSet((prevSet) => (prevSet + 1) % 3);
-    const marcasElement = document.getElementById("marcas");
-    if (marcasElement) {
-      marcasElement.scrollIntoView({ behavior: "smooth" });
+  const handleScrollTo = (elementId: string) => {
+    const element = document.getElementById(elementId);
+    if (element) {
+      element.scrollIntoView({ behavior: "smooth" });
     }
-  };
-
-  const handleVerMasSupport = () => {
-    setSupportSet((prevSet) => (prevSet + 1) % 3);
-    const supportElement = document.getElementById("support");
-    if (supportElement) {
-      supportElement.scrollIntoView({ behavior: "smooth" });
-    }
-  };
-
-
-  const handleConectaClick = () => {
-    const conectaElement = document.getElementById("conecta-1");
-    if (conectaElement) {
-      conectaElement.scrollIntoView({ behavior: "smooth" });
-    }
-  };
-
-
-
-  const handleCreaClick = () => {
-    const creaElement = document.getElementById("crea-2");
-    if (creaElement) {
-      creaElement.scrollIntoView({ behavior: "smooth" });
-    }
-  };
-
-  const handleCreceClick = () => {
-    const creceElement = document.getElementById("crece-3");
-    if (creceElement) {
-      creceElement.scrollIntoView({ behavior: "smooth" });
-    }
-  };
-
-  const handleContactClick = () => {
-    const contactElement = document.getElementById("quienes-somos");
-    if (contactElement) {
-      contactElement.scrollIntoView({ behavior: "smooth" });
-    }
-  };
-
-  const projectVariants = {
-    initial: { opacity: 0, scale: 0.8 },
-    animate: {
-      opacity: 1,
-      scale: 1,
-      transition: {
-        duration: 1.2,
-        ease: "easeOut"
-      }
-    },
-    exit: {
-      opacity: 0,
-      scale: 0.8,
-      transition: {
-        duration: 1.2,
-        ease: "easeIn"
-      }
-    },
   };
 
   const handleWhatsAppClick = () => {
     window.open(`https://wa.link/h0k461`, "_blank");
   };
 
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        delayChildren: 0.5,
-        staggerChildren: 0.8,
-      },
-    },
-  };
-
-  const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: {
-        duration: 0.8,
-      },
-    },
-  };
-
-  const marcasVariants = {
-    initial: { 
-      opacity: 0, 
-      scale: 0.8
-    },
-    animate: { 
-      opacity: 1, 
-      scale: 1,
-      transition: {
-        duration: 1,
-        ease: "easeOut"
-      }
-    },
-    exit: { 
-      opacity: 0,
-      scale: 0.8,
-      transition: {
-        duration: 1,
-        ease: "easeIn"
-      }
-    }
-  };
+  // Definir tipos explícitos para cada conjunto de variantes
 
 
-
-  const handleReunionClick = () => {
-    setSelectedProcess(0);
-  };
-
-  const handlePropuestaClick = () => {
-    setSelectedProcess(1);
-  };
-
-  const handleDiseñoClick = () => {
-    setSelectedProcess(2);
-  };
-
-  const handlePresentacionClick = () => {
-    setSelectedProcess(3);
-  };
-
-  const handleEntregaClick = () => {
-    setSelectedProcess(4);
+  const handleProcessClick = (index: number) => {
+    setSelectedProcess(index);
   };
 
   return (
@@ -382,7 +344,7 @@ export default function Home() {
                 style={{
                   borderImage: "linear-gradient(to right, #00C5FF, #00FF7C) 1",
                 }}
-                onClick={handleContactClick}
+                onClick={() => handleScrollTo("quienes-somos")}
               >
                 <span className="font-semibold text-sm lg:text-xl">¿Quienes somos?</span>
               </button>
@@ -480,19 +442,6 @@ export default function Home() {
             ))}
           </Grid>
         </AnimatePresence>
-        {/*<div className="flex justify-center space-x-2 mt-4">
-          {[0, 1, 2].map((index) => (
-            <button
-              key={index}
-              onClick={() => setCurrentProjectSet(index)}
-              className={`w-2 h-2 rounded-full transition-all ${
-                currentProjectSet === index 
-                  ? 'bg-[#00C5FF]' 
-                  : 'bg-white/30'
-              }`}
-            />
-          ))}
-        </div>*/}
         <div
           className="mt-6 w-full ">
 
@@ -518,7 +467,7 @@ export default function Home() {
               </p>
               <div className="flex gap-4">
                 <button
-                  onClick={handleVerMas}
+                  onClick={() => handleNext(setCurrentProjectSet, "projects")}
                   className={`border-2 border-white w-fit px-4 py-2 mt-10 font-['Poppins'] lg:text-2xl text-white hover:text-transparent bg-clip-text hover:bg-gradient-to-r hover:from-[#00C5FF] hover:to-[#00FF7C]`}
                   style={{
                     borderImage:
@@ -803,7 +752,7 @@ export default function Home() {
                       borderImage:
                         "linear-gradient(to right, #00C5FF, #00FF7C) 1",
                     }}
-                    onClick={handleVerMasMarcas}
+                    onClick={() => handleNext(setCurrentMarcasSet, "marcas")}
                   >
                     <span className="font-semibold text-xl">Ver más</span>
                   </button>
@@ -965,7 +914,7 @@ export default function Home() {
                 style={{
                   borderImage: "linear-gradient(to right, #00C5FF, #00FF7C) 1",
                 }}
-                onClick={handleVerMasSupport}
+                onClick={() => handleNext(setSupportSet, "support")}
               >
                 <span className="font-semibold text-xl">Ver más</span>
               </button>
@@ -1005,19 +954,19 @@ export default function Home() {
           </div>
           <div className="flex flex-col space-y-6 mt-8 md:mt-0">
             <div className="flex flex-col justify-center items-end">
-              <span className="text-[#AFAFAF] hover:text-white text-3xl font-bold font-['Poppins'] hover:cursor-pointer" onClick={handleConectaClick}>
+              <span className="text-[#AFAFAF] hover:text-white text-3xl font-bold font-['Poppins'] hover:cursor-pointer" onClick={() => handleScrollTo("conecta-1")}>
                 1. Conecta
               </span>
               <div className="bg-[#FFFFFF] w-full h-[1px] mt-2"></div>
             </div>
             <div className="flex flex-col justify-center items-end">
-              <span className="text-[#AFAFAF] hover:text-white text-3xl font-bold font-['Poppins'] hover:cursor-pointer" onClick={handleCreaClick}>
+              <span className="text-[#AFAFAF] hover:text-white text-3xl font-bold font-['Poppins'] hover:cursor-pointer" onClick={() => handleScrollTo("crea-2")}>
                 2. Crea
               </span>
               <div className="bg-[#FFFFFF] w-full h-[1px] mt-2"></div>
             </div>
             <div className="flex flex-col justify-center items-end">
-              <span className="text-[#AFAFAF] hover:text-white text-3xl font-bold font-['Poppins'] hover:cursor-pointer" onClick={handleCreceClick}>
+              <span className="text-[#AFAFAF] hover:text-white text-3xl font-bold font-['Poppins'] hover:cursor-pointer" onClick={() => handleScrollTo("crece-3")}>
                 3. Crece
               </span>
               <div className="bg-[#FFFFFF] w-full h-[1px] mt-2"></div>
@@ -1236,35 +1185,35 @@ export default function Home() {
           <h2 className="text-white text-4xl md:text-6xl  font-bold font-['Poppins'] lg:text-9xl">Nuestro Proceso</h2>
         </div>
         <div className="flex items-center w-full h-[40vh] justify-between px-20 overflow-x-auto">
-          <div className="flex flex-col items-center justify-center gap-4 cursor-pointer" onClick={handleReunionClick}>
+          <div className="flex flex-col items-center justify-center gap-4 cursor-pointer" onClick={() => handleProcessClick(0)}>
             {selectedProcess === 0 ? <ReunionColor /> : <Reunion />}
             <span className="text-white text-xl font-bold">Reunión</span>
           </div>
           <div className="h-16 flex px-4">
             <div className="flex-shrink-0 gap-4 bg-[#343434] w-8 h-[1px] items-center justify-center"></div>
           </div>
-          <div className="flex flex-col items-center justify-center gap-4 cursor-pointer" onClick={handlePropuestaClick}>
+          <div className="flex flex-col items-center justify-center gap-4 cursor-pointer" onClick={() => handleProcessClick(1)}>
             {selectedProcess === 1 ? <PropuestaColor /> : <Propuesta />}
             <span className="text-white text-xl font-bold">Propuesta</span>
           </div>
           <div className="h-16 flex px-4">
             <div className="flex-shrink gap-4 bg-[#343434] w-8 h-[1px] items-center justify-center"></div>
           </div>
-          <div className="flex flex-col items-center justify-center gap-4 cursor-pointer" onClick={handleDiseñoClick}>
+          <div className="flex flex-col items-center justify-center gap-4 cursor-pointer" onClick={() => handleProcessClick(2)}>
             {selectedProcess === 2 ? <DiseñoColor /> : <Diseño />}
             <span className="text-white text-xl font-bold">Diseño</span>
           </div>
           <div className="h-16 flex px-4">
             <div className="flex-shrink-0 gap-4 bg-[#343434] w-8 h-[1px] items-center justify-center"></div>
           </div>
-          <div className="flex flex-col items-center justify-center gap-4 cursor-pointer" onClick={handlePresentacionClick}>
+          <div className="flex flex-col items-center justify-center gap-4 cursor-pointer" onClick={() => handleProcessClick(3)}>
             {selectedProcess === 3 ? <ReunionColor /> : <Reunion />}
             <span className="text-white text-xl font-bold">Presentacion</span>
           </div>
           <div className="h-16 flex px-4">
             <div className="flex-shrink-0 gap-4 bg-[#343434] w-8 h-[1px] items-center justify-center"></div>
           </div>
-          <div className="flex flex-col items-center justify-center gap-4 cursor-pointer" onClick={handleEntregaClick}>
+          <div className="flex flex-col items-center justify-center gap-4 cursor-pointer" onClick={() => handleProcessClick(4)}>
             {selectedProcess === 4 ? <EntregaColor /> : <Entrega />}
             <span className="text-white text-xl font-bold">Entrega</span>
           </div>
@@ -1282,76 +1231,9 @@ export default function Home() {
 
       </Container>
       <div className="h-48 mt-28 md:mt-0"></div>
-      <Container className="h-[80vh]">
-        <Grid columns={{ xl: 2, lg: 2, md: 1, sm: 1 }}>
-          <div className="flex items-start justify-start">
-            <Image src="/carlos.png" alt="carlos" width={500} height={500} />
-          </div>
-          <div className="flex flex-col items-start justify-start space-y-2">
-            <span className="bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] text-transparent bg-clip-text font-bold text-2xl w-fit">
-              Dudas o Preguntas?
-            </span>
-            <h2 className="text-white text-4xl md:text-6xl text-center font-bold font-['Poppins'] lg:text-9xl">
-              Hablemos
-            </h2>
-            <p className="text-white text-xl">
-              Tu proyecto solo necesita un estudio de diseño responsable para
-              escalar; agenda una llamada ahora y no procrastines.{" "}
-              <span className="font-bold">Auditoria gratis.</span>
-            </p>
-            <div className="pt-8">
-              <a
-                target="_blank"
-                className={`flex items-center justify-center  border-2 border-white px-6 py-2 mt-10 font-['Poppins'] lg:text-2xl text-white hover:text-transparent bg-clip-text hover:bg-gradient-to-r hover:from-[#00C5FF] hover:to-[#00FF7C]`}
-                style={{
-                  borderImage: "linear-gradient(to right, #00C5FF, #00FF7C) 1",
-                }}
-                href="https://calendly.com/diazc6001-5azn/consultoria-cdigital?month=2025-03"
-              >
-                <span className="font-semibold">Agendar ahora</span>
-                <div className="bg-black rounded-full  ml-4">
-                  <Camara />
-                </div>
-              </a>
-            </div>
-          </div>
-        </Grid>
-      </Container>
+      <Meeting />
       <div className="h-48"></div>
-      <Container className="h-[50vh]">
-        <div className="flex flex-col items-center justify-center pb-8">
-          <span className="text-2xl font-bold bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] text-transparent bg-clip-text">
-            Follow Our Works
-          </span>
-        </div>
-        <Grid columns={{ xl: 5, lg: 5, md: 1, sm: 1 }}>
-          <div className="flex flex-col items-center justify-center">
-            <a href="https://www.linkedin.com/company/c-digital-estudio/" target="_blank" className="text-3xl font-bold text-[#AFAFAF] hover:text-[#0B7BD6] hover:cursor-pointer">
-              Linkedin
-            </a>
-          </div>
-          <div className="flex flex-col items-center justify-center">
-            <a href="https://www.youtube.com/@cdigitalestudio/videos" target="_blank" className="text-3xl font-bold text-[#AFAFAF] hover:text-[#E8003E] hover:cursor-pointer">
-              Youtube
-            </a>
-          </div>
-          <div className="flex flex-col items-center justify-center">
-            <a href="https://www.instagram.com/cdigitalestudio/" target="_blank" className="text-3xl text-[#AFAFAF] font-bold hover:bg-gradient-to-r hover:from-[#FFB42F] hover:to-[#FA0FB2] hover:text-transparent bg-clip-text hover:cursor-pointer">
-              Instagram
-            </a>
-          </div>
-          <div className="flex flex-col items-center justify-center">
-            <a href="https://dribbble.com/CDigitalEstudio" target="_blank" className="text-3xl font-bold text-[#AFAFAF] hover:text-[#FF6CCB] hover:cursor-pointer">
-              Dribbble
-            </a>
-          </div>
-          <div className="flex flex-col items-center justify-center">
-            <a href="https://x.com/CarlosDiaz_rd" target="_blank" className="text-3xl font-bold text-[#AFAFAF] hover:text-[#FFFFFF] hover:cursor-pointer">
-              X
-            </a>
-          </div>
-        </Grid>
-      </Container>
+      <SocialMedia />
     </div>
   );
 }
