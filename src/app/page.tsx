@@ -594,7 +594,7 @@ export default function Home() {
               <>
                 <Column columns={{ xl: { width: 2 }, md: { width: 1 } }}>
                   <motion.div
-                    className="flex h-full"
+                    className="flex h-full w-full"
                     key="marca2-1"
                     variants={marcasVariants}
                     initial="initial"
@@ -604,9 +604,7 @@ export default function Home() {
                     <Image
                       src={diseñoDeMarcas2[0].image}
                       alt="Project 1"
-                      width={700}
-                      height={700}
-                      className="w-full h-full object-cover"
+                      fill
                     />
                   </motion.div>
                 </Column>
@@ -637,13 +635,16 @@ export default function Home() {
                     animate="animate"
                     exit="exit"
                   >
+                    <div className="w-full h-full">
                     <Image
                       src={diseñoDeMarcas2[2].image}
                       alt="Project 1"
-                      width={700}
-                      height={700}
-                      className="w-full h-full object-cover"
-                    />
+                      width={800}
+                      height={800}
+                      className=" object-center w-full h-full "
+                      
+                      />
+                      </div>
                     <div className="flex gap-4">
                       <Image
                         src={diseñoDeMarcas2[3].image}
@@ -737,7 +738,7 @@ export default function Home() {
                           alt="Project 1"
                           width={540}
                           height={540}
-                          className="object-cover"
+                          className="object-contain"
                         />
                       </div>
                     </div>
