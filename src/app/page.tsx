@@ -471,17 +471,12 @@ export default function Home() {
                 {" "}
                 UX/UI Design
               </span>
-              <h2 className="text-white text-6xl lg:text-8xl font-bold font-['Poppins'] whitespace-normal leading-[1.1]">
-                Diseño De <br className="leading-[0.3]" /> Productos
+              <h2 className="text-white text-5xl lg:text-7xl font-bold font-['Poppins'] whitespace-normal leading-[1.1]">
+                Diseño De Productos
               </h2>
             </div>
             <div className="lg:mt-6 w-full h-full justify-center flex flex-col">
-              <p className="text-white text-2xl font-['Poppins'] hidden lg:block md:hidden">
-                Creamos Webs y Aplicaciones desde cero; <br /> que generan
-                impacto con diseños a la <br /> vanguardia. Para personas
-                ambiciosas.
-              </p>
-              <p className="text-white text-2xl font-['Poppins'] block lg:hidden md:hidden">
+              <p className="text-white text-xl lg:text-2xl font-['Poppins'] w-3/4">
                 Creamos Webs y Aplicaciones desde cero; que generan impacto
                 con diseños a la vanguardia. Para personas ambiciosas.
               </p>
@@ -754,15 +749,11 @@ export default function Home() {
                 {" "}
                 Branding / Rebranding
               </span>
-              <h2 className="text-white text-6xl lg:text-8xl font-bold font-['Poppins'] whitespace-normal leading-[1.1] pb-2">
-                Diseño De <br className="leading-[0.3]" /> Marcas
+              <h2 className="text-white text-5xl lg:text-7xl font-bold font-['Poppins'] whitespace-normal leading-[1.1] pb-2 w-96">
+                Diseño De Marcas
               </h2>
               <div className="lg:mt-6 w-full h-full justify-center flex flex-col">
-                <p className="text-white text-2xl font-['Poppins'] hidden lg:block md:hidden">
-                  Diseñamos marcas que reflejan un <br /> concepto e impulsan
-                  estrategias que <br /> venden.
-                </p>
-                <p className="text-white text-2xl font-['Poppins'] block lg:hidden md:hidden">
+                <p className="text-white text-xl lg:text-2xl font-['Poppins']">
                   Diseñamos marcas que reflejan un concepto e impulsan
                   estrategias que venden.
                 </p>
@@ -916,16 +907,12 @@ export default function Home() {
               {" "}
               Diseño gráfico
             </span>
-            <h2 className="text-white lg:text-8xl text-6xl font-bold font-['Poppins'] whitespace-normal leading-[1.1] pb-2">
-              Content <br/> Design
+            <h2 className="text-white text-5xl lg:text-7xl font-bold font-['Poppins'] whitespace-normal leading-[1.1] pb-2">
+              Content Design
             </h2>
           </div>
-          <div className="lg:mt-6 h-full justify-center flex flex-col">
-            <p className="text-white text-2xl font-['Poppins'] hidden lg:block md:hidden">
-              Creamos piezas gráficas para tu proyecto <br /> enfocadas en
-              posicionar, captar, educar o <br /> vender a tu cliente ideal.
-            </p>
-            <p className="text-white text-2xl font-['Poppins'] block lg:hidden md:hidden">
+          <div className="mt-0 md:mt-6 h-full justify-center flex flex-col ">
+            <p className="text-white text-xl lg:text-2xl font-['Poppins'] w-3/4">
               Creamos piezas gráficas para tu proyecto enfocadas en posicionar,
               captar, educar o vender a tu cliente ideal.
             </p>
