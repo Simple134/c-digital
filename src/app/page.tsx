@@ -233,6 +233,22 @@ export default function Home() {
 
   const supportImages1 = [
     {
+      image: "/support/support11.png",
+    },
+    {
+      image: "/support/support12.png",
+    },
+    {
+      image: "/support/support13.png",
+    },
+    {
+      image: "/support/support14.png",
+    },
+
+  ]
+
+  const supportImages2 = [
+    {
       image: "/support/support1.png",
     },
     {
@@ -243,7 +259,7 @@ export default function Home() {
     },
   ];
 
-  const supportImages2 = [
+  const supportImages3 = [
     {
       image: "/support/support4.png",
     },
@@ -258,7 +274,7 @@ export default function Home() {
     },
   ];
 
-  const supportImages3 = [
+  const supportImages4 = [
     {
       image: "/support/support8.png",
     },
@@ -297,7 +313,7 @@ export default function Home() {
     setter: React.Dispatch<React.SetStateAction<number>>,
     elementId: string
   ) => {
-    setter((prev) => (prev + 1) % 3);
+    setter((prev) => (prev + 1) % 4);
     const element = document.getElementById(elementId);
     if (element) {
       element.scrollIntoView({ behavior: "smooth" });
@@ -321,6 +337,8 @@ export default function Home() {
   const handleProcessClick = (index: number) => {
     setSelectedProcess(index);
   };
+
+  console.log(currentSupportSet)
 
   return (
     <div className="relative min-h-screen ">
@@ -785,7 +803,7 @@ export default function Home() {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.5 }}
           >
-            <div className={`hidden md:grid grid-cols-3 gap-4 ${currentSupportSet === 1 ? 'grid-cols-4' : ''}`}>
+            <div className={`hidden md:grid grid-cols-3 gap-4 ${currentSupportSet === 0 || currentSupportSet === 2 ? 'grid-cols-4' : ''}`}>
               {currentSupportSet === 0 && (
                 <>
                   {supportImages1.map((image, index) => (
@@ -860,6 +878,30 @@ export default function Home() {
                   ))}
                 </>
               )}
+              {currentSupportSet === 3 && (
+                <>
+                  {supportImages4.map((image, index) => (
+                    <Column key={`support4-${index}`}>
+                      <motion.div
+                        variants={marcasVariants}
+                        initial="initial"
+                        animate="animate"
+                        exit="exit"
+                        className="flex h-full relative group"
+                      >
+                        <Image
+                          src={image.image}
+                          alt="Project 1"
+                          width={650}
+                          height={650}
+                          className="w-full h-full object-cover rounded-lg"
+                        />
+                        <div className="absolute inset-0 bg-black/50 transition-opacity duration-300 group-hover:opacity-0 rounded-lg" />
+                      </motion.div>
+                    </Column>
+                  ))}
+                </>
+              )}
             </div>
 
             {/* Versión móvil con scroll horizontal */}
@@ -867,11 +909,12 @@ export default function Home() {
               <div className="flex overflow-x-auto snap-x snap-mandatory touch-pan-x scrollbar-hide">
                 {(currentSupportSet === 0 ? supportImages1 :
                   currentSupportSet === 1 ? supportImages2 :
-                    supportImages3).map((image, index) => (
-                      <div
-                        key={`support-mobile-${index}`}
-                        className="flex-none w-full snap-center">
-                        <motion.div
+                    currentSupportSet === 2 ? supportImages3 :
+                      supportImages4).map((image, index) => (
+                        <div
+                          key={`support-mobile-${index}`}
+                          className="flex-none w-full snap-center">
+                          <motion.div
                           variants={marcasVariants}
                           initial="initial"
                           animate="animate"
