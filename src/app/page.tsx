@@ -367,9 +367,9 @@ export default function Home() {
               </motion.h1>
               <motion.p
                 variants={itemVariants}
-                className="w-[90%] text-center font-['Poppins'] lg:text-xl pt-6"
+                className="w-[70%] text-center font-['Poppins'] lg:text-xl pt-6"
               >
-                Somos el equipo de desarrollo y diseño responsable que tu proyecto o negocio necesita <br /> para  destacar en el mercado digital.
+                Somos el equipo de diseño responsable que tu proyecto necesita para destacar en el mercado digital.
               </motion.p>
             </motion.div>
 

@@ -111,7 +111,7 @@ export const InfiniteMovingCards = ({
               <img
                 src={item.image}
                 alt={item?.name || ""}
-                className="w-48 h-48 object-contain overflow-hidden"
+                className="w-24 h-24 md:w-48 md:h-48 object-contain overflow-hidden"
                 style={{
                   aspectRatio: "4/3"
                 }}
