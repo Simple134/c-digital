@@ -6,7 +6,7 @@ import { useState } from "react";
 import InfiniteLogo from "@/components/infiniteLogo";
 import Link from "next/link";
 import { RedirectButton } from "@/components/RedirectButton";
-import {  Diseño, DiseñoColor, Entrega, EntregaColor, Propuesta, PropuestaColor, Reunion, ReunionColor } from "@/components/icons";
+import { Diseño, DiseñoColor, Entrega, EntregaColor, Propuesta, PropuestaColor, Reunion, ReunionColor } from "@/components/icons";
 import SocialMedia from "@/components/socialMedia";
 import Meeting from "@/components/meeting";
 
@@ -40,7 +40,7 @@ export default function Home() {
   const [currentSupportSet, setSupportSet] = useState(0);
   const [selectedProcess, setSelectedProcess] = useState<number | null>(0);
   const createAnimationVariants = (
-    type: 'fade' | 'fadeScale' | 'stagger', 
+    type: 'fade' | 'fadeScale' | 'stagger',
     options?: Partial<{
       duration: number;
       ease: string;
@@ -58,22 +58,22 @@ export default function Home() {
       scale: 0.8,
       y: 20
     };
-    
+
     const config = { ...defaults, ...options };
-    
+
     if (type === 'fadeScale') {
       return {
         initial: { opacity: 0, scale: config.scale },
-        animate: { 
-          opacity: 1, 
+        animate: {
+          opacity: 1,
           scale: 1,
           transition: {
             duration: config.duration,
             ease: config.ease
           }
         },
-        exit: { 
-          opacity: 0, 
+        exit: {
+          opacity: 0,
           scale: config.scale,
           transition: {
             duration: config.duration,
@@ -107,11 +107,11 @@ export default function Home() {
     }
   };
   const projectVariants = createAnimationVariants('fadeScale', { duration: 1.2 }) as FadeScaleVariants;
-  
+
   const containerVariants = createAnimationVariants('stagger') as StaggerVariants;
-  
+
   const itemVariants = createAnimationVariants('fade', { duration: 0.8 }) as FadeVariants;
-  
+
   const marcasVariants = createAnimationVariants('fadeScale') as FadeScaleVariants;
 
   const firstProjects = [
@@ -294,7 +294,7 @@ export default function Home() {
   ]
 
   const handleNext = (
-    setter: React.Dispatch<React.SetStateAction<number>>, 
+    setter: React.Dispatch<React.SetStateAction<number>>,
     elementId: string
   ) => {
     setter((prev) => (prev + 1) % 3);
@@ -395,15 +395,9 @@ export default function Home() {
           </div>
         </div>
         <div className=" w-full h-[30vh] flex mt-4 justify-end items-end ">
-          <div className="md:w-[60%] w-full h-full flex justify-end items-end   ">
+          <div className="md:w-[50%] w-full h-full flex justify-end items-end   ">
             <p className="text-white text-md md:text-2xl pl-20 md:pl-0 text-left">
-              Somos un estudio de diseño gráfico en La Vega, Rep. Dom.
-              especializado en brindar soluciones digitales a medida para
-              empresas en todo el mundo en sus diferentes etapas. Más que vendedores de
-              servicios de diseño, somos asesores que te ayudarán a resolver
-              problemas y alcanzar tus objetivos. Contamos con un equipo de
-              expertos en cada uno de nuestros servicios para ofrecerte
-              un servicio integral y de alta calidad.
+              En C Digital potenciamos la imagen de tu negocio para que venda más y proyecte confianza.Creamos gráficas visuales que comunican profesionalismo, calidad y valor real, sin importar si estás empezando o renovando. Tu imagen no solo debe verse bien, debe vender por ti.
 
             </p>
           </div>
@@ -411,7 +405,7 @@ export default function Home() {
       </Container>
       <div className="h-64"></div>
       <Container id="cont-1">
-        <div className="flex flex-col mb-36">
+        <div className="flex flex-col mb-14">
           <span className="bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] text-transparent bg-clip-text font-bold text-2xl w-fit">
             Servicios Destacados
           </span>
@@ -429,37 +423,37 @@ export default function Home() {
           >
             {(currentProjectSet === 0 ? firstProjects :
               currentProjectSet === 1 ? secondProjects :
-              thirdProjects).map((project) => (
-              <motion.div
-                key={project.image}
-                className="relative flex justify-center items-center group"
-                style={{ aspectRatio: "16/9" }}
-                variants={projectVariants}
-                initial="initial"
-                animate="animate"
-                exit="exit"
-              >
-                <Image
-                  src={project.image}
-                  alt=""
-                  width={500}
-                  height={500}
-                  className="transition-all duration-300"
-                />
-                <div className="absolute inset-0 bg-black/70 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end w-[60%] pb-12 px-4 cursor-pointer">
-                  <div className="mb-8">
-                    <p>
-                      <span className="text-white text-2xl font-bold flex h-full">
-                        {project.title}:
-                        <br />
-                      </span>{" "}
-                      {project.description}
-                    </p>
-                  </div>
-                  <p className="text-[#00C5FF]">{project.location}</p>
-                </div>
-              </motion.div>
-            ))}
+                thirdProjects).map((project) => (
+                  <motion.div
+                    key={project.image}
+                    className="relative flex justify-center items-center group"
+                    style={{ aspectRatio: "16/9" }}
+                    variants={projectVariants}
+                    initial="initial"
+                    animate="animate"
+                    exit="exit"
+                  >
+                    <Image
+                      src={project.image}
+                      alt=""
+                      width={500}
+                      height={500}
+                      className="transition-all duration-300"
+                    />
+                    <div className="absolute inset-0 bg-black/70 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end w-[60%] pb-12 px-4 cursor-pointer">
+                      <div className="mb-8">
+                        <p>
+                          <span className="text-white text-2xl font-bold flex h-full">
+                            {project.title}:
+                            <br />
+                          </span>{" "}
+                          {project.description}
+                        </p>
+                      </div>
+                      <p className="text-[#00C5FF]">{project.location}</p>
+                    </div>
+                  </motion.div>
+                ))}
           </Grid>
         </AnimatePresence>
         <div
@@ -631,15 +625,15 @@ export default function Home() {
                     exit="exit"
                   >
                     <div className="w-full h-full">
-                    <Image
-                      src={diseñoDeMarcas2[2].image}
-                      alt="Project 1"
-                      width={800}
-                      height={800}
-                      className=" object-center w-full h-full "
-                      
+                      <Image
+                        src={diseñoDeMarcas2[2].image}
+                        alt="Project 1"
+                        width={800}
+                        height={800}
+                        className=" object-center w-full h-full "
+
                       />
-                      </div>
+                    </div>
                     <div className="flex gap-4">
                       <Image
                         src={diseñoDeMarcas2[3].image}
@@ -873,28 +867,28 @@ export default function Home() {
               <div className="flex overflow-x-auto snap-x snap-mandatory touch-pan-x scrollbar-hide">
                 {(currentSupportSet === 0 ? supportImages1 :
                   currentSupportSet === 1 ? supportImages2 :
-                  supportImages3).map((image, index) => (
-                  <div 
-                    key={`support-mobile-${index}`}
-                    className="flex-none w-full snap-center">
-                    <motion.div
-                      variants={marcasVariants}
-                      initial="initial"
-                      animate="animate"
-                      exit="exit"
-                      className="relative group h-[50vh]"
-                    >
-                      <Image
-                        src={image.image}
-                        alt="Project 1"
-                        width={500}
-                        height={500}
-                        className="h-full object-contain rounded-lg"
-                      />
-                      <div className="hidden md:block absolute inset-0 bg-black/50 transition-opacity duration-300 group-hover:opacity-0 rounded-lg" />
-                    </motion.div>
-                  </div>
-                ))}
+                    supportImages3).map((image, index) => (
+                      <div
+                        key={`support-mobile-${index}`}
+                        className="flex-none w-full snap-center">
+                        <motion.div
+                          variants={marcasVariants}
+                          initial="initial"
+                          animate="animate"
+                          exit="exit"
+                          className="relative group h-[50vh]"
+                        >
+                          <Image
+                            src={image.image}
+                            alt="Project 1"
+                            width={500}
+                            height={500}
+                            className="h-full object-contain rounded-lg"
+                          />
+                          <div className="hidden md:block absolute inset-0 bg-black/50 transition-opacity duration-300 group-hover:opacity-0 rounded-lg" />
+                        </motion.div>
+                      </div>
+                    ))}
               </div>
 
             </div>
@@ -954,11 +948,14 @@ export default function Home() {
         <Grid columns={{ xl: 2, lg: 2, md: 1, sm: 1 }}>
           <div className="flex flex-col justify-center ">
             <span className="bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] text-transparent bg-clip-text font-bold text-2xl w-fit">
-              Servicios
+              Fases y Servicios
             </span>
             <h2 className="text-white text-5xl text-start font-bold font-['Poppins'] lg:text-7xl">
-              Fases de Desarrollo
+              Problemas que Resolvemos
             </h2>
+            <p className="text-white text-xl lg:text-2xl font-['Poppins'] w-3/4 pt-8">
+              Para simplificar el proceso de trabajo hemos creados 3 fases donde se agrupan los diferentes servicios.
+            </p>
           </div>
           <div className="flex flex-col space-y-6 mt-8 md:mt-0">
             <div className="flex flex-col justify-center items-end">

@@ -109,12 +109,13 @@ export const InfiniteMovingCards = ({
                 aria-hidden="true"
                 className="user-select-none overflow-hidden -z-1 pointer-events-none absolute -left-0.5 -top-0.5 h-[calc(100%_+_4px)] w-[calc(100%_+_4px)] flex items-center justify-center"
               ></div>
-              <Image
+              <img
                 src={item.image}
                 alt={item?.name || ""}
-                width={200}
-                height={200}
-                className="w-fit h-fit object-cover overflow-hidden"
+                className="w-48 h-48 object-contain overflow-hidden"
+                style={{
+                  aspectRatio: "4/3"
+                }}
               />
             </blockquote>
           </li>

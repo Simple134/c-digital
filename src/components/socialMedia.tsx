@@ -3,7 +3,7 @@ import { Grid, Container } from "@bitnation-dev/components";
 const SocialMedia = () => {
   return (
     <Container className="h-[50vh]">
-    <div className="flex flex-col items-center justify-center pb-8">
+    <div className="flex flex-col items-center justify-center pb-16">
       <span className="text-2xl font-bold bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] text-transparent bg-clip-text">
         Follow Our Works
       </span>
