@@ -1,7 +1,6 @@
 "use client";
 
 import { cn } from "@/app/lib/utils";
-import Image from "next/image";
 import React, { useEffect, useState, useCallback, useRef } from "react";
 
 export const InfiniteMovingCards = ({
