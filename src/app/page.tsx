@@ -388,12 +388,10 @@ export default function Home() {
     window.open(`https://wa.link/h0k461`, "_blank");
   };
 
-  // Definir tipos explícitos para cada conjunto de variantes
 
   const handleProcessClick = (index: number) => {
     setSelectedProcess(index);
   };
-
   return (
     <div className="relative min-h-screen ">
       <Container>
