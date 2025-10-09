@@ -394,8 +394,6 @@ export default function Home() {
     setSelectedProcess(index);
   };
 
-  console.log(currentSupportSet);
-
   return (
     <div className="relative min-h-screen ">
       <Container>
@@ -1157,7 +1155,8 @@ export default function Home() {
                 Posicionamiento SEO
               </span>
               <h2 className="w-full text-white text-5xl lg:text-7xl font-bold font-['Poppins'] whitespace-normal leading-[1.1] pb-2">
-                Salir Primero<br /> En Redes
+                Salir Primero
+                <br /> En Redes
               </h2>
               <div className="lg:mt-6 w-full h-full justify-center flex flex-col">
                 <div className="flex w-full">
