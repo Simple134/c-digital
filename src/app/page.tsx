@@ -1,4 +1,4 @@
-"use client"
+"use client";
 import { Container, Grid, Column } from "@bitnation-dev/components";
 import { motion, AnimatePresence, Variants } from "framer-motion";
 import Image from "next/image";
@@ -6,9 +6,19 @@ import { useState } from "react";
 import InfiniteLogo from "@/components/infiniteLogo";
 import Link from "next/link";
 import { RedirectButton } from "@/components/RedirectButton";
-import { Diseño, DiseñoColor, Entrega, EntregaColor, Propuesta, PropuestaColor, Reunion, ReunionColor } from "@/components/icons";
+import {
+  Diseño,
+  DiseñoColor,
+  Entrega,
+  EntregaColor,
+  Propuesta,
+  PropuestaColor,
+  Reunion,
+  ReunionColor,
+} from "@/components/icons";
 import SocialMedia from "@/components/socialMedia";
 import Meeting from "@/components/meeting";
+import ServiceCheckList from "@/components/ServiceCheckList";
 
 // Define interfaces para los tipos de animaciones
 interface AnimationTransition {
@@ -26,7 +36,10 @@ interface FadeScaleVariants extends Variants {
 
 interface StaggerVariants extends Variants {
   hidden: { opacity: number };
-  visible: { opacity: number; transition: { delayChildren: number; staggerChildren: number } };
+  visible: {
+    opacity: number;
+    transition: { delayChildren: number; staggerChildren: number };
+  };
 }
 
 interface FadeVariants extends Variants {
@@ -39,8 +52,45 @@ export default function Home() {
   const [currentMarcasSet, setCurrentMarcasSet] = useState(0);
   const [currentSupportSet, setSupportSet] = useState(0);
   const [selectedProcess, setSelectedProcess] = useState<number | null>(0);
+
+  // Servicios para el componente ServiceCheckList
+  const mainServices = [
+    { name: "Marketing Digital Estratégico", route: "cont-1" },
+    { name: "Diseño de Marca Profesional", route: "cont-2" },
+    { name: "Desarrollo Web y Sistemas", route: "cont-1" },
+    { name: "Posicionamiento SEO", route: "crece-3" },
+    { name: "Digitalización Completa de Negocios", route: "conecta-1" },
+  ];
+
+  const brandingServices = [
+    { name: "Diseño de Logo", route: "cont-2" },
+    { name: "Identidad Corporativa", route: "cont-2" },
+    { name: "Manual de Marcas", route: "cont-2" },
+    { name: "Papelería Corporativa", route: "cont-2" },
+  ];
+
+  const marketingServices = [
+    { name: "Gestión de Redes Sociales", route: "cont-1" },
+    { name: "Publicidad en Meta ads", route: "cont-2" },
+    { name: "Campañas de Google ads", route: "cont-1" },
+    { name: "Email Marketing", route: "crece-3" },
+    { name: "Content Marketing", route: "conecta-1" },
+  ];
+  const webSystemsServices = [
+    { name: "Pagina Web Corporativa", route: "cont-1" },
+    { name: "Tiendas Online (eCommerce)", route: "cont-2" },
+    { name: "Sistemas de Gestion", route: "cont-1" },
+    { name: "Aplicaciones Web", route: "crece-3" },
+  ];
+  const seoServices = [
+    { name: "Auditoria SEO", route: "cont-1" },
+    { name: "SEO Local", route: "cont-2" },
+    { name: "SEO Nacional", route: "cont-1" },
+    { name: "Optimización Web", route: "crece-3" },
+  ];
+
   const createAnimationVariants = (
-    type: 'fade' | 'fadeScale' | 'stagger',
+    type: "fade" | "fadeScale" | "stagger",
     options?: Partial<{
       duration: number;
       ease: string;
@@ -56,12 +106,12 @@ export default function Home() {
       delay: 0.5,
       staggerChildren: 0.8,
       scale: 0.8,
-      y: 20
+      y: 20,
     };
 
     const config = { ...defaults, ...options };
 
-    if (type === 'fadeScale') {
+    if (type === "fadeScale") {
       return {
         initial: { opacity: 0, scale: config.scale },
         animate: {
@@ -69,19 +119,19 @@ export default function Home() {
           scale: 1,
           transition: {
             duration: config.duration,
-            ease: config.ease
-          }
+            ease: config.ease,
+          },
         },
         exit: {
           opacity: 0,
           scale: config.scale,
           transition: {
             duration: config.duration,
-            ease: "easeIn"
-          }
-        }
+            ease: "easeIn",
+          },
+        },
       } as FadeScaleVariants;
-    } else if (type === 'stagger') {
+    } else if (type === "stagger") {
       return {
         hidden: { opacity: 0 },
         visible: {
@@ -106,13 +156,21 @@ export default function Home() {
       } as FadeVariants;
     }
   };
-  const projectVariants = createAnimationVariants('fadeScale', { duration: 1.2 }) as FadeScaleVariants;
+  const projectVariants = createAnimationVariants("fadeScale", {
+    duration: 1.2,
+  }) as FadeScaleVariants;
 
-  const containerVariants = createAnimationVariants('stagger') as StaggerVariants;
+  const containerVariants = createAnimationVariants(
+    "stagger"
+  ) as StaggerVariants;
 
-  const itemVariants = createAnimationVariants('fade', { duration: 0.8 }) as FadeVariants;
+  const itemVariants = createAnimationVariants("fade", {
+    duration: 0.8,
+  }) as FadeVariants;
 
-  const marcasVariants = createAnimationVariants('fadeScale') as FadeScaleVariants;
+  const marcasVariants = createAnimationVariants(
+    "fadeScale"
+  ) as FadeScaleVariants;
 
   const firstProjects = [
     {
@@ -174,7 +232,7 @@ export default function Home() {
       title: "Prestapp",
       description: "App de préstamos y control de capital",
       location: "Rep. Dom.",
-    }
+    },
   ];
 
   const diseñoDeMarcas1 = [
@@ -244,8 +302,7 @@ export default function Home() {
     {
       image: "/support/support14.png",
     },
-
-  ]
+  ];
 
   const supportImages2 = [
     {
@@ -289,25 +346,25 @@ export default function Home() {
   const processText = [
     {
       title: "Reunión Inicial",
-      text: "Nos reunimos contigo para entender tus necesidades, objetivos y expectativas. Analizamos la identidad de tu marca, el público objetivo y los requisitos del proyecto. Además, establecemos un presupuesto y un cronograma preliminar."
+      text: "Nos reunimos contigo para entender tus necesidades, objetivos y expectativas. Analizamos la identidad de tu marca, el público objetivo y los requisitos del proyecto. Además, establecemos un presupuesto y un cronograma preliminar.",
     },
     {
       title: "Propuesta",
-      text: "Basándonos en la información recopilada, creamos una propuesta detallada que incluye el alcance del proyecto, tiempos de entrega, costos y metodología de trabajo. Incluimos moodboards, referencias visuales o bocetos iniciales para alinear nuestra visión con la tuya."
+      text: "Basándonos en la información recopilada, creamos una propuesta detallada que incluye el alcance del proyecto, tiempos de entrega, costos y metodología de trabajo. Incluimos moodboards, referencias visuales o bocetos iniciales para alinear nuestra visión con la tuya.",
     },
     {
       title: "Diseño y Desarrollo",
-      text: "Una vez aprobada la propuesta, nuestro equipo de diseño gráfico y desarrollo web comienza a trabajar en soluciones creativas. Desarrollamos conceptos, bocetos y prototipos, realizando iteraciones y pruebas para garantizar un diseño funcional y atractivo."
+      text: "Una vez aprobada la propuesta, nuestro equipo de diseño gráfico y desarrollo web comienza a trabajar en soluciones creativas. Desarrollamos conceptos, bocetos y prototipos, realizando iteraciones y pruebas para garantizar un diseño funcional y atractivo.",
     },
     {
       title: "Presentación y Ajustes",
-      text: "Presentamos el diseño final, explicando el proceso creativo y las decisiones detrás de cada elemento. Recibimos tus comentarios y realizamos ajustes o refinamientos hasta lograr un resultado que supere tus expectativas."
+      text: "Presentamos el diseño final, explicando el proceso creativo y las decisiones detrás de cada elemento. Recibimos tus comentarios y realizamos ajustes o refinamientos hasta lograr un resultado que supere tus expectativas.",
     },
     {
       title: "Entrega y Soporte",
-      text: "Una vez aprobado, entregamos el material en los formatos adecuados (archivos digitales, especificaciones técnicas, guías de uso o productos impresos). Además, ofrecemos soporte posterior para asegurar una implementación exitosa."
-    }
-  ]
+      text: "Una vez aprobado, entregamos el material en los formatos adecuados (archivos digitales, especificaciones técnicas, guías de uso o productos impresos). Además, ofrecemos soporte posterior para asegurar una implementación exitosa.",
+    },
+  ];
 
   const handleNext = (
     setter: React.Dispatch<React.SetStateAction<number>>,
@@ -333,12 +390,9 @@ export default function Home() {
 
   // Definir tipos explícitos para cada conjunto de variantes
 
-
   const handleProcessClick = (index: number) => {
     setSelectedProcess(index);
   };
-
-  console.log(currentSupportSet)
 
   return (
     <div className="relative min-h-screen ">
@@ -361,15 +415,15 @@ export default function Home() {
             >
               <motion.h1
                 variants={itemVariants}
-                className="text-white text-6xl text-center font-bold font-['Poppins'] lg:text-9xl"
+                className="text-white text-6xl text-center font-bold font-['Poppins'] lg:text-8xl"
               >
-                Estudio de Diseño
+                Agencia de Marketing Digital y Diseño
               </motion.h1>
               <motion.p
                 variants={itemVariants}
                 className="w-[65%] text-center font-['Poppins'] lg:text-xl pt-6"
               >
-                Somos el equipo de diseño responsable que tu proyecto necesita para destacar en el mercado digital.
+                La Solución Completa para Digitalizar tu Negocio
               </motion.p>
             </motion.div>
 
@@ -384,12 +438,14 @@ export default function Home() {
                 }}
                 onClick={() => handleScrollTo("quienes-somos")}
               >
-                <span className="font-semibold text-sm lg:text-xl">¿Quienes somos?</span>
+                <span className="font-semibold text-sm lg:text-xl">
+                  ¿Quienes somos?
+                </span>
               </button>
               <Link
                 href="/contacto"
                 className={`border-2 border-white px-6 py-2 mt-10 font-['Poppins'] lg:text-2xl bg-white text-black`}
-              //onClick={() => router.push("/trabajos-ux/ui")}
+                //onClick={() => router.push("/trabajos-ux/ui")}
               >
                 <span className="font-semibold">Contactar </span>
               </Link>
@@ -397,126 +453,100 @@ export default function Home() {
           </motion.div>
         </AnimatePresence>
       </Container>
-      <div className="h-48" ></div>
-      <Container className="w-full px-0 mx-0 max-w-none bg-black" id="quienes-somos">
+      <div className="h-48"></div>
+      <Container
+        className="w-full px-0 mx-0 max-w-none bg-black"
+        id="quienes-somos"
+      >
         <div className="w-full h-56 flex justify-end md:justify-center items-end md:items-center ">
-          <div className="h-1 bg-white w-48 md:w-96 mb-14" ></div>
+          <div className="h-1 bg-white w-48 md:w-96 mb-14"></div>
         </div>
         <div className="flex w-full justify-start items-start ">
-          <div className="w-full" >
+          <div className="w-full">
             <span className="bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] text-transparent bg-clip-text font-bold text-lg md:text-2xl   ">
               ¿Quienes somos?
             </span>
             <div className="h-40 relative mt-4">
-              <Image src="/logoCdigital.png" alt="logo" width={500} height={500} className="w-[60%] " />
+              <Image
+                src="/logoCdigital.png"
+                alt="logo"
+                width={500}
+                height={500}
+                className="w-[60%] "
+              />
             </div>
           </div>
         </div>
-        <div className=" w-full h-[30vh] flex mt-4 justify-end items-end ">
-          <div className="md:w-[50%] w-full h-full flex justify-end items-end   ">
+        <div className="w-full flex mt-12 justify-end items-end">
+          <div className="md:w-[50%] w-full flex justify-end items-end">
             <p className="text-white text-md md:text-2xl pl-20 md:pl-0 text-left">
-              En C Digital potenciamos la imagen de tu negocio para que venda más y proyecte confianza.Creamos gráficas visuales que comunican profesionalismo, calidad y valor real, sin importar si estás empezando o renovando. Tu imagen no solo debe verse bien, debe vender por ti.
-
+              Somos tu agencia integral de marketing digital y diseño que te
+              acompaña desde la creación de tu marca hasta el desarrollo de
+              sistemas web y estrategias de posicionamiento que generan
+              resultados reales.
             </p>
           </div>
+        </div>
+        {/* Sección de Servicios con checkmarks */}
+        <div className="flex w-full mt-6 justify-end items-end">
+          <ServiceCheckList back={true} services={mainServices} />
+        </div>
+        <div className="grid grid-cols-2 w-full mt-6 ">
+          <div className="flex flex-col justify-center items-start gap-6 pl-8">
+            <h3 className="text-white text-3xl md:text-4xl font-medium font-['Poppins'] leading-tight">
+              ¿Tu negocio necesita estar en Digital pero no sabes por dónde
+              empezar?
+            </h3>
+            <p className="text-white text-lg md:text-xl font-['Poppins']">
+              En C Digital convertimos negocios tradicionales en empresas
+              digitales líderes.
+            </p>
+            <button
+              className="border-2 border-white px-6 py-3 "
+              onClick={handleWhatsAppClick}
+            >
+              <span className="bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] text-transparent bg-clip-text font-bold text-2xl w-fit">
+                Agenda tu Auditoría
+              </span>
+            </button>
+          </div>
+          <div className="flex justify-center items-center">
+            <Image
+              src="/sitBW.png"
+              alt="logo"
+              width={500}
+              height={500}
+              className="w-[60%] "
+            />
+          </div>
+        </div>
+      </Container>
+      <div className="h-64"></div>
+      <Container className="bg-black py-20">
+        <div className="flex items-center justify-center">
+          {/* Columna derecha - Texto inspiracional */}
+          <motion.div
+            initial={{ opacity: 0, x: 50 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8 }}
+            className="w-3/4 space-y-6 flex flex-col justify-center items-center"
+          >
+            <div className="w-full h-56 flex justify-end md:justify-center items-end md:items-center ">
+              <div className="h-1 bg-white w-48 md:w-96 mb-14"></div>
+            </div>
+            <span className=" bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] text-transparent bg-clip-text font-bold text-7xl w-fit text-center">
+              La Solución Completa para Digitalizar tu Negocio
+            </span>
+            <span className="text-white text-xl md:text-3xl font-['Poppins'] text-center">
+              Agencia de Marketing Digital, Diseño de Marca y Desarrollo Web en
+              la Vega, República Dominicana.
+            </span>
+          </motion.div>
         </div>
       </Container>
       <div className="h-64"></div>
       <Container id="cont-1">
-        <div className="flex flex-col mb-14">
-          <span className="bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] text-transparent bg-clip-text font-bold text-2xl w-fit">
-            Servicios Destacados
-          </span>
-          <h2 className="text-white text-5xl lg:text-7xl font-bold font-['Poppins'] whitespace-normal leading-[1.1]">
-            Somos Especialistas En
-          </h2>
-        </div>
-        <AnimatePresence mode="wait">
-          <Grid
-            key={`projects-set-${currentProjectSet}`}
-            columns={{ xl: 3, lg: 3, md: 1, sm: 1 }}
-            className="!m-0 !p-0"
-            behavior="media"
-            id="projects"
-          >
-            {(currentProjectSet === 0 ? firstProjects :
-              currentProjectSet === 1 ? secondProjects :
-                thirdProjects).map((project) => (
-                  <motion.div
-                    key={project.image}
-                    className="relative flex justify-center items-center group"
-                    style={{ aspectRatio: "16/9" }}
-                    variants={projectVariants}
-                    initial="initial"
-                    animate="animate"
-                    exit="exit"
-                  >
-                    <Image
-                      src={project.image}
-                      alt=""
-                      width={500}
-                      height={500}
-                      className="transition-all duration-300"
-                    />
-                    <div className="absolute inset-0 bg-black/70 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end w-[60%] pb-12 px-4 cursor-pointer">
-                      <div className="mb-8">
-                        <p>
-                          <span className="text-white text-2xl font-bold flex h-full">
-                            {project.title}:
-                            <br />
-                          </span>{" "}
-                          {project.description}
-                        </p>
-                      </div>
-                      <p className="text-[#00C5FF]">{project.location}</p>
-                    </div>
-                  </motion.div>
-                ))}
-          </Grid>
-        </AnimatePresence>
-        <div
-          className="mt-6 w-full ">
-
-          <Grid columns={{ xl: 2, lg: 2, md: 1, sm: 1 }}>
-            <div>
-              <span className="bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] text-transparent bg-clip-text font-bold text-2xl">
-                {" "}
-                UX/UI Design
-              </span>
-              <h2 className="text-white text-5xl lg:text-7xl font-bold font-['Poppins'] whitespace-normal leading-[1.1]">
-                Diseño De Productos
-              </h2>
-            </div>
-            <div className="lg:mt-6 w-full h-full justify-center flex flex-col">
-              <p className="text-white text-xl lg:text-2xl font-['Poppins'] w-3/4">
-                Creamos Webs y Aplicaciones desde cero; que generan impacto
-                con diseños a la vanguardia. Para personas ambiciosas.
-              </p>
-              <div className="flex gap-4">
-                <button
-                  onClick={() => handleNext(setCurrentProjectSet, "projects")}
-                  className={`border-2 border-white w-fit px-4 py-2 mt-10 font-['Poppins'] lg:text-2xl text-white hover:text-transparent bg-clip-text hover:bg-gradient-to-r hover:from-[#00C5FF] hover:to-[#00FF7C]`}
-                  style={{
-                    borderImage:
-                      "linear-gradient(to right, #00C5FF, #00FF7C) 1",
-                  }}
-                >
-                  <span className="font-semibold text-xl">Ver más</span>
-                </button>
-                <RedirectButton
-                  className="bg-white text-black px-4 py-2 mt-10 font-['Poppins'] lg:text-2xl flex gap-2 items-center"
-                  whatsappLink={handleWhatsAppClick}
-                  service="diseño-app"
-                >
-                  <span className="font-semibold text-xl">Hablemos</span>
-                </RedirectButton>
-              </div>
-            </div>
-          </Grid>
-        </div>
-      </Container>
-      <div className="h-64"></div>
-      <Container id="cont-2">
         <Grid columns={{ xl: 4, lg: 4, md: 1, sm: 1 }} id="marcas">
           <AnimatePresence mode="wait">
             {currentMarcasSet === 0 && (
@@ -649,7 +679,6 @@ export default function Home() {
                         width={800}
                         height={800}
                         className=" object-center w-full h-full "
-
                       />
                     </div>
                     <div className="flex gap-4">
@@ -762,14 +791,13 @@ export default function Home() {
                 Branding / Rebranding
               </span>
               <h2 className="text-white text-5xl lg:text-7xl font-bold font-['Poppins'] whitespace-normal leading-[1.1] pb-2 w-96">
-                Diseño De Marcas
+                Diseño De Marcas Profesionales
               </h2>
               <div className="lg:mt-6 w-full h-full justify-center flex flex-col">
-                <p className="text-white text-xl lg:text-2xl font-['Poppins']">
-                  Diseñamos marcas que reflejan un concepto e impulsan
-                  estrategias que venden.
-                </p>
-                <div className="flex gap-4">
+                <div className="flex w-full">
+                  <ServiceCheckList services={brandingServices} />
+                </div>
+                <div className="flex gap-4 w-full">
                   <button
                     className={`border-2 border-white w-fit px-4 py-2 mt-10 font-['Poppins'] lg:text-2xl text-white hover:text-transparent bg-clip-text hover:bg-gradient-to-r hover:from-[#00C5FF] hover:to-[#00FF7C]`}
                     style={{
@@ -794,7 +822,7 @@ export default function Home() {
         </Grid>
       </Container>
       <div className="h-64"></div>
-      <Container className="pb-12" id="support">
+      <Container className="pb-12" id="cont-2">
         <AnimatePresence mode="wait">
           <motion.div
             key={`support-set-${currentSupportSet}`}
@@ -803,7 +831,13 @@ export default function Home() {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.5 }}
           >
-            <div className={`hidden md:grid grid-cols-3 gap-4 ${currentSupportSet === 0 || currentSupportSet === 2 ? 'grid-cols-4' : ''}`}>
+            <div
+              className={`hidden md:grid grid-cols-3 gap-4 ${
+                currentSupportSet === 0 || currentSupportSet === 2
+                  ? "grid-cols-4"
+                  : ""
+              }`}
+            >
               {currentSupportSet === 0 && (
                 <>
                   {supportImages1.map((image, index) => (
@@ -907,33 +941,37 @@ export default function Home() {
             {/* Versión móvil con scroll horizontal */}
             <div className="md:hidden w-full">
               <div className="flex overflow-x-auto snap-x snap-mandatory touch-pan-x scrollbar-hide">
-                {(currentSupportSet === 0 ? supportImages1 :
-                  currentSupportSet === 1 ? supportImages2 :
-                    currentSupportSet === 2 ? supportImages3 :
-                      supportImages4).map((image, index) => (
-                        <div
-                          key={`support-mobile-${index}`}
-                          className="flex-none w-full snap-center">
-                          <motion.div
-                          variants={marcasVariants}
-                          initial="initial"
-                          animate="animate"
-                          exit="exit"
-                          className="relative group h-[50vh]"
-                        >
-                          <Image
-                            src={image.image}
-                            alt="Project 1"
-                            width={500}
-                            height={500}
-                            className="h-full object-contain rounded-lg"
-                          />
-                          <div className="hidden md:block absolute inset-0 bg-black/50 transition-opacity duration-300 group-hover:opacity-0 rounded-lg" />
-                        </motion.div>
-                      </div>
-                    ))}
+                {(currentSupportSet === 0
+                  ? supportImages1
+                  : currentSupportSet === 1
+                  ? supportImages2
+                  : currentSupportSet === 2
+                  ? supportImages3
+                  : supportImages4
+                ).map((image, index) => (
+                  <div
+                    key={`support-mobile-${index}`}
+                    className="flex-none w-full snap-center"
+                  >
+                    <motion.div
+                      variants={marcasVariants}
+                      initial="initial"
+                      animate="animate"
+                      exit="exit"
+                      className="relative group h-[50vh]"
+                    >
+                      <Image
+                        src={image.image}
+                        alt="Project 1"
+                        width={500}
+                        height={500}
+                        className="h-full object-contain rounded-lg"
+                      />
+                      <div className="hidden md:block absolute inset-0 bg-black/50 transition-opacity duration-300 group-hover:opacity-0 rounded-lg" />
+                    </motion.div>
+                  </div>
+                ))}
               </div>
-
             </div>
           </motion.div>
         </AnimatePresence>
@@ -944,15 +982,12 @@ export default function Home() {
               {" "}
               Diseño gráfico
             </span>
-            <h2 className="text-white text-5xl lg:text-7xl font-bold font-['Poppins'] whitespace-normal leading-[1.1] pb-2">
-              Content Design
+            <h2 className="text-white text-5xl lg:text-8xl font-bold font-['Poppins'] whitespace-normal leading-[1.1] pb-2">
+              Marketing Digital
             </h2>
           </div>
           <div className="mt-0 md:mt-6 h-full justify-center flex flex-col ">
-            <p className="text-white text-xl lg:text-2xl font-['Poppins'] w-3/4">
-              Creamos piezas gráficas para tu proyecto enfocadas en posicionar,
-              captar, educar o vender a tu cliente ideal.
-            </p>
+            <ServiceCheckList services={marketingServices} />
             <div className="flex gap-4">
               <button
                 className={`border-2 border-white w-fit px-4 py-2 mt-10 font-['Poppins'] lg:text-2xl text-white hover:text-transparent bg-clip-text hover:bg-gradient-to-r hover:from-[#00C5FF] hover:to-[#00FF7C]`}
@@ -972,6 +1007,183 @@ export default function Home() {
               </RedirectButton>
             </div>
           </div>
+        </Grid>
+      </Container>
+      <div className="h-64"></div>
+      <Container id="cont-3">
+        <AnimatePresence mode="wait">
+          <Grid
+            key={`projects-set-${currentProjectSet}`}
+            columns={{ xl: 3, lg: 3, md: 1, sm: 1 }}
+            className="!m-0 !p-0"
+            behavior="media"
+            id="projects"
+          >
+            {(currentProjectSet === 0
+              ? firstProjects
+              : currentProjectSet === 1
+              ? secondProjects
+              : thirdProjects
+            ).map((project) => (
+              <motion.div
+                key={project.image}
+                className="relative flex justify-center items-center group"
+                style={{ aspectRatio: "16/9" }}
+                variants={projectVariants}
+                initial="initial"
+                animate="animate"
+                exit="exit"
+              >
+                <Image
+                  src={project.image}
+                  alt=""
+                  width={500}
+                  height={500}
+                  className="transition-all duration-300"
+                />
+                <div className="absolute inset-0 bg-black/70 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end w-[60%] pb-12 px-4 cursor-pointer">
+                  <div className="mb-8">
+                    <p>
+                      <span className="text-white text-2xl font-bold flex h-full">
+                        {project.title}:
+                        <br />
+                      </span>{" "}
+                      {project.description}
+                    </p>
+                  </div>
+                  <p className="text-[#00C5FF]">{project.location}</p>
+                </div>
+              </motion.div>
+            ))}
+          </Grid>
+        </AnimatePresence>
+        <div className="mt-6 w-full ">
+          <Grid columns={{ xl: 2, lg: 2, md: 1, sm: 1 }}>
+            <div>
+              <span className="bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] text-transparent bg-clip-text font-bold text-2xl">
+                {" "}
+                UX/UI Design
+              </span>
+              <h2 className="text-white text-5xl lg:text-7xl font-bold font-['Poppins'] whitespace-normal leading-[1.1]">
+                Diseño Web <br /> Y Sistemas
+              </h2>
+            </div>
+            <div className="lg:mt-6 w-full h-full justify-center flex flex-col">
+              <ServiceCheckList services={webSystemsServices} />
+              <div className="flex gap-4">
+                <button
+                  onClick={() => handleNext(setCurrentProjectSet, "projects")}
+                  className={`border-2 border-white w-fit px-4 py-2 mt-10 font-['Poppins'] lg:text-2xl text-white hover:text-transparent bg-clip-text hover:bg-gradient-to-r hover:from-[#00C5FF] hover:to-[#00FF7C]`}
+                  style={{
+                    borderImage:
+                      "linear-gradient(to right, #00C5FF, #00FF7C) 1",
+                  }}
+                >
+                  <span className="font-semibold text-xl">Ver más</span>
+                </button>
+                <RedirectButton
+                  className="bg-white text-black px-4 py-2 mt-10 font-['Poppins'] lg:text-2xl flex gap-2 items-center"
+                  whatsappLink={handleWhatsAppClick}
+                  service="diseño-app"
+                >
+                  <span className="font-semibold text-xl">Hablemos</span>
+                </RedirectButton>
+              </div>
+            </div>
+          </Grid>
+        </div>
+      </Container>
+      <div className="h-64"></div>
+      <Container id="cont-4">
+        <Grid columns={{ xl: 4, lg: 4, md: 1, sm: 1 }} id="redes">
+          <Column columns={{ xl: { width: 2 }, md: { width: 1 } }}>
+            <motion.div
+              className="flex h-full"
+              variants={marcasVariants}
+              initial="initial"
+              whileInView="animate"
+              viewport={{ once: true }}
+            >
+              <Image
+                src="/redes/redes1.png"
+                alt="Contenido de Redes"
+                width={700}
+                height={700}
+                className="w-full h-full object-cover"
+              />
+            </motion.div>
+          </Column>
+          <Column columns={{ xl: { width: 2 }, md: { width: 1 } }}>
+            <motion.div
+              className="flex h-full"
+              variants={marcasVariants}
+              initial="initial"
+              whileInView="animate"
+              viewport={{ once: true }}
+            >
+              <Image
+                src="/redes/redes2.png"
+                alt="Contenido de Redes"
+                width={700}
+                height={700}
+                className="w-full h-full object-cover"
+              />
+            </motion.div>
+          </Column>
+          <Column columns={{ xl: { width: 2 }, md: { width: 1 } }}>
+            <motion.div
+              className="flex h-full"
+              variants={marcasVariants}
+              initial="initial"
+              whileInView="animate"
+              viewport={{ once: true }}
+            >
+              <Image
+                src="/redes/redes3.png"
+                alt="Contenido de Redes"
+                width={700}
+                height={700}
+                className="w-full h-full object-cover"
+              />
+            </motion.div>
+          </Column>
+
+          <Column columns={{ xl: { width: 2 }, md: { width: 1 } }}>
+            <div className="lg:ml-4 w-full">
+              <span className="bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] text-transparent bg-clip-text font-bold text-2xl">
+                {" "}
+                Posicionamiento SEO
+              </span>
+              <h2 className="w-full text-white text-5xl lg:text-7xl font-bold font-['Poppins'] whitespace-normal leading-[1.1] pb-2">
+                Salir Primero
+                <br /> En Redes
+              </h2>
+              <div className="lg:mt-6 w-full h-full justify-center flex flex-col">
+                <div className="flex w-full">
+                  <ServiceCheckList services={seoServices} />
+                </div>
+                <div className="flex gap-4 w-full">
+                  <button
+                    className={`border-2 border-white w-fit px-4 py-2 mt-10 font-['Poppins'] lg:text-2xl text-white hover:text-transparent bg-clip-text hover:bg-gradient-to-r hover:from-[#00C5FF] hover:to-[#00FF7C]`}
+                    style={{
+                      borderImage:
+                        "linear-gradient(to right, #00C5FF, #00FF7C) 1",
+                    }}
+                    onClick={() => handleNext(setCurrentMarcasSet, "marcas")}
+                  >
+                    <span className="font-semibold text-xl">Ver más</span>
+                  </button>
+                  <RedirectButton
+                    className="bg-white text-black px-4 py-2 mt-10 font-['Poppins'] lg:text-2xl flex gap-2 items-center"
+                    whatsappLink={handleWhatsAppClick}
+                    service="branding"
+                  >
+                    <span className="font-semibold text-xl">Hablemos</span>
+                  </RedirectButton>
+                </div>
+              </div>
+            </div>
+          </Column>
         </Grid>
       </Container>
       <div className="h-64"></div>
@@ -997,24 +1209,34 @@ export default function Home() {
               Problemas que Resolvemos
             </h2>
             <p className="text-white text-xl lg:text-2xl font-['Poppins'] w-3/4 pt-8">
-              Para simplificar el proceso de trabajo hemos creados 3 fases donde se agrupan los diferentes servicios.
+              Para simplificar el proceso de trabajo hemos creados 3 fases donde
+              se agrupan los diferentes servicios.
             </p>
           </div>
           <div className="flex flex-col space-y-6 mt-8 md:mt-0">
             <div className="flex flex-col justify-center items-end">
-              <span className="text-[#AFAFAF] hover:text-white text-3xl font-bold font-['Poppins'] hover:cursor-pointer" onClick={() => handleScrollTo("conecta-1")}>
+              <span
+                className="text-[#AFAFAF] hover:text-white text-3xl font-bold font-['Poppins'] hover:cursor-pointer"
+                onClick={() => handleScrollTo("conecta-1")}
+              >
                 1. Conecta
               </span>
               <div className="bg-[#FFFFFF] w-full h-[1px] mt-2"></div>
             </div>
             <div className="flex flex-col justify-center items-end">
-              <span className="text-[#AFAFAF] hover:text-white text-3xl font-bold font-['Poppins'] hover:cursor-pointer" onClick={() => handleScrollTo("crea-2")}>
+              <span
+                className="text-[#AFAFAF] hover:text-white text-3xl font-bold font-['Poppins'] hover:cursor-pointer"
+                onClick={() => handleScrollTo("crea-2")}
+              >
                 2. Crea
               </span>
               <div className="bg-[#FFFFFF] w-full h-[1px] mt-2"></div>
             </div>
             <div className="flex flex-col justify-center items-end">
-              <span className="text-[#AFAFAF] hover:text-white text-3xl font-bold font-['Poppins'] hover:cursor-pointer" onClick={() => handleScrollTo("crece-3")}>
+              <span
+                className="text-[#AFAFAF] hover:text-white text-3xl font-bold font-['Poppins'] hover:cursor-pointer"
+                onClick={() => handleScrollTo("crece-3")}
+              >
                 3. Crece
               </span>
               <div className="bg-[#FFFFFF] w-full h-[1px] mt-2"></div>
@@ -1023,7 +1245,7 @@ export default function Home() {
         </Grid>
       </Container>
       <div className="h-48" id="conecta-1"></div>
-      <Container className="h-[80vh]" >
+      <Container className="h-[80vh]">
         <div className="flex justify-between">
           <div className="">
             <h2 className="text-white text-6xl text-center font-bold font-['Poppins'] lg:text-9xl">
@@ -1036,7 +1258,7 @@ export default function Home() {
             </h2>
           </div>
         </div>
-        <div className="flex w-full h-[2px] bg-[#AFAFAF] mt-4" ></div>
+        <div className="flex w-full h-[2px] bg-[#AFAFAF] mt-4"></div>
         <Grid columns={{ xl: 2, lg: 2, md: 1, sm: 1 }}>
           <div className="flex items-start justify-start mt-8">
             <ul className="text-xl pl-0 space-y-1">
@@ -1069,11 +1291,11 @@ export default function Home() {
           <div className="flex flex-col items-start justify-start mt-8">
             <span className="text-white text-xl md:text-2xl ">
               En esta fase inicial, definimos la visión de tu negocio, la
-              identidad visual de tu marca y tu buyer persona. Realizamos
-              una investigación exhaustiva del mercado y analizamos a tu
-              competencia para identificar oportunidades y desafíos.
-              Establecemos una estrategia de marca sólida que te permita
-              diferenciarte y conectar con tu público objetivo.
+              identidad visual de tu marca y tu buyer persona. Realizamos una
+              investigación exhaustiva del mercado y analizamos a tu competencia
+              para identificar oportunidades y desafíos. Establecemos una
+              estrategia de marca sólida que te permita diferenciarte y conectar
+              con tu público objetivo.
             </span>
             <div className=" mt-8">
               <RedirectButton
@@ -1087,7 +1309,7 @@ export default function Home() {
         </Grid>
       </Container>
       <div className="h-64 md:h-48" id="crea-2"></div>
-      <Container className="h-[80vh]" >
+      <Container className="h-[80vh]">
         <div className="flex justify-between ">
           <div className="">
             <h2 className="text-white text-6xl text-center font-bold font-['Poppins'] lg:text-9xl">
@@ -1145,11 +1367,11 @@ export default function Home() {
           <div className="flex flex-col items-start justify-start mt-8">
             <span className="text-white text-xl ">
               En esta fase, damos vida a tu marca mediante la creación de
-              activos visuales y digitales que transmitan su esencia.
-              Diseñamos logos, páginas web atractivas y apps innovadoras,
-              empaques creativos y mucho más. Nos aseguramos de que cada
-              elemento esté alineado con la narrativa de tu marca y genere un
-              impacto positivo en tu audiencia.
+              activos visuales y digitales que transmitan su esencia. Diseñamos
+              logos, páginas web atractivas y apps innovadoras, empaques
+              creativos y mucho más. Nos aseguramos de que cada elemento esté
+              alineado con la narrativa de tu marca y genere un impacto positivo
+              en tu audiencia.
             </span>
             <div className=" mt-8">
               <RedirectButton
@@ -1163,7 +1385,7 @@ export default function Home() {
         </Grid>
       </Container>
       <div className="h-64 md:h-48" id="crece-3"></div>
-      <Container className="h-[80vh]" >
+      <Container className="h-[80vh]">
         <div className="flex justify-between ">
           <div className="">
             <h2 className="text-white text-6xl text-center font-bold font-['Poppins'] lg:text-9xl">
@@ -1229,39 +1451,58 @@ export default function Home() {
       <div className="h-48"></div>
       <Container className="h-[80vh] ">
         <div className="flex flex-col w-full items-start justify-start md:items-center md:justify-center">
-          <span className="bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] text-transparent bg-clip-text text-2xl w-fit font-bold">¿Cómo trabajamos?</span>
-          <h2 className="text-white text-4xl md:text-6xl  font-bold font-['Poppins'] lg:text-9xl">Nuestro Proceso</h2>
+          <span className="bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] text-transparent bg-clip-text text-2xl w-fit font-bold">
+            ¿Cómo trabajamos?
+          </span>
+          <h2 className="text-white text-4xl md:text-6xl  font-bold font-['Poppins'] lg:text-9xl">
+            Nuestro Proceso
+          </h2>
         </div>
         <div className="flex items-center w-full h-[40vh] justify-between px-20 overflow-x-auto">
-          <div className="flex flex-col items-center justify-center gap-4 cursor-pointer" onClick={() => handleProcessClick(0)}>
+          <div
+            className="flex flex-col items-center justify-center gap-4 cursor-pointer"
+            onClick={() => handleProcessClick(0)}
+          >
             {selectedProcess === 0 ? <ReunionColor /> : <Reunion />}
             <span className="text-white text-xl font-bold">Reunión</span>
           </div>
           <div className="h-16 flex px-4">
             <div className="flex-shrink-0 gap-4 bg-[#343434] w-8 h-[1px] items-center justify-center"></div>
           </div>
-          <div className="flex flex-col items-center justify-center gap-4 cursor-pointer" onClick={() => handleProcessClick(1)}>
+          <div
+            className="flex flex-col items-center justify-center gap-4 cursor-pointer"
+            onClick={() => handleProcessClick(1)}
+          >
             {selectedProcess === 1 ? <PropuestaColor /> : <Propuesta />}
             <span className="text-white text-xl font-bold">Propuesta</span>
           </div>
           <div className="h-16 flex px-4">
             <div className="flex-shrink gap-4 bg-[#343434] w-8 h-[1px] items-center justify-center"></div>
           </div>
-          <div className="flex flex-col items-center justify-center gap-4 cursor-pointer" onClick={() => handleProcessClick(2)}>
+          <div
+            className="flex flex-col items-center justify-center gap-4 cursor-pointer"
+            onClick={() => handleProcessClick(2)}
+          >
             {selectedProcess === 2 ? <DiseñoColor /> : <Diseño />}
             <span className="text-white text-xl font-bold">Diseño</span>
           </div>
           <div className="h-16 flex px-4">
             <div className="flex-shrink-0 gap-4 bg-[#343434] w-8 h-[1px] items-center justify-center"></div>
           </div>
-          <div className="flex flex-col items-center justify-center gap-4 cursor-pointer" onClick={() => handleProcessClick(3)}>
+          <div
+            className="flex flex-col items-center justify-center gap-4 cursor-pointer"
+            onClick={() => handleProcessClick(3)}
+          >
             {selectedProcess === 3 ? <ReunionColor /> : <Reunion />}
             <span className="text-white text-xl font-bold">Presentacion</span>
           </div>
           <div className="h-16 flex px-4">
             <div className="flex-shrink-0 gap-4 bg-[#343434] w-8 h-[1px] items-center justify-center"></div>
           </div>
-          <div className="flex flex-col items-center justify-center gap-4 cursor-pointer" onClick={() => handleProcessClick(4)}>
+          <div
+            className="flex flex-col items-center justify-center gap-4 cursor-pointer"
+            onClick={() => handleProcessClick(4)}
+          >
             {selectedProcess === 4 ? <EntregaColor /> : <Entrega />}
             <span className="text-white text-xl font-bold">Entrega</span>
           </div>
@@ -1276,7 +1517,6 @@ export default function Home() {
             </span>
           </div>
         )}
-
       </Container>
       <div className="h-48 mt-28 md:mt-0"></div>
       <Meeting />

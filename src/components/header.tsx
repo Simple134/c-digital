@@ -17,9 +17,11 @@ const Header = () => {
                 </div>
                 <div className=" space-x-8 lg:block hidden relative z-50">
                     <Link href="/" className={` ${pathname === "/" ? "bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] text-transparent bg-clip-text font-bold" : "hover:text-[#9F9F9F] font-normal"} `}>Inicio</Link>
-                    {/*<Link href="/construction" className={` ${pathname === "" ? "text-[#01aaa8] font-bold" : "hover:text-[#9F9F9F] font-normal"} `}>Servicios</Link>
-                    <Link href="/construction" className={` ${pathname === "" ? "text-[#01aaa8] font-bold" : "hover:text-[#9F9F9F] font-normal"} `}>Nosotros</Link>*/}
+                    <Link href="/construction" className={` ${pathname === "" ? "text-[#01aaa8] font-bold" : "hover:text-[#9F9F9F] font-normal"} `}>Servicios</Link>
+                    <Link href="/construction" className={` ${pathname === "" ? "text-[#01aaa8] font-bold" : "hover:text-[#9F9F9F] font-normal"} `}>Blog</Link>
+                    <Link href="/construction" className={` ${pathname === "" ? "text-[#01aaa8] font-bold" : "hover:text-[#9F9F9F] font-normal"} `}>Equipo</Link>
                     <Link href="/contacto" className={` ${pathname === "/contacto" ? "bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] text-transparent bg-clip-text font-bold" : "hover:text-[#9F9F9F] font-normal"} `}>Contacto</Link>
+                    <Link href="/construction" className={` ${pathname === "" ? "text-[#01aaa8] font-bold" : "hover:text-[#9F9F9F] font-normal"} `}>Recursos</Link>
                 </div>
             </div>
         </Container>
