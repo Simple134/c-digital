@@ -370,7 +370,7 @@ export default function Home() {
     setter: React.Dispatch<React.SetStateAction<number>>,
     elementId: string
   ) => {
-    setter((prev) => (prev + 1) % 4);
+    setter((prev) => (prev + 1) % 3);
     const element = document.getElementById(elementId);
     if (element) {
       element.scrollIntoView({ behavior: "smooth" });
@@ -387,7 +387,6 @@ export default function Home() {
   const handleWhatsAppClick = () => {
     window.open(`https://wa.link/h0k461`, "_blank");
   };
-
 
   const handleProcessClick = (index: number) => {
     setSelectedProcess(index);
@@ -1167,7 +1166,7 @@ export default function Home() {
                       borderImage:
                         "linear-gradient(to right, #00C5FF, #00FF7C) 1",
                     }}
-                    onClick={() => handleNext(setCurrentMarcasSet, "marcas")}
+                    disabled
                   >
                     <span className="font-semibold text-xl">Ver más</span>
                   </button>
@@ -1199,7 +1198,7 @@ export default function Home() {
       <div className="h-48"></div>
       <Container className="h-[100vh] flex ">
         <Grid columns={{ xl: 2, lg: 2, md: 1, sm: 1 }}>
-          <div className="flex flex-col justify-center ">
+          <div className="flex flex-col ">
             <span className="bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] text-transparent bg-clip-text font-bold text-2xl w-fit">
               Fases y Servicios
             </span>
@@ -1239,6 +1238,12 @@ export default function Home() {
               </span>
               <div className="bg-[#FFFFFF] w-full h-[1px] mt-2"></div>
             </div>
+            <Image
+              src="/ilustration.png"
+              alt="Process"
+              width={1000}
+              height={1000}
+            />
           </div>
         </Grid>
       </Container>
@@ -1263,37 +1268,35 @@ export default function Home() {
               <li className="flex items-center">
                 <span className="inline-block w-2 h-2 rounded-full bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] mr-4"></span>
                 <span className="bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] text-transparent bg-clip-text ">
-                  Naming
+                  Auditoria Digital Completa
                 </span>
               </li>
               <li className="flex items-center">
                 <span className="inline-block w-2 h-2 rounded-full bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] mr-4"></span>
                 <span className="bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] text-transparent bg-clip-text">
-                  Diseño de identidad visual
+                  Estrategia de Marketing Digital
                 </span>
               </li>
               <li className="flex items-center">
                 <span className="inline-block w-2 h-2 rounded-full bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] mr-4"></span>
                 <span className="bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] text-transparent bg-clip-text">
-                  Investigacion de mercado
+                  Posicionamiento SEO Local
                 </span>
               </li>
               <li className="flex items-center">
                 <span className="inline-block w-2 h-2 rounded-full bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] mr-4"></span>
                 <span className="bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] text-transparent bg-clip-text">
-                  Estrategia de marca
+                  Consultoria Estrategica
                 </span>
               </li>
             </ul>
           </div>
           <div className="flex flex-col items-start justify-start mt-8">
             <span className="text-white text-xl md:text-2xl ">
-              En esta fase inicial, definimos la visión de tu negocio, la
-              identidad visual de tu marca y tu buyer persona. Realizamos una
-              investigación exhaustiva del mercado y analizamos a tu competencia
-              para identificar oportunidades y desafíos. Establecemos una
-              estrategia de marca sólida que te permita diferenciarte y conectar
-              con tu público objetivo.
+              Todo comienza con entender tu negocio y definir cómo te conectarás
+              con tus clientes ideales en el ecosistema digital. En esta fase
+              desarrollamos la estrategia de marketing digital que impulsará tu
+              crecimiento.
             </span>
             <div className=" mt-8">
               <RedirectButton
@@ -1327,49 +1330,41 @@ export default function Home() {
               <li className="flex items-center">
                 <span className="inline-block w-2 h-2 rounded-full bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] mr-4"></span>
                 <span className="bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] text-transparent bg-clip-text ">
-                  Diseño de logos
+                  Diseño de Marca Profesional
                 </span>
               </li>
               <li className="flex items-center">
                 <span className="inline-block w-2 h-2 rounded-full bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] mr-4"></span>
                 <span className="bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] text-transparent bg-clip-text">
-                  Branding
+                  Desarrollo Web y Sistemas
                 </span>
               </li>
               <li className="flex items-center">
                 <span className="inline-block w-2 h-2 rounded-full bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] mr-4"></span>
                 <span className="bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] text-transparent bg-clip-text">
-                  Diseño de App
+                  Presencia en Redes Sociales
                 </span>
               </li>
               <li className="flex items-center">
                 <span className="inline-block w-2 h-2 rounded-full bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] mr-4"></span>
                 <span className="bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] text-transparent bg-clip-text">
-                  Desarrollo Web
+                  E-commerce (Si necesitas tienda online)
                 </span>
               </li>
               <li className="flex items-center">
                 <span className="inline-block w-2 h-2 rounded-full bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] mr-4"></span>
                 <span className="bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] text-transparent bg-clip-text">
-                  Diseño UI/UX
-                </span>
-              </li>
-              <li className="flex items-center">
-                <span className="inline-block w-2 h-2 rounded-full bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] mr-4"></span>
-                <span className="bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] text-transparent bg-clip-text">
-                  Diseño de empaques
+                  Sistemas Empresariales
                 </span>
               </li>
             </ul>
           </div>
           <div className="flex flex-col items-start justify-start mt-8">
             <span className="text-white text-xl ">
-              En esta fase, damos vida a tu marca mediante la creación de
-              activos visuales y digitales que transmitan su esencia. Diseñamos
-              logos, páginas web atractivas y apps innovadoras, empaques
-              creativos y mucho más. Nos aseguramos de que cada elemento esté
-              alineado con la narrativa de tu marca y genere un impacto positivo
-              en tu audiencia.
+              Con la estrategia definida, pasamos a la acción. Creamos todos los
+              activos digitales que necesitas: desde tu marca profesional hasta
+              tu sitio web y contenido visual. Todo diseñado para vender y
+              generar confianza.
             </span>
             <div className=" mt-8">
               <RedirectButton
@@ -1409,31 +1404,41 @@ export default function Home() {
               <li className="flex items-center">
                 <span className="inline-block w-2 h-2 rounded-full bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] mr-4"></span>
                 <span className="bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] text-transparent bg-clip-text">
-                  Creacion de contenido
+                  Publicidad Digital (Google Ads + Meta Ads)
                 </span>
               </li>
               <li className="flex items-center">
                 <span className="inline-block w-2 h-2 rounded-full bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] mr-4"></span>
                 <span className="bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] text-transparent bg-clip-text">
-                  SEO
+                  Posicionamiento SEO Continuo
                 </span>
               </li>
               <li className="flex items-center">
                 <span className="inline-block w-2 h-2 rounded-full bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] mr-4"></span>
                 <span className="bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] text-transparent bg-clip-text">
-                  Campañas de publicidad digital
+                  Email Marketing Automatizado
+                </span>
+              </li>
+              <li className="flex items-center">
+                <span className="inline-block w-2 h-2 rounded-full bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] mr-4"></span>
+                <span className="bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] text-transparent bg-clip-text">
+                  Analitica y Optimizacion
+                </span>
+              </li>
+              <li className="flex items-center">
+                <span className="inline-block w-2 h-2 rounded-full bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] mr-4"></span>
+                <span className="bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] text-transparent bg-clip-text">
+                  Produccion de contenido
                 </span>
               </li>
             </ul>
           </div>
           <div className="flex flex-col items-start justify-start mt-8">
             <span className="text-white text-xl ">
-              Impulsamos tu startup con estrategias de marketing digital
-              personalizadas. Aumentamos la visibilidad de tu marca y atraemos a
-              tu público ideal mediante la gestión de redes sociales, la
-              creación de contenido atractivo, la optimización SEO y campañas
-              publicitarias efectivas. Nos enfocamos en generar leads
-              cualificados y posicionarte en un mercado competitivo.
+              Una vez lanzado, el verdadero trabajo comienza. Implementamos
+              campañas de marketing digital, optimizamos tu posicionamiento en
+              Google y gestionamos tu presencia online para que generes leads y
+              ventas constantes.
             </span>
             <div className=" mt-8">
               <RedirectButton
@@ -1515,6 +1520,18 @@ export default function Home() {
             </span>
           </div>
         )}
+      </Container>
+      <div className="h-48"></div>
+      <Container className="bg-white h-[65vh] w-full  flex flex-col overflow-hidden !p-0 !m-0  ">
+        <div className="flex flex-col items-center  ">
+          <p className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#00C5FF] to-[#00FF7C]">
+            Testimonios Reales
+          </p>
+          <h2 className="text-black text-4xl md:text-6xl font-bold font-['Poppins'] pb-16">
+            Nuestros Clientes
+          </h2>
+          <InfiniteLogo />
+        </div>
       </Container>
       <div className="h-48 mt-28 md:mt-0"></div>
       <Meeting />

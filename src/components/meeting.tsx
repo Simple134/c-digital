@@ -7,7 +7,7 @@ const Meeting = () => {
     <Container >
     <Grid columns={{ xl: 2, lg: 2, md: 1, sm: 1 }}>
       <div className="flex items-start justify-start">
-        <Image src="/carlos.png" alt="carlos" width={500} height={500} />
+        <Image src="/muñeco.png" alt="carlos" width={500} height={500} />
       </div>
       <div className="flex flex-col items-start justify-center space-y-2">
         <span className="bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] text-transparent bg-clip-text font-bold text-2xl w-fit">

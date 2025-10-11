@@ -50,13 +50,13 @@ const ContactoContent = () => {
 
   const formVariants = {
     hidden: { opacity: 0, x: 50 },
-    visible: { 
-      opacity: 1, 
-      x: 0, 
-      transition: { 
+    visible: {
+      opacity: 1,
+      x: 0,
+      transition: {
         duration: 0.8,
-        delay: 0.4 
-      } 
+        delay: 0.4,
+      },
     },
   };
 
@@ -68,14 +68,14 @@ const ContactoContent = () => {
 
   const successVariants = {
     hidden: { opacity: 0, scale: 0.8 },
-    visible: { 
-      opacity: 1, 
-      scale: 1, 
-      transition: { 
-        duration: 0.5, 
-        type: "spring", 
-        stiffness: 200 
-      } 
+    visible: {
+      opacity: 1,
+      scale: 1,
+      transition: {
+        duration: 0.5,
+        type: "spring",
+        stiffness: 200,
+      },
     },
   };
 
@@ -157,20 +157,28 @@ const ContactoContent = () => {
     <div className="relative min-h-screen w-full pt-24 pb-14 lg:py-20">
       <Container className="flex flex-col items-center justify-center h-full w-full z-50 !p-0 !m-0">
         <Grid columns={{ xl: 2, lg: 2, md: 1, sm: 1 }}>
-          <motion.div 
+          <motion.div
             className="flex flex-col justify-center pb-4"
             initial="hidden"
             animate="visible"
             variants={containerVariants}
           >
-            <motion.h2 variants={itemVariants} className="text-white text-5xl font-bold font-['Poppins'] lg:text-7xl">
+            <motion.h2
+              variants={itemVariants}
+              className="text-white text-5xl font-bold font-['Poppins'] lg:text-7xl"
+            >
               No Perdamos Tiempo
             </motion.h2>
-            <motion.span variants={itemVariants} className="text-white lg:text-lg text-md font-['Poppins'] pt-6 md:pt-12">
-              Nos dices que necesitas y nosotros nos <br className="hidden sm:block" /> encargamos de guiarte en el proceso.
+            <motion.span
+              variants={itemVariants}
+              className="text-white lg:text-lg text-md font-['Poppins'] pt-6 md:pt-12"
+            >
+              Nos dices que necesitas y nosotros nos{" "}
+              <br className="hidden sm:block" /> encargamos de guiarte en el
+              proceso.
             </motion.span>
           </motion.div>
-          <motion.div 
+          <motion.div
             className="flex flex-col bg-white px-10 py-28 "
             initial="hidden"
             animate="visible"
@@ -178,7 +186,7 @@ const ContactoContent = () => {
           >
             <AnimatePresence mode="wait">
               {enviado ? (
-                <motion.div 
+                <motion.div
                   className="flex flex-col items-center justify-center h-full"
                   key="success"
                   initial="hidden"
@@ -208,8 +216,8 @@ const ContactoContent = () => {
                   </p>
                 </motion.div>
               ) : (
-                <motion.form 
-                  onSubmit={handleSubmit(onSubmit)} 
+                <motion.form
+                  onSubmit={handleSubmit(onSubmit)}
                   className="w-full"
                   key="form"
                   initial={{ opacity: 0 }}
@@ -217,7 +225,7 @@ const ContactoContent = () => {
                   exit={{ opacity: 0 }}
                 >
                   <div className="w-full space-y-6 mb-8 ">
-                    <motion.span 
+                    <motion.span
                       className="text-black text-xl"
                       variants={itemVariants}
                     >
@@ -313,7 +321,7 @@ const ContactoContent = () => {
                       </motion.button>
                     </Grid>
                   </div>
-                  <motion.div 
+                  <motion.div
                     className="flex flex-col"
                     variants={containerVariants}
                   >
@@ -325,7 +333,7 @@ const ContactoContent = () => {
                       variants={itemVariants}
                     />
                     {errors.nombre && (
-                      <motion.span 
+                      <motion.span
                         className="text-red-500"
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
@@ -345,7 +353,7 @@ const ContactoContent = () => {
                       variants={itemVariants}
                     />
                     {errors.email && (
-                      <motion.span 
+                      <motion.span
                         className="text-red-500"
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
@@ -361,7 +369,7 @@ const ContactoContent = () => {
                       variants={itemVariants}
                     />
                     {errors.descripcion && (
-                      <motion.span 
+                      <motion.span
                         className="text-red-500"
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
@@ -370,7 +378,7 @@ const ContactoContent = () => {
                       </motion.span>
                     )}
 
-                    <motion.div 
+                    <motion.div
                       className="relative mt-5"
                       variants={itemVariants}
                     >
@@ -416,7 +424,7 @@ const ContactoContent = () => {
                     {/* Lista de archivos seleccionados */}
                     <AnimatePresence>
                       {selectedFiles.length > 0 && (
-                        <motion.div 
+                        <motion.div
                           className="mt-4 border border-gray-200 rounded p-3"
                           initial={{ opacity: 0, height: 0 }}
                           animate={{ opacity: 1, height: "auto" }}
@@ -485,7 +493,7 @@ const ContactoContent = () => {
                         </motion.div>
                       )}
                     </AnimatePresence>
-
+                    <div className="flex gap-4">
                     <motion.button
                       type="submit"
                       disabled={enviando}
@@ -493,11 +501,33 @@ const ContactoContent = () => {
                         enviando ? "opacity-50 cursor-not-allowed" : ""
                       }`}
                       variants={itemVariants}
-                      whileHover={{ scale: 1.03, transition: { duration: 0.2 } }}
+                      whileHover={{
+                        scale: 1.03,
+                        transition: { duration: 0.2 },
+                      }}
                       whileTap={{ scale: 0.97 }}
-                    >
+                      >
                       {enviando ? "Enviando..." : "Enviar mensaje"}
                     </motion.button>
+                    <motion.button
+                      type="button"
+                      onClick={() => {
+                        window.location.href = "https://wa.me/7867557025";
+                      }}
+                      disabled={enviando}
+                      className={`md:w-72 p-2 mt-14 h-14 bg-green-500 text-white  md:text-2xl font-bold hover:bg-gray-800 ${
+                        enviando ? "opacity-50 cursor-not-allowed" : ""
+                      }`}
+                      variants={itemVariants}
+                      whileHover={{
+                        scale: 1.03,
+                        transition: { duration: 0.2 },
+                      }}
+                      whileTap={{ scale: 0.97 }}
+                      >
+                      {enviando ? "Enviando..." : "WhatsApp"}
+                    </motion.button>
+                      </div>
                   </motion.div>
                 </motion.form>
               )}
