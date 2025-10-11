@@ -1,5 +1,4 @@
 import { InfiniteMovingCards } from "./ui/infinite-moving-card";
-
 const InfiniteLogo = () => {
     const logoImages = [
         {

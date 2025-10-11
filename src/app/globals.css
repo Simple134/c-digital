@@ -57,3 +57,10 @@ body {
       scrollbar-width: none;  /* Firefox */
 }
 }
+
+/* Hide React Google Reviews controls for a fluid carousel */
+.carousel .slick-dots { display: none !important; }
+.carousel .carousel__btn { display: none !important; }
+.carousel:hover .slick-slider { animation-play-state: running !important; }
+.carousel .carousel__btn--left { display: none !important; }
+.carousel .carousel__btn--right { display: none !important; }

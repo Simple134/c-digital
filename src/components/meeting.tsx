@@ -7,7 +7,7 @@ const Meeting = () => {
     <Container >
     <Grid columns={{ xl: 2, lg: 2, md: 1, sm: 1 }}>
       <div className="flex items-start justify-start">
-        <Image src="/carlos.png" alt="carlos" width={500} height={500} />
+        <Image src="/muñeco.png" alt="carlos" width={500} height={500} />
       </div>
       <div className="flex flex-col items-start justify-center space-y-2">
         <span className="bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] text-transparent bg-clip-text font-bold text-2xl w-fit">
@@ -18,8 +18,7 @@ const Meeting = () => {
           Hablemos
         </h2>
         <p className="text-white text-xl">
-          Tu proyecto solo necesita un estudio de diseño responsable para
-          escalar; agenda una llamada ahora y no procrastines.{" "}
+        Tu proyecto solo necesita un equipo responsable para escalar; agenda una llamada ahora y no procrastines.{" "}
           <span className="font-bold">Auditoria gratis.</span>
         </p>
         </div>
@@ -30,7 +29,7 @@ const Meeting = () => {
             style={{
               borderImage: "linear-gradient(to right, #00C5FF, #00FF7C) 1",
             }}
-            href="https://calendly.com/diazc6001-5azn/consultoria-cdigital?month=2025-03"
+            href="https://calendly.com/marketing-agency-rd/consultoria-cdigital"
           >
             <span className="font-semibold">Agendar ahora</span>
             <div className="bg-black rounded-full  ml-4">
