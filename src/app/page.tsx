@@ -15,10 +15,13 @@ import {
   PropuestaColor,
   Reunion,
   ReunionColor,
+  EmailIcon,
 } from "@/components/icons";
 import SocialMedia from "@/components/socialMedia";
 import Meeting from "@/components/meeting";
 import ServiceCheckList from "@/components/ServiceCheckList";
+import { ReactGoogleReviews } from "react-google-reviews";
+import "react-google-reviews/dist/index.css";
 
 // Define interfaces para los tipos de animaciones
 interface AnimationTransition {
@@ -52,41 +55,42 @@ export default function Home() {
   const [currentMarcasSet, setCurrentMarcasSet] = useState(0);
   const [currentSupportSet, setSupportSet] = useState(0);
   const [selectedProcess, setSelectedProcess] = useState<number | null>(0);
+  const PLACE_ID = process.env.NEXT_PUBLIC_WIDGET_ID;
 
   // Servicios para el componente ServiceCheckList
   const mainServices = [
-    { name: "Marketing Digital Estratégico", route: "cont-1" },
-    { name: "Diseño de Marca Profesional", route: "cont-2" },
-    { name: "Desarrollo Web y Sistemas", route: "cont-1" },
-    { name: "Posicionamiento SEO", route: "crece-3" },
-    { name: "Digitalización Completa de Negocios", route: "conecta-1" },
+    { name: "Marketing Digital Estratégico", route: "" },
+    { name: "Diseño de Marca Profesional", route: "" },
+    { name: "Desarrollo Web y Sistemas", route: "" },
+    { name: "Posicionamiento SEO", route: "" },
+    { name: "Digitalización Completa de Negocios", route: "" },
   ];
 
   const brandingServices = [
-    { name: "Diseño de Logo", route: "cont-2" },
-    { name: "Identidad Corporativa", route: "cont-2" },
-    { name: "Manual de Marcas", route: "cont-2" },
-    { name: "Papelería Corporativa", route: "cont-2" },
+    { name: "Diseño de Logo", route: "" },
+    { name: "Identidad Corporativa", route: "" },
+    { name: "Manual de Marcas", route: "" },
+    { name: "Papelería Corporativa", route: "" },
   ];
 
   const marketingServices = [
-    { name: "Gestión de Redes Sociales", route: "cont-1" },
-    { name: "Publicidad en Meta ads", route: "cont-2" },
-    { name: "Campañas de Google ads", route: "cont-1" },
-    { name: "Email Marketing", route: "crece-3" },
-    { name: "Content Marketing", route: "conecta-1" },
+    { name: "Gestión de Redes Sociales", route: "" },
+    { name: "Publicidad en Meta ads", route: "" },
+    { name: "Campañas de Google ads", route: "" },
+    { name: "Email Marketing", route: "" },
+    { name: "Content Marketing", route: "" },
   ];
   const webSystemsServices = [
-    { name: "Pagina Web Corporativa", route: "cont-1" },
-    { name: "Tiendas Online (eCommerce)", route: "cont-2" },
-    { name: "Sistemas de Gestion", route: "cont-1" },
-    { name: "Aplicaciones Web", route: "crece-3" },
+    { name: "Pagina Web Corporativa", route: "" },
+    { name: "Tiendas Online (eCommerce)", route: "" },
+    { name: "Sistemas de Gestion", route: "" },
+    { name: "Aplicaciones Web", route: "" },
   ];
   const seoServices = [
-    { name: "Auditoria SEO", route: "cont-1" },
-    { name: "SEO Local", route: "cont-2" },
-    { name: "SEO Nacional", route: "cont-1" },
-    { name: "Optimización Web", route: "crece-3" },
+    { name: "Auditoria SEO", route: "" },
+    { name: "SEO Local", route: "" },
+    { name: "SEO Nacional", route: "" },
+    { name: "Optimización Web", route: "" },
   ];
 
   const createAnimationVariants = (
@@ -384,10 +388,6 @@ export default function Home() {
     }
   };
 
-  const handleWhatsAppClick = () => {
-    window.open(`https://wa.link/h0k461`, "_blank");
-  };
-
   const handleProcessClick = (index: number) => {
     setSelectedProcess(index);
   };
@@ -418,7 +418,7 @@ export default function Home() {
               </motion.h1>
               <motion.p
                 variants={itemVariants}
-                className="w-[65%] text-center font-['Poppins'] lg:text-xl pt-6"
+                className="w-[65%] text-center font-['Avenir'] lg:text-2xl pt-6 font-extrabold"
               >
                 La Solución Completa para Digitalizar tu Negocio
               </motion.p>
@@ -476,11 +476,11 @@ export default function Home() {
         </div>
         <div className="w-full flex mt-12 justify-end items-end">
           <div className="md:w-[50%] w-full flex justify-end items-end">
-            <p className="text-white text-md md:text-2xl pl-20 md:pl-0 text-left">
-              Somos tu agencia integral de marketing digital y diseño que te
-              acompaña desde la creación de tu marca hasta el desarrollo de
-              sistemas web y estrategias de posicionamiento que generan
-              resultados reales.
+            <p className="text-white text-md md:text-2xl pl-20 md:pl-0 text-left font-['Avenir']">
+              Somos una agencia de marketing digital y diseño especializada en
+              la digitalización de negocio/proyecto. Que te acompaña desde la
+              ideación de tu negocio hasta la implementación de estrategias de
+              posicionamiento que generan resultados reales.
             </p>
           </div>
         </div>
@@ -488,22 +488,30 @@ export default function Home() {
         <div className="flex w-full mt-6 justify-end items-end">
           <ServiceCheckList back={true} services={mainServices} />
         </div>
-        <div className="grid grid-cols-2 w-full mt-6 ">
+        <div className="grid grid-cols-2 w-full mt-24 ">
           <div className="flex flex-col justify-center items-start gap-6 pl-8">
-            <h3 className="text-white text-3xl md:text-4xl font-medium font-['Poppins'] leading-tight">
+            <h3
+              style={{
+                lineHeight: "1.1",
+                fontWeight: "505",
+              }}
+              className="text-white text-3xl md:text-5xl font-['Avenir'] leading-tight"
+            >
               ¿Tu negocio necesita estar en Digital pero no sabes por dónde
               empezar?
             </h3>
             <p className="text-white text-lg md:text-xl font-['Poppins']">
-              En C Digital convertimos negocios tradicionales en empresas
+              En C Digital convertimos negocios tradicionales en <br /> empresas
               digitales líderes.
             </p>
             <button
-              className="border-2 border-white px-6 py-3 "
-              onClick={handleWhatsAppClick}
+              className="border-2 border-white px-6 py-3 mt-5 "
+              onClick={() => {
+                window.location.href = "https://wa.me/7867557025";
+              }}
             >
               <span className="bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] text-transparent bg-clip-text font-bold text-2xl w-fit">
-                Agenda tu Auditoría
+                Me Interesa Iniciar
               </span>
             </button>
           </div>
@@ -519,7 +527,7 @@ export default function Home() {
         </div>
       </Container>
       <div className="h-64"></div>
-      <Container className="bg-black py-20">
+      <Container className="py-20">
         <div className="flex items-center justify-center">
           {/* Columna derecha - Texto inspiracional */}
           <motion.div
@@ -527,17 +535,17 @@ export default function Home() {
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.8 }}
-            className="w-3/4 space-y-6 flex flex-col justify-center items-center"
+            className="w-3/4 space-y-10 flex flex-col justify-center items-center"
           >
-            <div className="w-full h-56 flex justify-end md:justify-center items-end md:items-center ">
-              <div className="h-1 bg-white w-48 md:w-96 mb-14"></div>
+            <div className="w-full h-24 flex justify-center items-center ">
+              <div className="h-1 bg-white w-48 md:w-96"></div>
             </div>
             <span className=" bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] text-transparent bg-clip-text font-bold text-7xl w-fit text-center">
               La Solución Completa para Digitalizar tu Negocio
             </span>
-            <span className="text-white text-xl md:text-3xl font-['Poppins'] text-center">
-              Agencia de Marketing Digital, Diseño de Marca y Desarrollo Web en
-              la Vega, República Dominicana.
+            <span className="text-white text-xl md:text-3xl font-['Avenir']  text-center">
+              Agencia de Marketing Digital, Diseño de Marca y Desarrollo Web <br /> desde
+              La Vega, República Dominicana.
             </span>
           </motion.div>
         </div>
@@ -796,7 +804,7 @@ export default function Home() {
                 </div>
                 <div className="flex gap-4 w-full">
                   <button
-                    className={`border-2 border-white w-fit px-4 py-2 mt-10 font-['Poppins'] lg:text-2xl text-white hover:text-transparent bg-clip-text hover:bg-gradient-to-r hover:from-[#00C5FF] hover:to-[#00FF7C]`}
+                    className={`border-2 border-white w-fit px-4 py-2 mt-10 font-['Avenir'] font-bold lg:text-2xl text-white hover:text-transparent bg-clip-text hover:bg-gradient-to-r hover:from-[#00C5FF] hover:to-[#00FF7C]`}
                     style={{
                       borderImage:
                         "linear-gradient(to right, #00C5FF, #00FF7C) 1",
@@ -806,11 +814,14 @@ export default function Home() {
                     <span className="font-semibold text-xl">Ver más</span>
                   </button>
                   <RedirectButton
-                    className="bg-white text-black px-4 py-2 mt-10 font-['Poppins'] lg:text-2xl flex gap-2 items-center"
-                    whatsappLink={handleWhatsAppClick}
+                    className="bg-white text-black px-4 py-2 mt-10 font-['Avenir'] font-bold lg:text-2xl flex gap-2 items-center"
+                    whatsappLink={() => {
+                      window.location.href = "https://wa.me/7867557025";
+                    }}
                     service="branding"
                   >
-                    <span className="font-semibold text-xl">Hablemos</span>
+                    <span className="font-semibold text-xl">Me Interesa Esto</span>
+                    <EmailIcon />
                   </RedirectButton>
                 </div>
               </div>
@@ -977,7 +988,7 @@ export default function Home() {
           <div className="mt-10 !p-0">
             <span className="bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] text-transparent bg-clip-text font-bold text-2xl">
               {" "}
-              Diseño gráfico
+              Agencia de Marketing
             </span>
             <h2 className="text-white text-5xl lg:text-8xl font-bold font-['Poppins'] whitespace-normal leading-[1.1] pb-2">
               Marketing Digital
@@ -987,7 +998,7 @@ export default function Home() {
             <ServiceCheckList services={marketingServices} />
             <div className="flex gap-4">
               <button
-                className={`border-2 border-white w-fit px-4 py-2 mt-10 font-['Poppins'] lg:text-2xl text-white hover:text-transparent bg-clip-text hover:bg-gradient-to-r hover:from-[#00C5FF] hover:to-[#00FF7C]`}
+                className={`border-2 border-white w-fit px-4 py-2 mt-10 font-['Avenir'] font-bold lg:text-2xl text-white hover:text-transparent bg-clip-text hover:bg-gradient-to-r hover:from-[#00C5FF] hover:to-[#00FF7C]`}
                 style={{
                   borderImage: "linear-gradient(to right, #00C5FF, #00FF7C) 1",
                 }}
@@ -996,11 +1007,14 @@ export default function Home() {
                 <span className="font-semibold text-xl">Ver más</span>
               </button>
               <RedirectButton
-                className="bg-white text-black px-4 py-2 mt-10 font-['Poppins'] lg:text-2xl flex gap-2 items-center"
-                whatsappLink={handleWhatsAppClick}
+                className="bg-white text-black px-4 py-2 mt-10 font-['Avenir'] font-bold lg:text-2xl flex gap-2 items-center"
+                whatsappLink={() => {
+                  window.location.href = "https://wa.me/7867557025";
+                }}
                 service="marketing"
               >
-                <span className="font-semibold text-xl">Hablemos</span>
+                <span className="font-semibold text-xl">Me Interesa Esto</span>
+                <EmailIcon />
               </RedirectButton>
             </div>
           </div>
@@ -1070,7 +1084,7 @@ export default function Home() {
               <div className="flex gap-4">
                 <button
                   onClick={() => handleNext(setCurrentProjectSet, "projects")}
-                  className={`border-2 border-white w-fit px-4 py-2 mt-10 font-['Poppins'] lg:text-2xl text-white hover:text-transparent bg-clip-text hover:bg-gradient-to-r hover:from-[#00C5FF] hover:to-[#00FF7C]`}
+                  className={`border-2 border-white w-fit px-4 py-2 mt-10 font-['Avenir'] font-bold lg:text-2xl text-white hover:text-transparent bg-clip-text hover:bg-gradient-to-r hover:from-[#00C5FF] hover:to-[#00FF7C]`}
                   style={{
                     borderImage:
                       "linear-gradient(to right, #00C5FF, #00FF7C) 1",
@@ -1079,11 +1093,14 @@ export default function Home() {
                   <span className="font-semibold text-xl">Ver más</span>
                 </button>
                 <RedirectButton
-                  className="bg-white text-black px-4 py-2 mt-10 font-['Poppins'] lg:text-2xl flex gap-2 items-center"
-                  whatsappLink={handleWhatsAppClick}
+                  className="bg-white text-black px-4 py-2 mt-10 font-['Avenir'] font-bold lg:text-2xl flex gap-2 items-center"
+                  whatsappLink={() => {
+                    window.location.href = "https://wa.me/7867557025";
+                  }}
                   service="diseño-app"
                 >
-                  <span className="font-semibold text-xl">Hablemos</span>
+                  <span className="font-semibold text-xl">Me Interesa Esto</span>
+                  <EmailIcon />
                 </RedirectButton>
               </div>
             </div>
@@ -1161,7 +1178,7 @@ export default function Home() {
                 </div>
                 <div className="flex gap-4 w-full">
                   <button
-                    className={`border-2 border-white w-fit px-4 py-2 mt-10 font-['Poppins'] lg:text-2xl text-white hover:text-transparent bg-clip-text hover:bg-gradient-to-r hover:from-[#00C5FF] hover:to-[#00FF7C]`}
+                    className={`border-2 border-white w-fit px-4 py-2 mt-10 font-['Avenir'] font-bold lg:text-2xl text-white hover:text-transparent bg-clip-text hover:bg-gradient-to-r hover:from-[#00C5FF] hover:to-[#00FF7C]`}
                     style={{
                       borderImage:
                         "linear-gradient(to right, #00C5FF, #00FF7C) 1",
@@ -1171,11 +1188,14 @@ export default function Home() {
                     <span className="font-semibold text-xl">Ver más</span>
                   </button>
                   <RedirectButton
-                    className="bg-white text-black px-4 py-2 mt-10 font-['Poppins'] lg:text-2xl flex gap-2 items-center"
-                    whatsappLink={handleWhatsAppClick}
+                    className="bg-white text-black px-4 py-2 mt-10 font-['Avenir'] font-bold lg:text-2xl flex gap-2 items-center"
+                    whatsappLink={() => {
+                      window.location.href = "https://wa.me/7867557025";
+                    }}
                     service="branding"
                   >
-                    <span className="font-semibold text-xl">Hablemos</span>
+                    <span className="font-semibold text-xl">Me Intersa Esto</span>
+                    <EmailIcon />
                   </RedirectButton>
                 </div>
               </div>
@@ -1292,7 +1312,7 @@ export default function Home() {
             </ul>
           </div>
           <div className="flex flex-col items-start justify-start mt-8">
-            <span className="text-white text-xl md:text-2xl ">
+            <span className="text-white text-xl md:text-2xl font-['Avenir']">
               Todo comienza con entender tu negocio y definir cómo te conectarás
               con tus clientes ideales en el ecosistema digital. En esta fase
               desarrollamos la estrategia de marketing digital que impulsará tu
@@ -1301,9 +1321,11 @@ export default function Home() {
             <div className=" mt-8">
               <RedirectButton
                 className={`border-2 border-white px-6 py-2 mt-10 font-['Poppins'] lg:text-2xl text-white hover:text-transparent bg-clip-text hover:bg-gradient-to-r hover:from-[#00C5FF] hover:to-[#00FF7C]`}
-                whatsappLink={handleWhatsAppClick}
+                whatsappLink={() => {
+                  window.location.href = "https://wa.me/7867557025";
+                }}
               >
-                <span className="font-semibold">Necesito Esto +</span>
+                <span className="font-semibold font-['Avenir']">Necesito Esto +</span>
               </RedirectButton>
             </div>
           </div>
@@ -1369,7 +1391,9 @@ export default function Home() {
             <div className=" mt-8">
               <RedirectButton
                 className={`border-2 border-white px-6 py-2 mt-10 font-['Poppins'] lg:text-2xl text-white hover:text-transparent bg-clip-text hover:bg-gradient-to-r hover:from-[#00C5FF] hover:to-[#00FF7C]`}
-                whatsappLink={handleWhatsAppClick}
+                whatsappLink={() => {
+                  window.location.href = "https://wa.me/7867557025";
+                }}
               >
                 <span className="font-semibold">Necesito Esto +</span>
               </RedirectButton>
@@ -1443,7 +1467,9 @@ export default function Home() {
             <div className=" mt-8">
               <RedirectButton
                 className={`border-2 border-white px-6 py-2 mt-10 font-['Poppins'] lg:text-2xl text-white hover:text-transparent bg-clip-text hover:bg-gradient-to-r hover:from-[#00C5FF] hover:to-[#00FF7C]`}
-                whatsappLink={handleWhatsAppClick}
+                whatsappLink={() => {
+                  window.location.href = "https://wa.me/7867557025";
+                }}
               >
                 <span className="font-semibold">Necesito Esto +</span>
               </RedirectButton>
@@ -1522,7 +1548,7 @@ export default function Home() {
         )}
       </Container>
       <div className="h-48"></div>
-      <Container className="bg-white h-[65vh] w-full  flex flex-col overflow-hidden !p-0 !m-0  ">
+      <Container className="bg-white h-[75vh] w-full  flex flex-col overflow-hidden !p-0 !m-0  ">
         <div className="flex flex-col items-center  ">
           <p className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#00C5FF] to-[#00FF7C]">
             Testimonios Reales
@@ -1530,7 +1556,14 @@ export default function Home() {
           <h2 className="text-black text-4xl md:text-6xl font-bold font-['Poppins'] pb-16">
             Nuestros Clientes
           </h2>
-          <InfiniteLogo />
+          <ReactGoogleReviews
+            layout="carousel"
+            featurableId={PLACE_ID as string}
+            maxItems={3}
+            carouselAutoplay={true}
+            carouselSpeed={2500}
+            showDots={false}
+          />
         </div>
       </Container>
       <div className="h-48 mt-28 md:mt-0"></div>

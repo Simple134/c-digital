@@ -18,8 +18,7 @@ const Meeting = () => {
           Hablemos
         </h2>
         <p className="text-white text-xl">
-          Tu proyecto solo necesita un estudio de diseño responsable para
-          escalar; agenda una llamada ahora y no procrastines.{" "}
+        Tu proyecto solo necesita un equipo responsable para escalar; agenda una llamada ahora y no procrastines.{" "}
           <span className="font-bold">Auditoria gratis.</span>
         </p>
         </div>
@@ -30,7 +29,7 @@ const Meeting = () => {
             style={{
               borderImage: "linear-gradient(to right, #00C5FF, #00FF7C) 1",
             }}
-            href="https://calendly.com/diazc6001-5azn/consultoria-cdigital?month=2025-03"
+            href="https://calendly.com/marketing-agency-rd/consultoria-cdigital"
           >
             <span className="font-semibold">Agendar ahora</span>
             <div className="bg-black rounded-full  ml-4">

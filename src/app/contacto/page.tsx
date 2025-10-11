@@ -10,7 +10,7 @@ import Meeting from "@/components/meeting";
 // Componente wrapper con Suspense
 const ContactoContent = () => {
   const searchParams = useSearchParams();
-  const initialService = searchParams.get("service");
+  const initialService = searchParams?.get("service");
   const [selectedServices, setSelectedServices] = useState<string[]>(
     initialService ? [initialService] : []
   );
@@ -163,12 +163,12 @@ const ContactoContent = () => {
             animate="visible"
             variants={containerVariants}
           >
-            <motion.h2
+            <motion.h1
               variants={itemVariants}
-              className="text-white text-5xl font-bold font-['Poppins'] lg:text-7xl"
+              className="text-white text-5xl font-bold font-['Poppins'] lg:text-7xl inline-block"
             >
-              No Perdamos Tiempo
-            </motion.h2>
+              Contacta con Nuestra Agencia de Marketing Digital
+            </motion.h1>
             <motion.span
               variants={itemVariants}
               className="text-white lg:text-lg text-md font-['Poppins'] pt-6 md:pt-12"
