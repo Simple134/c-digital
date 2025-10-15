@@ -5,9 +5,9 @@ import Script from "next/script";
 import Footer from "@/components/footer";
 import Background from "@/components/background";
 export const metadata: Metadata = {
-  title: "C Digital",
+  title: "Agencia de marketing digital y diseño para pymes en RD",
   description:
-    "C Digital es una agencia de diseño en República Dominicana que ofrece soluciones digitales completas para empresas que buscan destacar en el mercado. Nos especializamos en diseño gráfico, branding, creación de logos, desarrollo de aplicaciones móviles, diseño web optimizado para SEO y animación para redes sociales. Ayudamos a PYMEs, startups y emprendedores a crecer mediante estrategias visuales innovadoras y contenido impactante. Con creatividad y tecnología, impulsamos marcas hacia el éxito digital. ¡Transforma tu negocio con nosotros!",
+    "La mejor agencia de marketing digital y diseño especializada en acompañar desde cero a pymes de Rep. Dom. a posicionar sus negocios y digitalizar sus negocios.",
 };
 
 export default function RootLayout({
@@ -42,7 +42,7 @@ export default function RootLayout({
           `}
         </Script>
       </head>
-      <body suppressHydrationWarning >
+      <body suppressHydrationWarning>
         {/* Noscript fallback */}
         <noscript>
           <iframe
