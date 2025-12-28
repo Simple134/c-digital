@@ -113,7 +113,6 @@ const Servicios = () => {
     const [activeConecta, setActiveConecta] = useState(1);
     const [activeCrea, setActiveCrea] = useState(1);
     const [activeCrece, setActiveCrece] = useState(1);
-    const [highlightedService, setHighlightedService] = useState<string | null>(null);
     const [showSuggestions, setShowSuggestions] = useState(false);
 
     // Combine all services for search
@@ -131,10 +130,9 @@ const Servicios = () => {
         : [];
 
     // Handle service selection from search
-    const handleServiceSelect = (service: any) => {
+    const handleServiceSelect = (service: { category: string; id: number }) => {
         setSearchQuery("");
         setShowSuggestions(false);
-        setHighlightedService(service.title);
 
         // Scroll to the service
         const serviceElement = document.getElementById(`service-${service.category}-${service.id}`);
@@ -150,11 +148,6 @@ const Servicios = () => {
         } else if (service.category === 'crece') {
             setActiveCrece(service.id);
         }
-
-        // Remove highlight after 3 seconds
-        setTimeout(() => {
-            setHighlightedService(null);
-        }, 3000);
     };
 
     // Handle search input change
@@ -191,7 +184,7 @@ const Servicios = () => {
                     {/* Autocomplete Dropdown */}
                     {showSuggestions && filteredSuggestions.length > 0 && (
                         <div className="absolute top-full mt-2 w-full bg-[#0a0a0a] border border-[#333333] rounded-md shadow-lg z-50 max-h-64 overflow-y-auto">
-                            {filteredSuggestions.map((service, index) => (
+                            {filteredSuggestions.map((service) => (
                                 <div
                                     key={`${service.category}-${service.id}`}
                                     onClick={() => handleServiceSelect(service)}
