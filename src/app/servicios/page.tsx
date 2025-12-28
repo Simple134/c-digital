@@ -1,29 +1,34 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Search } from "lucide-react";
+import Comotrabajamos from "@/components/Comotrabajamos";
 
 const conectaServices = [
     {
         id: 1,
+        slug: "auditoria-digital",
         title: "Auditoría Digital Completa",
         description: "Análisis exhaustivo de tu presencia digital actual para identificar oportunidades de mejora. Evaluamos tu sitio web, redes sociales, SEO, competencia y rendimiento online para crear un diagnóstico detallado con recomendaciones accionables.",
         purpose: "Te permite conocer exactamente dónde estás parado digitalmente, qué está funcionando, qué no, y cuál es el camino más efectivo para alcanzar tus objetivos de negocio."
     },
     {
         id: 2,
+        slug: "marketing-digital",
         title: "Estrategia de Marketing Digital",
         description: "Desarrollo de un plan personalizado que define objetivos, audiencias, canales y tácticas específicas para tu negocio. Creamos una hoja de ruta clara con acciones concretas, cronograma y métricas de éxito.",
         purpose: "Evita que inviertas tiempo y dinero en acciones dispersas sin resultados. Te da dirección clara y enfoque estratégico para maximizar tu retorno de inversión en marketing digital."
     },
     {
         id: 3,
+        slug: "seo-local",
         title: "Posicionamiento SEO Local",
         description: "Optimización para que tu negocio aparezca en los primeros resultados cuando clientes cercanos buscan tus servicios en Google. Incluye Google Business Profile, palabras clave locales y estrategias geográficas.",
         purpose: "Atrae clientes de tu zona que están buscando activamente lo que ofreces, aumentando visitas presenciales, llamadas y conversiones de clientes locales."
     },
     {
         id: 4,
+        slug: "consultoria-estrategica",
         title: "Consultoría Estratégica",
         description: "Asesoramiento experto continuo para tomar decisiones digitales acertadas. Sesiones periódicas donde analizamos resultados, resolvemos desafíos y ajustamos estrategias según la evolución de tu negocio.",
         purpose: "Tienes un experto digital a tu lado sin necesidad de contratar personal interno, ahorrando costos mientras recibes orientación profesional para cada decisión importante."
@@ -33,36 +38,42 @@ const conectaServices = [
 const creaServices = [
     {
         id: 1,
+        slug: "branding",
         title: "Diseño de Marca Profesional",
         description: "Creación de identidad visual completa: logo, paleta de colores, tipografías, manual de marca y aplicaciones. Desarrollamos una imagen coherente que refleja los valores y personalidad de tu negocio.",
         purpose: "Transmite profesionalismo y credibilidad, diferenciándote de la competencia. Una marca sólida genera confianza y hace que los clientes te recuerden y prefieran."
     },
     {
         id: 2,
+        slug: "desarrollo-web",
         title: "Desarrollo Web y Sistemas",
         description: "Construcción de sitios web modernos, rápidos y responsivos, más sistemas personalizados según tus necesidades. Incluye diseño, programación, optimización y funcionalidades específicas para tu industria.",
         purpose: "Tu sitio web es tu vendedor 24/7. Un desarrollo profesional convierte visitantes en clientes, facilita procesos internos y proyecta una imagen de confianza que impulsa las ventas."
     },
     {
         id: 3,
+        slug: "redes-sociales",
         title: "Presencia en Redes Sociales",
         description: "Configuración y optimización de perfiles profesionales en las plataformas relevantes para tu audiencia. Establecemos bases sólidas con imágenes, descripciones, enlaces y estructura adecuada.",
         purpose: "Crea tu punto de contacto con clientes potenciales donde ellos pasan tiempo. Una presencia profesional genera credibilidad y abre canales directos de comunicación con tu mercado."
     },
     {
         id: 4,
+        slug: "contenido-visual",
         title: "Contenido Visual",
         description: "Producción de fotografías, videos, gráficos e infografías profesionales para tus canales digitales. Contenido visual atractivo y alineado con tu marca que comunica efectivamente tu mensaje.",
         purpose: "El contenido visual genera 94% más vistas que el texto solo. Captura atención, explica tus servicios rápidamente y aumenta significativamente el engagement y las conversiones."
     },
     {
         id: 5,
+        slug: "ecommerce",
         title: "E-commerce (Tienda Online)",
         description: "Desarrollo de plataforma de ventas online completa con catálogo, carrito de compras, pasarelas de pago seguras y gestión de inventario. Soluciones escalables para vender productos o servicios por internet.",
         purpose: "Expande tu negocio más allá de límites físicos, vende 24/7 sin estar presente y accede a nuevos mercados. Aumenta ingresos con un canal de ventas automatizado y medible."
     },
     {
         id: 6,
+        slug: "diseño-de-aplicaciones",
         title: "Diseño de Aplicaciones",
         description: "Creación de aplicaciones móviles o web personalizadas para iOS y Android que resuelven necesidades específicas de tu negocio o clientes. Interfaces intuitivas con funcionalidades adaptadas a tus procesos.",
         purpose: "Mejora la experiencia de tus clientes, automatiza procesos, aumenta la fidelización y diferénciate con tecnología propia que facilita la interacción con tu marca."
@@ -72,36 +83,42 @@ const creaServices = [
 const creceServices = [
     {
         id: 1,
+        slug: "gestion-redes",
         title: "Gestión de Redes Sociales",
         description: "Administración completa de tus perfiles: creación de contenido, publicación programada, respuesta a mensajes, monitoreo y reportes. Mantenemos tus redes activas y profesionales.",
         purpose: "Mantén conexión constante con tu audiencia sin consumir tu tiempo. Construye comunidad, genera confianza y convierte seguidores en clientes mientras tú te enfocas en tu negocio."
     },
     {
         id: 2,
+        slug: "publicidad-digital",
         title: "Publicidad Digital (Google Ads + Meta Ads)",
         description: "Campañas publicitarias pagadas en Google, Facebook e Instagram optimizadas para generar resultados específicos. Incluye diseño de anuncios, segmentación precisa, gestión de presupuesto y optimización continua.",
         purpose: "Genera resultados inmediatos llevando tu mensaje directamente a clientes potenciales que buscan o necesitan tus servicios. Maximiza cada peso invertido con campañas medibles y ajustables en tiempo real."
     },
     {
         id: 3,
+        slug: "posicionamiento-seo",
         title: "Posicionamiento SEO Continuo",
         description: "Optimización constante de tu sitio web para mejorar y mantener rankings en buscadores. Trabajo mensual en contenido, enlaces, aspectos técnicos y estrategias según algoritmos actualizados.",
         purpose: "El SEO no es trabajo de una sola vez. Este servicio garantiza que mantengas y mejores tu visibilidad orgánica, generando tráfico calificado constante sin pagar por cada clic."
     },
     {
         id: 4,
+        slug: "email-marketing",
         title: "Email Marketing Automatizado",
         description: "Creación de campañas de correo electrónico segmentadas con secuencias automatizadas según comportamiento del usuario. Incluye diseño, copywriting y análisis de resultados.",
         purpose: "Nutre relaciones con clientes actuales y potenciales de forma automatizada. Recupera ventas abandonadas, fideliza clientes y genera ingresos recurrentes con el canal de mayor ROI del marketing digital."
     },
     {
         id: 5,
+        slug: "analitica",
         title: "Analítica y Optimización",
         description: "Implementación de herramientas de medición, análisis profundo de datos y optimización basada en resultados reales. Reportes claros con insights accionables y recomendaciones de mejora.",
         purpose: "Deja de adivinar y toma decisiones basadas en datos. Identifica qué funciona, qué no y dónde invertir para mejorar continuamente tus resultados digitales y maximizar tu inversión."
     },
     {
         id: 6,
+        slug: "produccion-contenido",
         title: "Producción de Contenido",
         description: "Creación de contenido de valor: artículos de blog, ebooks, guías, videos educativos y materiales que posicionan tu marca como referente. Contenido optimizado para SEO y conversión.",
         purpose: "Atrae clientes potenciales educándolos, construye autoridad en tu industria y alimenta tus canales digitales con material que genera tráfico orgánico, engagement y conversiones a largo plazo."
@@ -110,10 +127,50 @@ const creceServices = [
 
 const Servicios = () => {
     const [searchQuery, setSearchQuery] = useState("");
-    const [activeConecta, setActiveConecta] = useState(1);
-    const [activeCrea, setActiveCrea] = useState(1);
-    const [activeCrece, setActiveCrece] = useState(1);
+    const [activeConecta, setActiveConecta] = useState(0);
+    const [activeCrea, setActiveCrea] = useState(0);
+    const [activeCrece, setActiveCrece] = useState(0);
     const [showSuggestions, setShowSuggestions] = useState(false);
+
+    useEffect(() => {
+        const handleHash = () => {
+            const hash = window.location.hash.substring(1);
+            if (!hash) return;
+
+            const findService = (services: any[], category: string) => {
+                return services.find(s => s.slug === hash);
+            };
+
+            const conecta = findService(conectaServices, 'conecta');
+            const crea = findService(creaServices, 'crea');
+            const crece = findService(creceServices, 'crece');
+
+            if (conecta) {
+                setActiveConecta(conecta.id);
+                setTimeout(() => {
+                    const el = document.getElementById(conecta.slug);
+                    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }, 100);
+            } else if (crea) {
+                setActiveCrea(crea.id);
+                setTimeout(() => {
+                    const el = document.getElementById(crea.slug);
+                    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }, 100);
+            } else if (crece) {
+                setActiveCrece(crece.id);
+                setTimeout(() => {
+                    const el = document.getElementById(crece.slug);
+                    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }, 100);
+            }
+        };
+
+        handleHash();
+        const onHashChange = () => handleHash();
+        window.addEventListener('hashchange', onHashChange);
+        return () => window.removeEventListener('hashchange', onHashChange);
+    }, []);
 
     // Combine all services for search
     const allServices = [
@@ -130,12 +187,12 @@ const Servicios = () => {
         : [];
 
     // Handle service selection from search
-    const handleServiceSelect = (service: { category: string; id: number }) => {
+    const handleServiceSelect = (service: { category: string; id: number, slug: string }) => {
         setSearchQuery("");
         setShowSuggestions(false);
 
         // Scroll to the service
-        const serviceElement = document.getElementById(`service-${service.category}-${service.id}`);
+        const serviceElement = document.getElementById(service.slug);
         if (serviceElement) {
             serviceElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
@@ -210,8 +267,8 @@ const Servicios = () => {
                     </h1>
 
                     <p className="text-[#AFAFAF] text-base md:text-lg leading-relaxed max-w-xl">
-                        Todo comienza con entender tu negocio y definir cómo te conectarás con tus clientes ideales en el ecosistema digital. En esta fase desarrollamos la estrategia de marketing digital que impulsará tu crecimiento.
-                    </p>
+                        Todo comienza cuando sientes que tu negocio “está en internet” pero no sabes si realmente está funcionando. En esta etapa te ayudamos a entender dónde estás parado digitalmente y a poner orden para que cada esfuerzo tenga una dirección clara.
+                        Aquí trabajamos contigo en: auditoría digital, estrategia de marketing, posicionamiento local y consultoría, para que tengas un plan concreto y dejes de tomar decisiones a ciegas.</p>
 
                     <div className="pt-4">
                         <button className="bg-transparent border border-white text-white px-8 py-3 rounded-md hover:bg-white hover:text-black transition-all duration-300 font-['Poppins'] font-medium">
@@ -227,7 +284,7 @@ const Servicios = () => {
                     {conectaServices.map((service) => (
                         <div
                             key={service.id}
-                            id={`service-conecta-${service.id}`}
+                            id={service.slug}
                             className={`border-b border-[#333333] transition-all duration-300`}
                         >
                             <div
@@ -272,9 +329,9 @@ const Servicios = () => {
                     </h1>
 
                     <p className="text-[#AFAFAF] text-base md:text-lg leading-relaxed max-w-xl">
-                        Con la estrategia definida, pasamos a la acción. Creamos todos los activos digitales que necesitas: desde tu marca profesional hasta tu sitio web y contenido visual. Todo diseñado para vender y generar confianza.
+                        Si ya tienes claro a quién quieres llegar, el siguiente paso es construir una presencia que se vea y se sienta profesional. En esta etapa diseñamos tu marca, sitio web, contenidos y sistemas para que todo lo que el cliente ve de tu negocio inspire confianza.
+                        Creamos contigo los activos digitales que te representan: identidad de marca, página web, tienda online, redes listas para vender, contenido visual y hasta aplicaciones si tu negocio lo necesita.
                     </p>
-
                     <div className="pt-4">
                         <button className="bg-transparent border border-white text-white px-8 py-3 rounded-md hover:bg-white hover:text-black transition-all duration-300 font-['Poppins'] font-medium">
                             <span className="bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] text-transparent bg-clip-text flex items-center justify-center w-fit">
@@ -289,7 +346,7 @@ const Servicios = () => {
                     {creaServices.map((service) => (
                         <div
                             key={service.id}
-                            id={`service-crea-${service.id}`}
+                            id={service.slug}
                             className={`border-b border-[#333333] transition-all duration-300`}
                         >
                             <div
@@ -334,7 +391,8 @@ const Servicios = () => {
                     </h1>
 
                     <p className="text-[#AFAFAF] text-base md:text-lg leading-relaxed max-w-xl">
-                        Una vez lanzado, el verdadero trabajo comienza. Implementamos campañas de marketing digital, optimizamos tu posicionamiento en Google y gestionamos tu presencia online para que generes leads y ventas constantes.
+                        Cuando ya estás presente en digital, el reto es que las visitas se conviertan en clientes de forma constante. En esta etapa activamos y optimizamos campañas, contenidos y medición para que tu negocio crezca con resultados medibles.
+                        Aquí te acompañamos con gestión de redes, publicidad, SEO continuo, email marketing, analítica y contenido de valor para que dejes de depender del “boca a boca” y tengas un flujo estable de oportunidades.
                     </p>
 
                     <div className="pt-4">
@@ -351,7 +409,7 @@ const Servicios = () => {
                     {creceServices.map((service) => (
                         <div
                             key={service.id}
-                            id={`service-crece-${service.id}`}
+                            id={service.slug}
                             className={`border-b border-[#333333] transition-all duration-300`}
                         >
                             <div
@@ -401,6 +459,8 @@ const Servicios = () => {
                     </button>
                 </div>
             </div>
+            <div className="h-36" />
+            <Comotrabajamos />
         </div>
     );
 };
