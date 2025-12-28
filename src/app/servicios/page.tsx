@@ -446,7 +446,7 @@ const Servicios = () => {
                 </div>
             </div>
             <div className="h-24 border-b border-[#333333]" />
-            <div className="grid grid-cols-1 lg:grid-cols-2 mt-12">
+            <div className="grid grid-cols-1 lg:grid-cols-2 mt-48">
                 <img src="/ilustration.png" alt="Mujer digital" />
                 <div className="flex flex-col justify-center space-y-6 mt-12 md:mt-0 md:ml-12">
                     <h2 className="text-6xl font-bold font-['Poppins'] w-48">
@@ -459,7 +459,7 @@ const Servicios = () => {
                     </button>
                 </div>
             </div>
-            <div className="h-36" />
+            <div className="h-64" />
             <Comotrabajamos />
         </div>
     );
