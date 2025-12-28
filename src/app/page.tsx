@@ -475,8 +475,8 @@ export default function Home() {
           </div>
         </div>
         <div className="w-full flex mt-12 justify-end items-end">
-          <div className="md:w-[50%] w-full flex justify-end items-end">
-            <p className="text-white text-md md:text-2xl pl-20 md:pl-0 text-left font-['Avenir']">
+          <div className="w-full md:w-[50%]  flex justify-end items-end">
+            <p className="text-white text-md md:text-2xl pl-0 text-left font-['Avenir']">
               Somos una agencia de marketing digital y diseño especializada en
               la digitalización de negocio/proyecto. Que te acompaña desde la
               ideación de tu negocio hasta la implementación de estrategias de
@@ -485,11 +485,11 @@ export default function Home() {
           </div>
         </div>
         {/* Sección de Servicios con checkmarks */}
-        <div className="flex w-full mt-6 justify-end items-end">
+        <div className="flex w-full mt-6 md:justify-end md:items-end">
           <ServiceCheckList back={true} services={mainServices} />
         </div>
-        <div className="grid grid-cols-2 w-full mt-24 ">
-          <div className="flex flex-col justify-center items-start gap-6 pl-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 w-full mt-24 ">
+          <div className="flex flex-col justify-center items-start mt-12 md:mt-0 gap-6 pl-8 order-last md:order-first">
             <h3
               style={{
                 lineHeight: "1.1",
@@ -515,7 +515,7 @@ export default function Home() {
               </span>
             </button>
           </div>
-          <div className="flex justify-center items-center">
+          <div className="flex justify-center items-center order-first md:order-last">
             <Image
               src="/sitBW.png"
               alt="logo"
