@@ -137,13 +137,13 @@ const Servicios = () => {
             const hash = window.location.hash.substring(1);
             if (!hash) return;
 
-            const findService = (services: any[], category: string) => {
+            const findService = (services: {id: number, slug: string, title: string, description: string, purpose: string}[]) => {
                 return services.find(s => s.slug === hash);
             };
 
-            const conecta = findService(conectaServices, 'conecta');
-            const crea = findService(creaServices, 'crea');
-            const crece = findService(creceServices, 'crece');
+            const conecta = findService(conectaServices);
+            const crea = findService(creaServices);
+            const crece = findService(creceServices);
 
             if (conecta) {
                 setActiveConecta(conecta.id);

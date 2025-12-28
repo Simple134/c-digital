@@ -3,7 +3,7 @@ import { Container } from "@bitnation-dev/components";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Mail, MapPin, Phone, Facebook, Instagram, Linkedin, Youtube } from "lucide-react";
+import { Mail, MapPin, Phone, Facebook, Instagram, Youtube } from "lucide-react";
 
 const navigation = {
   main: [
