@@ -55,7 +55,7 @@ const Comotrabajamos = () => {
           onClick={() => handleProcessClick(0)}
         >
           {selectedProcess === 0 ? <ReunionColor /> : <Reunion />}
-          <span className="text-white text-xl font-bold">Reunión</span>
+          <span className="text-white text-xl font-bold">Auditoría</span>
         </div>
         <div className="h-16 flex px-4">
           <div className="flex-shrink-0 gap-4 bg-[#343434] w-8 h-[1px] items-center justify-center"></div>

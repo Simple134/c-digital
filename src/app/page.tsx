@@ -533,15 +533,19 @@ export default function Home() {
             <span className=" bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] text-transparent bg-clip-text font-bold text-7xl w-fit text-center">
               La Solución Completa para Digitalizar tu Negocio
             </span>
-            <span className="text-white text-xl md:text-3xl font-['Avenir']  text-center">
-              Agencia de Marketing Digital, Diseño de Marca y Desarrollo Web{" "}
-              <br /> desde La Vega, República Dominicana.
-            </span>
           </motion.div>
         </div>
       </Container>
       <div className="h-64"></div>
       <Container id="cont-1">
+        <div className="flex flex-col lg:mb-20 mb-12">
+          <span className="bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] text-transparent bg-clip-text font-bold text-2xl w-fit text-center">
+            Servicios Destacados
+          </span>
+          <span className="text-white font-bold text-5xl md:text-7xl font-['Poppins']">
+            Somos Especialistas En
+          </span>
+        </div>
         <Grid columns={{ xl: 4, lg: 4, md: 1, sm: 1 }} id="marcas">
           <AnimatePresence mode="wait">
             {currentMarcasSet === 0 && (
