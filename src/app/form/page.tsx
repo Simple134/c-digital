@@ -73,6 +73,9 @@ export default function BriefBrandForm() {
     watch,
     setValue,
     getValues,
+    trigger,
+    setError,
+    clearErrors,
     formState: { errors },
   } = useForm<BriefBrandFormData>({
     shouldUnregister: false, // Keep data even when fields are hidden
@@ -130,6 +133,7 @@ export default function BriefBrandForm() {
       setValue(fieldName, currentArray.filter((item) => item !== value));
     } else {
       setValue(fieldName, [...currentArray, value]);
+      clearErrors(fieldName);
     }
   };
 
@@ -138,10 +142,81 @@ export default function BriefBrandForm() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
+  const getFieldsForStep = (step: number): (keyof BriefBrandFormData)[] => {
+    const type = formData.tipoProyecto;
+
+    if (step === 1) {
+      return ["nombreCompleto", "whatsapp", "email", "pais", "enSociedad"];
+    }
+
+    if (step === 2) {
+      return ["tipoProyecto"];
+    }
+
+    if (type === "rebranding") {
+      if (step === 3) return []; // Redes sociales no tiene *
+      if (step === 4) return ["problemaActual"];
+      if (step === 5) return ["nombreMarca", "industria", "audienciaObjetivo"];
+      if (step === 6)
+        return ["valoresNucleo", "personalidadMarca", "emocionTransmitir"];
+      if (step === 7) return ["competidores", "diferenciaCompetencia"];
+      if (step === 8) return ["coloresFavoritos", "estiloVisual"];
+      if (step === 9) return ["tipoLogo", "usoPrincipal"];
+      if (step === 10) return ["mensajeClave"];
+    } else {
+      // Nuevo proyecto (steps shifted by 2 compared to rebranding after step 2)
+      if (step === 3) return ["nombreMarca", "industria", "audienciaObjetivo"];
+      if (step === 4)
+        return ["valoresNucleo", "personalidadMarca", "emocionTransmitir"];
+      if (step === 5) return ["competidores", "diferenciaCompetencia"];
+      if (step === 6) return ["coloresFavoritos", "estiloVisual"];
+      if (step === 7) return ["tipoLogo", "usoPrincipal"];
+      if (step === 8) return ["mensajeClave"];
+    }
+
+    return [];
+  };
+
   const handleNext = async () => {
-    // Optional: Add step-by-step validation here if strict validation is needed
-    // const result = await trigger(['fieldName1', 'fieldName2']);
-    // if (!result) return;
+    const fields = getFieldsForStep(currentStep);
+    const isStepValid = await trigger(fields);
+    let isCustomValid = true;
+
+    // Manual validation for checkbox groups
+    if (
+      (currentStep === 4 && formData.tipoProyecto === "nuevo") ||
+      (currentStep === 6 && formData.tipoProyecto === "rebranding")
+    ) {
+      if (!formData.personalidadMarca || formData.personalidadMarca.length === 0) {
+        setError("personalidadMarca", {
+          type: "manual",
+          message: "Debes seleccionar al menos una opción",
+        });
+        isCustomValid = false;
+      }
+    }
+
+    if (
+      (currentStep === 6 && formData.tipoProyecto === "nuevo") ||
+      (currentStep === 8 && formData.tipoProyecto === "rebranding")
+    ) {
+      if (!formData.estiloVisual || formData.estiloVisual.length === 0) {
+        setError("estiloVisual", { type: "manual", message: "Debes seleccionar al menos una opción" });
+        isCustomValid = false;
+      }
+    }
+
+    if (
+      (currentStep === 7 && formData.tipoProyecto === "nuevo") ||
+      (currentStep === 9 && formData.tipoProyecto === "rebranding")
+    ) {
+      if (!formData.usoPrincipal || formData.usoPrincipal.length === 0) {
+        setError("usoPrincipal", { type: "manual", message: "Debes seleccionar al menos una opción" });
+        isCustomValid = false;
+      }
+    }
+
+    if (!isStepValid || !isCustomValid) return;
 
     if (currentStep < totalSteps) {
       goToStep(currentStep + 1);
@@ -526,601 +601,609 @@ export default function BriefBrandForm() {
               {((currentStep === 3 && formData.tipoProyecto === "nuevo") ||
                 (currentStep === 5 &&
                   formData.tipoProyecto === "rebranding")) && (
-                <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-2xl p-8 lg:p-10 animate-fadeIn">
-                  <h2 className="text-2xl font-bold mb-2">
-                    Información Básica
-                  </h2>
-                  <p className="text-gray-400 text-sm mb-8">
-                    Comencemos con lo esencial
-                  </p>
+                  <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-2xl p-8 lg:p-10 animate-fadeIn">
+                    <h2 className="text-2xl font-bold mb-2">
+                      Información Básica
+                    </h2>
+                    <p className="text-gray-400 text-sm mb-8">
+                      Comencemos con lo esencial
+                    </p>
 
-                  <div className="space-y-7">
-                    <div>
-                      <label
-                        htmlFor="nombreMarca"
-                        className="block text-sm font-medium mb-2.5"
-                      >
-                        ¿Cuál es el nombre de tu marca?{" "}
-                        <span className="text-[#00d9ff]">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        id="nombreMarca"
-                        placeholder="Nombre de la marca"
-                        {...register("nombreMarca", { required: true })}
-                        className="w-full px-4 py-3.5 bg-transparent border border-[#1a1a1a] rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-[#00d9ff] focus:shadow-[0_0_0_3px_rgba(0,217,255,0.1)]"
-                      />
-                      {errors.nombreMarca && (
-                        <p className="text-red-500 text-xs mt-1">
-                          Este campo es requerido
-                        </p>
-                      )}
-                    </div>
+                    <div className="space-y-7">
+                      <div>
+                        <label
+                          htmlFor="nombreMarca"
+                          className="block text-sm font-medium mb-2.5"
+                        >
+                          ¿Cuál es el nombre de tu marca?{" "}
+                          <span className="text-[#00d9ff]">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          id="nombreMarca"
+                          placeholder="Nombre de la marca"
+                          {...register("nombreMarca", { required: true })}
+                          className="w-full px-4 py-3.5 bg-transparent border border-[#1a1a1a] rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-[#00d9ff] focus:shadow-[0_0_0_3px_rgba(0,217,255,0.1)]"
+                        />
+                        {errors.nombreMarca && (
+                          <p className="text-red-500 text-xs mt-1">
+                            Este campo es requerido
+                          </p>
+                        )}
+                      </div>
 
-                    <div>
-                      <label
-                        htmlFor="industria"
-                        className="block text-sm font-medium mb-2.5"
-                      >
-                        ¿A qué industria o sector pertenece?{" "}
-                        <span className="text-[#00d9ff]">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        id="industria"
-                        placeholder="Ej: Tecnología, Salud, Moda..."
-                        {...register("industria", { required: true })}
-                        className="w-full px-4 py-3.5 bg-transparent border border-[#1a1a1a] rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-[#00d9ff] focus:shadow-[0_0_0_3px_rgba(0,217,255,0.1)]"
-                      />
-                      {errors.industria && (
-                        <p className="text-red-500 text-xs mt-1">
-                          Este campo es requerido
-                        </p>
-                      )}
-                    </div>
+                      <div>
+                        <label
+                          htmlFor="industria"
+                          className="block text-sm font-medium mb-2.5"
+                        >
+                          ¿A qué industria o sector pertenece?{" "}
+                          <span className="text-[#00d9ff]">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          id="industria"
+                          placeholder="Ej: Tecnología, Salud, Moda..."
+                          {...register("industria", { required: true })}
+                          className="w-full px-4 py-3.5 bg-transparent border border-[#1a1a1a] rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-[#00d9ff] focus:shadow-[0_0_0_3px_rgba(0,217,255,0.1)]"
+                        />
+                        {errors.industria && (
+                          <p className="text-red-500 text-xs mt-1">
+                            Este campo es requerido
+                          </p>
+                        )}
+                      </div>
 
-                    <div>
-                      <label
-                        htmlFor="audienciaObjetivo"
-                        className="block text-sm font-medium mb-2.5"
-                      >
-                        ¿Quién es tu audiencia objetivo?{" "}
-                        <span className="text-[#00d9ff]">*</span>
-                      </label>
-                      <textarea
-                        id="audienciaObjetivo"
-                        placeholder="Describe tu público objetivo: edad, género, intereses, comportamiento..."
-                        rows={4}
-                        {...register("audienciaObjetivo", { required: true })}
-                        className="w-full px-4 py-3.5 bg-transparent border border-[#1a1a1a] rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-[#00d9ff] focus:shadow-[0_0_0_3px_rgba(0,217,255,0.1)] resize-y min-h-[120px]"
-                      />
-                      {errors.audienciaObjetivo && (
-                        <p className="text-red-500 text-xs mt-1">
-                          Este campo es requerido
-                        </p>
-                      )}
+                      <div>
+                        <label
+                          htmlFor="audienciaObjetivo"
+                          className="block text-sm font-medium mb-2.5"
+                        >
+                          ¿Quién es tu audiencia objetivo?{" "}
+                          <span className="text-[#00d9ff]">*</span>
+                        </label>
+                        <textarea
+                          id="audienciaObjetivo"
+                          placeholder="Describe tu público objetivo: edad, género, intereses, comportamiento..."
+                          rows={4}
+                          {...register("audienciaObjetivo", { required: true })}
+                          className="w-full px-4 py-3.5 bg-transparent border border-[#1a1a1a] rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-[#00d9ff] focus:shadow-[0_0_0_3px_rgba(0,217,255,0.1)] resize-y min-h-[120px]"
+                        />
+                        {errors.audienciaObjetivo && (
+                          <p className="text-red-500 text-xs mt-1">
+                            Este campo es requerido
+                          </p>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              )}
+                )}
 
               {/* Valores y Personalidad */}
               {((currentStep === 4 && formData.tipoProyecto === "nuevo") ||
                 (currentStep === 6 &&
                   formData.tipoProyecto === "rebranding")) && (
-                <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-2xl p-8 lg:p-10 animate-fadeIn">
-                  <h2 className="text-2xl font-bold mb-2">
-                    Valores y Personalidad
-                  </h2>
-                  <p className="text-gray-400 text-sm mb-8">
-                    Define la esencia de tu marca
-                  </p>
+                  <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-2xl p-8 lg:p-10 animate-fadeIn">
+                    <h2 className="text-2xl font-bold mb-2">
+                      Valores y Personalidad
+                    </h2>
+                    <p className="text-gray-400 text-sm mb-8">
+                      Define la esencia de tu marca
+                    </p>
 
-                  <div className="space-y-7">
-                    <div>
-                      <label
-                        htmlFor="valoresNucleo"
-                        className="block text-sm font-medium mb-2.5"
-                      >
-                        ¿Cuáles son los valores núcleo de tu marca?{" "}
-                        <span className="text-[#00d9ff]">*</span>
-                      </label>
-                      <textarea
-                        id="valoresNucleo"
-                        placeholder="Ej: Innovación, Sostenibilidad, Calidad, Confianza..."
-                        rows={3}
-                        {...register("valoresNucleo", { required: true })}
-                        className="w-full px-4 py-3.5 bg-transparent border border-[#1a1a1a] rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-[#00d9ff] focus:shadow-[0_0_0_3px_rgba(0,217,255,0.1)] resize-y"
-                      />
-                      {errors.valoresNucleo && (
-                        <p className="text-red-500 text-xs mt-1">
-                          Este campo es requerido
-                        </p>
-                      )}
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium mb-2.5">
-                        ¿Cómo describirías la personalidad de tu marca?{" "}
-                        <span className="text-[#00d9ff]">*</span>
-                      </label>
-                      <div className="space-y-3">
-                        {[
-                          {
-                            value: "profesional",
-                            label: "Profesional y seria",
-                          },
-                          { value: "amigable", label: "Amigable y accesible" },
-                          {
-                            value: "innovadora",
-                            label: "Innovadora y moderna",
-                          },
-                          {
-                            value: "elegante",
-                            label: "Elegante y sofisticada",
-                          },
-                          { value: "divertida", label: "Divertida y juvenil" },
-                          {
-                            value: "tradicional",
-                            label: "Tradicional y confiable",
-                          },
-                          { value: "aventurera", label: "Aventurera y audaz" },
-                          {
-                            value: "minimalista",
-                            label: "Minimalista y limpia",
-                          },
-                        ].map((option) => (
-                          <label
-                            key={option.value}
-                            className="flex items-center px-4 py-3.5 border border-[#1a1a1a] rounded-xl cursor-pointer hover:border-[#00d9ff] hover:bg-[#00d9ff]/5 transition-all"
-                          >
-                            <input
-                              type="checkbox"
-                              checked={watch("personalidadMarca").includes(
-                                option.value,
-                              )}
-                              onChange={() =>
-                                handleCheckboxChange(
-                                  "personalidadMarca",
-                                  option.value,
-                                )
-                              }
-                              className="appearance-none w-5 h-5 min-w-[20px] border-2 border-[#1a1a1a] rounded-md mr-3 cursor-pointer transition-all checked:bg-[#00d9ff] checked:border-[#00d9ff] relative after:content-['✓'] after:absolute after:text-black after:text-sm after:font-bold after:top-1/2 after:left-1/2 after:-translate-x-1/2 after:-translate-y-1/2 after:scale-0 checked:after:scale-100 after:transition-transform"
-                            />
-                            <span className="text-sm">{option.label}</span>
-                          </label>
-                        ))}
+                    <div className="space-y-7">
+                      <div>
+                        <label
+                          htmlFor="valoresNucleo"
+                          className="block text-sm font-medium mb-2.5"
+                        >
+                          ¿Cuáles son los valores núcleo de tu marca?{" "}
+                          <span className="text-[#00d9ff]">*</span>
+                        </label>
+                        <textarea
+                          id="valoresNucleo"
+                          placeholder="Ej: Innovación, Sostenibilidad, Calidad, Confianza..."
+                          rows={3}
+                          {...register("valoresNucleo", { required: true })}
+                          className="w-full px-4 py-3.5 bg-transparent border border-[#1a1a1a] rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-[#00d9ff] focus:shadow-[0_0_0_3px_rgba(0,217,255,0.1)] resize-y"
+                        />
+                        {errors.valoresNucleo && (
+                          <p className="text-red-500 text-xs mt-1">
+                            Este campo es requerido
+                          </p>
+                        )}
                       </div>
-                    </div>
 
-                    <div>
-                      <label
-                        htmlFor="emocionTransmitir"
-                        className="block text-sm font-medium mb-2.5"
-                      >
-                        ¿Qué emoción quieres que tu marca transmita?{" "}
-                        <span className="text-[#00d9ff]">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        id="emocionTransmitir"
-                        placeholder="Ej: Confianza, Inspiración, Alegría, Seguridad..."
-                        {...register("emocionTransmitir", { required: true })}
-                        className="w-full px-4 py-3.5 bg-transparent border border-[#1a1a1a] rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-[#00d9ff] focus:shadow-[0_0_0_3px_rgba(0,217,255,0.1)]"
-                      />
-                      {errors.emocionTransmitir && (
-                        <p className="text-red-500 text-xs mt-1">
-                          Este campo es requerido
-                        </p>
+                      <div>
+                        <label className="block text-sm font-medium mb-2.5">
+                          ¿Cómo describirías la personalidad de tu marca?{" "}
+                          <span className="text-[#00d9ff]">*</span>
+                        </label>
+                        <div className="space-y-3">
+                          {[
+                            {
+                              value: "profesional",
+                              label: "Profesional y seria",
+                            },
+                            { value: "amigable", label: "Amigable y accesible" },
+                            {
+                              value: "innovadora",
+                              label: "Innovadora y moderna",
+                            },
+                            {
+                              value: "elegante",
+                              label: "Elegante y sofisticada",
+                            },
+                            { value: "divertida", label: "Divertida y juvenil" },
+                            {
+                              value: "tradicional",
+                              label: "Tradicional y confiable",
+                            },
+                            { value: "aventurera", label: "Aventurera y audaz" },
+                            {
+                              value: "minimalista",
+                              label: "Minimalista y limpia",
+                            },
+                          ].map((option) => (
+                            <label
+                              key={option.value}
+                              className="flex items-center px-4 py-3.5 border border-[#1a1a1a] rounded-xl cursor-pointer hover:border-[#00d9ff] hover:bg-[#00d9ff]/5 transition-all"
+                            >
+                              <input
+                                type="checkbox"
+                                checked={watch("personalidadMarca").includes(
+                                  option.value,
+                                )}
+                                onChange={() =>
+                                  handleCheckboxChange(
+                                    "personalidadMarca",
+                                    option.value,
+                                  )
+                                }
+                                className="appearance-none w-5 h-5 min-w-[20px] border-2 border-[#1a1a1a] rounded-md mr-3 cursor-pointer transition-all checked:bg-[#00d9ff] checked:border-[#00d9ff] relative after:content-['✓'] after:absolute after:text-black after:text-sm after:font-bold after:top-1/2 after:left-1/2 after:-translate-x-1/2 after:-translate-y-1/2 after:scale-0 checked:after:scale-100 after:transition-transform"
+                              />
+                              <span className="text-sm">{option.label}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div>
+                        <label
+                          htmlFor="emocionTransmitir"
+                          className="block text-sm font-medium mb-2.5"
+                        >
+                          ¿Qué emoción quieres que tu marca transmita?{" "}
+                          <span className="text-[#00d9ff]">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          id="emocionTransmitir"
+                          placeholder="Ej: Confianza, Inspiración, Alegría, Seguridad..."
+                          {...register("emocionTransmitir", { required: true })}
+                          className="w-full px-4 py-3.5 bg-transparent border border-[#1a1a1a] rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-[#00d9ff] focus:shadow-[0_0_0_3px_rgba(0,217,255,0.1)]"
+                        />
+                        {errors.emocionTransmitir && (
+                          <p className="text-red-500 text-xs mt-1">
+                            Este campo es requerido
+                          </p>
+                        )}
+                      </div>
+                      {errors.personalidadMarca && (
+                        <div className="text-red-500 text-xs mt-1 text-center w-full">
+                          Debes seleccionar al menos una personalidad
+                        </div>
                       )}
                     </div>
                   </div>
-                </div>
-              )}
+                )}
 
               {/* Competencia */}
               {((currentStep === 5 && formData.tipoProyecto === "nuevo") ||
                 (currentStep === 7 &&
                   formData.tipoProyecto === "rebranding")) && (
-                <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-2xl p-8 lg:p-10 animate-fadeIn">
-                  <h2 className="text-2xl font-bold mb-2">
-                    Análisis de Competencia
-                  </h2>
-                  <p className="text-gray-400 text-sm mb-8">
-                    Ayúdanos a entender tu mercado
-                  </p>
+                  <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-2xl p-8 lg:p-10 animate-fadeIn">
+                    <h2 className="text-2xl font-bold mb-2">
+                      Análisis de Competencia
+                    </h2>
+                    <p className="text-gray-400 text-sm mb-8">
+                      Ayúdanos a entender tu mercado
+                    </p>
 
-                  <div className="space-y-7">
-                    <div>
-                      <label
-                        htmlFor="competidores"
-                        className="block text-sm font-medium mb-2.5"
-                      >
-                        ¿Quiénes son tus principales competidores?{" "}
-                        <span className="text-[#00d9ff]">*</span>
-                      </label>
-                      <textarea
-                        id="competidores"
-                        placeholder="Lista de competidores directos o indirectos..."
-                        rows={3}
-                        {...register("competidores", { required: true })}
-                        className="w-full px-4 py-3.5 bg-transparent border border-[#1a1a1a] rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-[#00d9ff] focus:shadow-[0_0_0_3px_rgba(0,217,255,0.1)] resize-y"
-                      />
-                      {errors.competidores && (
-                        <p className="text-red-500 text-xs mt-1">
-                          Este campo es requerido
-                        </p>
-                      )}
-                    </div>
+                    <div className="space-y-7">
+                      <div>
+                        <label
+                          htmlFor="competidores"
+                          className="block text-sm font-medium mb-2.5"
+                        >
+                          ¿Quiénes son tus principales competidores?{" "}
+                          <span className="text-[#00d9ff]">*</span>
+                        </label>
+                        <textarea
+                          id="competidores"
+                          placeholder="Lista de competidores directos o indirectos..."
+                          rows={3}
+                          {...register("competidores", { required: true })}
+                          className="w-full px-4 py-3.5 bg-transparent border border-[#1a1a1a] rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-[#00d9ff] focus:shadow-[0_0_0_3px_rgba(0,217,255,0.1)] resize-y"
+                        />
+                        {errors.competidores && (
+                          <p className="text-red-500 text-xs mt-1">
+                            Este campo es requerido
+                          </p>
+                        )}
+                      </div>
 
-                    <div>
-                      <label
-                        htmlFor="diferenciaCompetencia"
-                        className="block text-sm font-medium mb-2.5"
-                      >
-                        ¿Qué te diferencia de tu competencia?{" "}
-                        <span className="text-[#00d9ff]">*</span>
-                      </label>
-                      <textarea
-                        id="diferenciaCompetencia"
-                        placeholder="Tu propuesta de valor única, ventajas competitivas..."
-                        rows={4}
-                        {...register("diferenciaCompetencia", {
-                          required: true,
-                        })}
-                        className="w-full px-4 py-3.5 bg-transparent border border-[#1a1a1a] rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-[#00d9ff] focus:shadow-[0_0_0_3px_rgba(0,217,255,0.1)] resize-y min-h-[120px]"
-                      />
-                      {errors.diferenciaCompetencia && (
-                        <p className="text-red-500 text-xs mt-1">
-                          Este campo es requerido
-                        </p>
-                      )}
+                      <div>
+                        <label
+                          htmlFor="diferenciaCompetencia"
+                          className="block text-sm font-medium mb-2.5"
+                        >
+                          ¿Qué te diferencia de tu competencia?{" "}
+                          <span className="text-[#00d9ff]">*</span>
+                        </label>
+                        <textarea
+                          id="diferenciaCompetencia"
+                          placeholder="Tu propuesta de valor única, ventajas competitivas..."
+                          rows={4}
+                          {...register("diferenciaCompetencia", {
+                            required: true,
+                          })}
+                          className="w-full px-4 py-3.5 bg-transparent border border-[#1a1a1a] rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-[#00d9ff] focus:shadow-[0_0_0_3px_rgba(0,217,255,0.1)] resize-y min-h-[120px]"
+                        />
+                        {errors.diferenciaCompetencia && (
+                          <p className="text-red-500 text-xs mt-1">
+                            Este campo es requerido
+                          </p>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              )}
+                )}
 
               {/* Estilo Visual */}
               {((currentStep === 6 && formData.tipoProyecto === "nuevo") ||
                 (currentStep === 8 &&
                   formData.tipoProyecto === "rebranding")) && (
-                <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-2xl p-8 lg:p-10 animate-fadeIn">
-                  <h2 className="text-2xl font-bold mb-2">Estilo Visual</h2>
-                  <p className="text-gray-400 text-sm mb-8">
-                    Define la estética de tu marca
-                  </p>
+                  <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-2xl p-8 lg:p-10 animate-fadeIn">
+                    <h2 className="text-2xl font-bold mb-2">Estilo Visual</h2>
+                    <p className="text-gray-400 text-sm mb-8">
+                      Define la estética de tu marca
+                    </p>
 
-                  <div className="space-y-7">
-                    <div>
-                      <label
-                        htmlFor="coloresFavoritos"
-                        className="block text-sm font-medium mb-2.5"
-                      >
-                        ¿Tienes colores favoritos para tu marca?{" "}
-                        <span className="text-[#00d9ff]">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        id="coloresFavoritos"
-                        placeholder="Ej: Azul marino, Dorado, Verde menta..."
-                        {...register("coloresFavoritos", { required: true })}
-                        className="w-full px-4 py-3.5 bg-transparent border border-[#1a1a1a] rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-[#00d9ff] focus:shadow-[0_0_0_3px_rgba(0,217,255,0.1)]"
-                      />
-                      {errors.coloresFavoritos && (
-                        <p className="text-red-500 text-xs mt-1">
-                          Este campo es requerido
-                        </p>
+                    <div className="space-y-7">
+                      <div>
+                        <label
+                          htmlFor="coloresFavoritos"
+                          className="block text-sm font-medium mb-2.5"
+                        >
+                          ¿Tienes colores favoritos para tu marca?{" "}
+                          <span className="text-[#00d9ff]">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          id="coloresFavoritos"
+                          placeholder="Ej: Azul marino, Dorado, Verde menta..."
+                          {...register("coloresFavoritos", { required: true })}
+                          className="w-full px-4 py-3.5 bg-transparent border border-[#1a1a1a] rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-[#00d9ff] focus:shadow-[0_0_0_3px_rgba(0,217,255,0.1)]"
+                        />
+                        {errors.coloresFavoritos && (
+                          <p className="text-red-500 text-xs mt-1">
+                            Este campo es requerido
+                          </p>
+                        )}
+                      </div>
+
+                      <div>
+                        <label
+                          htmlFor="coloresEvitar"
+                          className="block text-sm font-medium mb-2.5"
+                        >
+                          ¿Hay colores que quieras evitar?
+                        </label>
+                        <input
+                          type="text"
+                          id="coloresEvitar"
+                          placeholder="Colores que no representen tu marca..."
+                          {...register("coloresEvitar")}
+                          className="w-full px-4 py-3.5 bg-transparent border border-[#1a1a1a] rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-[#00d9ff] focus:shadow-[0_0_0_3px_rgba(0,217,255,0.1)]"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium mb-2.5">
+                          ¿Qué estilo visual prefieres?{" "}
+                          <span className="text-[#00d9ff]">*</span>
+                        </label>
+                        <div className="space-y-3">
+                          {[
+                            {
+                              value: "minimalista",
+                              label: "Minimalista y limpio",
+                            },
+                            { value: "moderno", label: "Moderno y tecnológico" },
+                            { value: "clasico", label: "Clásico y tradicional" },
+                            { value: "colorido", label: "Colorido y vibrante" },
+                            {
+                              value: "elegante",
+                              label: "Elegante y sofisticado",
+                            },
+                            { value: "industrial", label: "Industrial y urbano" },
+                            { value: "organico", label: "Orgánico y natural" },
+                            { value: "retro", label: "Retro y vintage" },
+                          ].map((option) => (
+                            <label
+                              key={option.value}
+                              className="flex items-center px-4 py-3.5 border border-[#1a1a1a] rounded-xl cursor-pointer hover:border-[#00d9ff] hover:bg-[#00d9ff]/5 transition-all"
+                            >
+                              <input
+                                type="checkbox"
+                                checked={watch("estiloVisual").includes(
+                                  option.value,
+                                )}
+                                onChange={() =>
+                                  handleCheckboxChange(
+                                    "estiloVisual",
+                                    option.value,
+                                  )
+                                }
+                                className="appearance-none w-5 h-5 min-w-[20px] border-2 border-[#1a1a1a] rounded-md mr-3 cursor-pointer transition-all checked:bg-[#00d9ff] checked:border-[#00d9ff] relative after:content-['✓'] after:absolute after:text-black after:text-sm after:font-bold after:top-1/2 after:left-1/2 after:-translate-x-1/2 after:-translate-y-1/2 after:scale-0 checked:after:scale-100 after:transition-transform"
+                              />
+                              <span className="text-sm">{option.label}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div>
+                        <label
+                          htmlFor="referenciasMarcas"
+                          className="block text-sm font-medium mb-2.5"
+                        >
+                          ¿Hay marcas que admires estéticamente?
+                        </label>
+                        <textarea
+                          id="referenciasMarcas"
+                          placeholder="Marcas que te inspiran y por qué..."
+                          rows={3}
+                          {...register("referenciasMarcas")}
+                          className="w-full px-4 py-3.5 bg-transparent border border-[#1a1a1a] rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-[#00d9ff] focus:shadow-[0_0_0_3px_rgba(0,217,255,0.1)] resize-y"
+                        />
+                      </div>
+                      {errors.estiloVisual && (
+                        <div className="text-red-500 text-xs mt-1 text-center w-full">
+                          Debes seleccionar al menos un estilo visual
+                        </div>
                       )}
                     </div>
-
-                    <div>
-                      <label
-                        htmlFor="coloresEvitar"
-                        className="block text-sm font-medium mb-2.5"
-                      >
-                        ¿Hay colores que quieras evitar?
-                      </label>
-                      <input
-                        type="text"
-                        id="coloresEvitar"
-                        placeholder="Colores que no representen tu marca..."
-                        {...register("coloresEvitar")}
-                        className="w-full px-4 py-3.5 bg-transparent border border-[#1a1a1a] rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-[#00d9ff] focus:shadow-[0_0_0_3px_rgba(0,217,255,0.1)]"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium mb-2.5">
-                        ¿Qué estilo visual prefieres?{" "}
-                        <span className="text-[#00d9ff]">*</span>
-                      </label>
-                      <div className="space-y-3">
-                        {[
-                          {
-                            value: "minimalista",
-                            label: "Minimalista y limpio",
-                          },
-                          { value: "moderno", label: "Moderno y tecnológico" },
-                          { value: "clasico", label: "Clásico y tradicional" },
-                          { value: "colorido", label: "Colorido y vibrante" },
-                          {
-                            value: "elegante",
-                            label: "Elegante y sofisticado",
-                          },
-                          { value: "industrial", label: "Industrial y urbano" },
-                          { value: "organico", label: "Orgánico y natural" },
-                          { value: "retro", label: "Retro y vintage" },
-                        ].map((option) => (
-                          <label
-                            key={option.value}
-                            className="flex items-center px-4 py-3.5 border border-[#1a1a1a] rounded-xl cursor-pointer hover:border-[#00d9ff] hover:bg-[#00d9ff]/5 transition-all"
-                          >
-                            <input
-                              type="checkbox"
-                              checked={watch("estiloVisual").includes(
-                                option.value,
-                              )}
-                              onChange={() =>
-                                handleCheckboxChange(
-                                  "estiloVisual",
-                                  option.value,
-                                )
-                              }
-                              className="appearance-none w-5 h-5 min-w-[20px] border-2 border-[#1a1a1a] rounded-md mr-3 cursor-pointer transition-all checked:bg-[#00d9ff] checked:border-[#00d9ff] relative after:content-['✓'] after:absolute after:text-black after:text-sm after:font-bold after:top-1/2 after:left-1/2 after:-translate-x-1/2 after:-translate-y-1/2 after:scale-0 checked:after:scale-100 after:transition-transform"
-                            />
-                            <span className="text-sm">{option.label}</span>
-                          </label>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div>
-                      <label
-                        htmlFor="referenciasMarcas"
-                        className="block text-sm font-medium mb-2.5"
-                      >
-                        ¿Hay marcas que admires estéticamente?
-                      </label>
-                      <textarea
-                        id="referenciasMarcas"
-                        placeholder="Marcas que te inspiran y por qué..."
-                        rows={3}
-                        {...register("referenciasMarcas")}
-                        className="w-full px-4 py-3.5 bg-transparent border border-[#1a1a1a] rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-[#00d9ff] focus:shadow-[0_0_0_3px_rgba(0,217,255,0.1)] resize-y"
-                      />
-                    </div>
                   </div>
-                </div>
-              )}
+                )}
 
               {/* Elementos de Marca */}
               {((currentStep === 7 && formData.tipoProyecto === "nuevo") ||
                 (currentStep === 9 &&
                   formData.tipoProyecto === "rebranding")) && (
-                <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-2xl p-8 lg:p-10 animate-fadeIn">
-                  <h2 className="text-2xl font-bold mb-2">
-                    Elementos de Marca
-                  </h2>
-                  <p className="text-gray-400 text-sm mb-8">
-                    Especifica qué necesitas
-                  </p>
+                  <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-2xl p-8 lg:p-10 animate-fadeIn">
+                    <h2 className="text-2xl font-bold mb-2">
+                      Elementos de Marca
+                    </h2>
+                    <p className="text-gray-400 text-sm mb-8">
+                      Especifica qué necesitas
+                    </p>
 
-                  <div className="space-y-7">
-                    <div>
-                      <label className="block text-sm font-medium mb-4">
-                        ¿Qué tipo de logo prefieres?{" "}
-                        <span className="text-[#00d9ff]">*</span>
-                      </label>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {/* We iterate over types to keep code smaller but user gave specific styled blocks. I will implement a few representative blocks to match their design */}
-                        {[
-                          {
-                            value: "logotipo",
-                            label: "Logotipo",
-                            sub: "Solo texto",
-                            letter: "A",
-                          },
-                          {
-                            value: "logotipo-accesorio",
-                            label: "Logotipo con accesorio",
-                            sub: "Texto + Ícono Integrado",
-                            letter: "B",
-                          },
-                          {
-                            value: "simbolo",
-                            label: "Solo símbolo",
-                            sub: "Ícono independiente",
-                            letter: "C",
-                          },
-                          {
-                            value: "logo-simbolo",
-                            label: "Logo-Símbolo",
-                            sub: "Combinado",
-                            letter: "D",
-                          },
-                          {
-                            value: "personaje",
-                            label: "Mascota / Personaje",
-                            sub: "Ilustración",
-                            letter: "E",
-                          },
-                          {
-                            value: "abierto",
-                            label: "Abierto a sugerencias",
-                            sub: "Creatividad libre",
-                            letter: "F",
-                          },
-                        ].map((type) => (
-                          <label
-                            key={type.value}
-                            className={`relative group cursor-pointer overflow-hidden rounded-xl border-2 transition-all ${
-                              watch("tipoLogo") === type.value
+                    <div className="space-y-7">
+                      <div>
+                        <label className="block text-sm font-medium mb-4">
+                          ¿Qué tipo de logo prefieres?{" "}
+                          <span className="text-[#00d9ff]">*</span>
+                        </label>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {/* We iterate over types to keep code smaller but user gave specific styled blocks. I will implement a few representative blocks to match their design */}
+                          {[
+                            {
+                              value: "logotipo",
+                              label: "Logotipo",
+                              sub: "Solo texto",
+                              letter: "A",
+                            },
+                            {
+                              value: "logotipo-accesorio",
+                              label: "Logotipo con accesorio",
+                              sub: "Texto + Ícono Integrado",
+                              letter: "B",
+                            },
+                            {
+                              value: "simbolo",
+                              label: "Solo símbolo",
+                              sub: "Ícono independiente",
+                              letter: "C",
+                            },
+                            {
+                              value: "logo-simbolo",
+                              label: "Logo-Símbolo",
+                              sub: "Combinado",
+                              letter: "D",
+                            },
+                            {
+                              value: "personaje",
+                              label: "Mascota / Personaje",
+                              sub: "Ilustración",
+                              letter: "E",
+                            },
+                            {
+                              value: "abierto",
+                              label: "Abierto a sugerencias",
+                              sub: "Creatividad libre",
+                              letter: "F",
+                            },
+                          ].map((type) => (
+                            <label
+                              key={type.value}
+                              className={`relative group cursor-pointer overflow-hidden rounded-xl border-2 transition-all ${watch("tipoLogo") === type.value
                                 ? "border-[#00d9ff] bg-[#00d9ff]/5"
                                 : "border-[#1a1a1a] hover:border-[#00d9ff]/50"
-                            }`}
-                          >
-                            <input
-                              type="radio"
-                              value={type.value}
-                              {...register("tipoLogo", { required: true })}
-                              className="sr-only"
-                            />
-                            <div className="aspect-[4/3] bg-gradient-to-br from-[#1a1a1a] to-[#0a0a0a] flex items-center justify-center p-6">
-                              {/* Simplified placeholder content for visual consistency without huge SVG blocks */}
-                              <div className="text-center text-white/50 text-sm">
-                                {type.label}
+                                }`}
+                            >
+                              <input
+                                type="radio"
+                                value={type.value}
+                                {...register("tipoLogo", { required: true })}
+                                className="sr-only"
+                              />
+                              <div className="aspect-[4/3] bg-gradient-to-br from-[#1a1a1a] to-[#0a0a0a] flex items-center justify-center p-6">
+                                {/* Simplified placeholder content for visual consistency without huge SVG blocks */}
+                                <div className="text-center text-white/50 text-sm">
+                                  {type.label}
+                                </div>
                               </div>
-                            </div>
-                            <div
-                              className={`px-4 py-3 bg-black/50 backdrop-blur-sm flex items-center gap-2 ${
-                                watch("tipoLogo") === type.value
+                              <div
+                                className={`px-4 py-3 bg-black/50 backdrop-blur-sm flex items-center gap-2 ${watch("tipoLogo") === type.value
                                   ? "text-[#00d9ff]"
                                   : "text-white"
-                              }`}
-                            >
-                              <span className="w-6 h-6 rounded bg-white/10 flex items-center justify-center text-xs font-bold">
-                                {type.letter}
-                              </span>
-                              <span className="text-sm font-medium">
-                                {type.label}
-                              </span>
-                            </div>
-                          </label>
-                        ))}
+                                  }`}
+                              >
+                                <span className="w-6 h-6 rounded bg-white/10 flex items-center justify-center text-xs font-bold">
+                                  {type.letter}
+                                </span>
+                                <span className="text-sm font-medium">
+                                  {type.label}
+                                </span>
+                              </div>
+                            </label>
+                          ))}
+                        </div>
+                        {errors.tipoLogo && (
+                          <p className="text-red-500 text-xs mt-1">
+                            Este campo es requerido
+                          </p>
+                        )}
                       </div>
-                      {errors.tipoLogo && (
-                        <p className="text-red-500 text-xs mt-1">
-                          Este campo es requerido
-                        </p>
-                      )}
-                    </div>
 
-                    <div>
-                      <label
-                        htmlFor="elementosIncluir"
-                        className="block text-sm font-medium mb-2.5"
-                      >
-                        ¿Hay elementos específicos que quieras incluir en el
-                        logo?
-                      </label>
-                      <textarea
-                        id="elementosIncluir"
-                        placeholder="Ej: Una montaña, un árbol, formas geométricas..."
-                        rows={3}
-                        {...register("elementosIncluir")}
-                        className="w-full px-4 py-3.5 bg-transparent border border-[#1a1a1a] rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-[#00d9ff] focus:shadow-[0_0_0_3px_rgba(0,217,255,0.1)] resize-y"
-                      />
-                    </div>
+                      <div>
+                        <label
+                          htmlFor="elementosIncluir"
+                          className="block text-sm font-medium mb-2.5"
+                        >
+                          ¿Hay elementos específicos que quieras incluir en el
+                          logo?
+                        </label>
+                        <textarea
+                          id="elementosIncluir"
+                          placeholder="Ej: Una montaña, un árbol, formas geométricas..."
+                          rows={3}
+                          {...register("elementosIncluir")}
+                          className="w-full px-4 py-3.5 bg-transparent border border-[#1a1a1a] rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-[#00d9ff] focus:shadow-[0_0_0_3px_rgba(0,217,255,0.1)] resize-y"
+                        />
+                      </div>
 
-                    <div>
-                      <label className="block text-sm font-medium mb-2.5">
-                        ¿Dónde se usará principalmente tu marca?{" "}
-                        <span className="text-[#00d9ff]">*</span>
-                      </label>
-                      <div className="space-y-3">
-                        {[
-                          {
-                            value: "digital",
-                            label: "Medios digitales (web, redes sociales)",
-                          },
-                          {
-                            value: "impreso",
-                            label: "Material impreso (tarjetas, folletos)",
-                          },
-                          {
-                            value: "productos",
-                            label: "Productos físicos (packaging, etiquetas)",
-                          },
-                          {
-                            value: "senaletica",
-                            label: "Señalética (letreros, vallas)",
-                          },
-                          {
-                            value: "textil",
-                            label: "Textil (uniformes, bolsas)",
-                          },
-                          {
-                            value: "vehiculos",
-                            label: "Vehículos (rotulación)",
-                          },
-                        ].map((option) => (
-                          <label
-                            key={option.value}
-                            className="flex items-center px-4 py-3.5 border border-[#1a1a1a] rounded-xl cursor-pointer hover:border-[#00d9ff] hover:bg-[#00d9ff]/5 transition-all"
-                          >
-                            <input
-                              type="checkbox"
-                              checked={watch("usoPrincipal").includes(
-                                option.value,
-                              )}
-                              onChange={() =>
-                                handleCheckboxChange(
-                                  "usoPrincipal",
+                      <div>
+                        <label className="block text-sm font-medium mb-2.5">
+                          ¿Dónde se usará principalmente tu marca?{" "}
+                          <span className="text-[#00d9ff]">*</span>
+                        </label>
+                        <div className="space-y-3">
+                          {[
+                            {
+                              value: "digital",
+                              label: "Medios digitales (web, redes sociales)",
+                            },
+                            {
+                              value: "impreso",
+                              label: "Material impreso (tarjetas, folletos)",
+                            },
+                            {
+                              value: "productos",
+                              label: "Productos físicos (packaging, etiquetas)",
+                            },
+                            {
+                              value: "senaletica",
+                              label: "Señalética (letreros, vallas)",
+                            },
+                            {
+                              value: "textil",
+                              label: "Textil (uniformes, bolsas)",
+                            },
+                            {
+                              value: "vehiculos",
+                              label: "Vehículos (rotulación)",
+                            },
+                          ].map((option) => (
+                            <label
+                              key={option.value}
+                              className="flex items-center px-4 py-3.5 border border-[#1a1a1a] rounded-xl cursor-pointer hover:border-[#00d9ff] hover:bg-[#00d9ff]/5 transition-all"
+                            >
+                              <input
+                                type="checkbox"
+                                checked={watch("usoPrincipal").includes(
                                   option.value,
-                                )
-                              }
-                              className="appearance-none w-5 h-5 min-w-[20px] border-2 border-[#1a1a1a] rounded-md mr-3 cursor-pointer transition-all checked:bg-[#00d9ff] checked:border-[#00d9ff] relative after:content-['✓'] after:absolute after:text-black after:text-sm after:font-bold after:top-1/2 after:left-1/2 after:-translate-x-1/2 after:-translate-y-1/2 after:scale-0 checked:after:scale-100 after:transition-transform"
-                            />
-                            <span className="text-sm">{option.label}</span>
-                          </label>
-                        ))}
+                                )}
+                                onChange={() =>
+                                  handleCheckboxChange(
+                                    "usoPrincipal",
+                                    option.value,
+                                  )
+                                }
+                                className="appearance-none w-5 h-5 min-w-[20px] border-2 border-[#1a1a1a] rounded-md mr-3 cursor-pointer transition-all checked:bg-[#00d9ff] checked:border-[#00d9ff] relative after:content-['✓'] after:absolute after:text-black after:text-sm after:font-bold after:top-1/2 after:left-1/2 after:-translate-x-1/2 after:-translate-y-1/2 after:scale-0 checked:after:scale-100 after:transition-transform"
+                              />
+                              <span className="text-sm">{option.label}</span>
+                            </label>
+                          ))}
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              )}
+                )}
 
               {/* Step 8/10: Mensaje */}
               {((currentStep === 8 && formData.tipoProyecto === "nuevo") ||
                 (currentStep === 10 &&
                   formData.tipoProyecto === "rebranding")) && (
-                <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-2xl p-8 lg:p-10 animate-fadeIn">
-                  <h2 className="text-2xl font-bold mb-2">Mensaje de Marca</h2>
-                  <p className="text-gray-400 text-sm mb-8">
-                    ¿Qué quieres comunicar?
-                  </p>
+                  <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-2xl p-8 lg:p-10 animate-fadeIn">
+                    <h2 className="text-2xl font-bold mb-2">Mensaje de Marca</h2>
+                    <p className="text-gray-400 text-sm mb-8">
+                      ¿Qué quieres comunicar?
+                    </p>
 
-                  <div className="space-y-7">
-                    <div>
-                      <label
-                        htmlFor="eslogan"
-                        className="block text-sm font-medium mb-2.5"
-                      >
-                        ¿Tienes un eslogan o tagline en mente?
-                      </label>
-                      <input
-                        type="text"
-                        id="eslogan"
-                        placeholder="Tu eslogan o tagline..."
-                        {...register("eslogan")}
-                        className="w-full px-4 py-3.5 bg-transparent border border-[#1a1a1a] rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-[#00d9ff] focus:shadow-[0_0_0_3px_rgba(0,217,255,0.1)]"
-                      />
-                    </div>
+                    <div className="space-y-7">
+                      <div>
+                        <label
+                          htmlFor="eslogan"
+                          className="block text-sm font-medium mb-2.5"
+                        >
+                          ¿Tienes un eslogan o tagline en mente?
+                        </label>
+                        <input
+                          type="text"
+                          id="eslogan"
+                          placeholder="Tu eslogan o tagline..."
+                          {...register("eslogan")}
+                          className="w-full px-4 py-3.5 bg-transparent border border-[#1a1a1a] rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-[#00d9ff] focus:shadow-[0_0_0_3px_rgba(0,217,255,0.1)]"
+                        />
+                      </div>
 
-                    <div>
-                      <label
-                        htmlFor="mensajeClave"
-                        className="block text-sm font-medium mb-2.5"
-                      >
-                        ¿Cuál es el mensaje clave que quieres transmitir?{" "}
-                        <span className="text-[#00d9ff]">*</span>
-                      </label>
-                      <textarea
-                        id="mensajeClave"
-                        placeholder="El mensaje principal que tu audiencia debe recordar..."
-                        rows={4}
-                        {...register("mensajeClave", { required: true })}
-                        className="w-full px-4 py-3.5 bg-transparent border border-[#1a1a1a] rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-[#00d9ff] focus:shadow-[0_0_0_3px_rgba(0,217,255,0.1)] resize-y min-h-[120px]"
-                      />
-                      {errors.mensajeClave && (
-                        <p className="text-red-500 text-xs mt-1">
-                          Este campo es requerido
-                        </p>
-                      )}
+                      <div>
+                        <label
+                          htmlFor="mensajeClave"
+                          className="block text-sm font-medium mb-2.5"
+                        >
+                          ¿Cuál es el mensaje clave que quieres transmitir?{" "}
+                          <span className="text-[#00d9ff]">*</span>
+                        </label>
+                        <textarea
+                          id="mensajeClave"
+                          placeholder="El mensaje principal que tu audiencia debe recordar..."
+                          rows={4}
+                          {...register("mensajeClave", { required: true })}
+                          className="w-full px-4 py-3.5 bg-transparent border border-[#1a1a1a] rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-[#00d9ff] focus:shadow-[0_0_0_3px_rgba(0,217,255,0.1)] resize-y min-h-[120px]"
+                        />
+                        {errors.mensajeClave && (
+                          <p className="text-red-500 text-xs mt-1">
+                            Este campo es requerido
+                          </p>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              )}
+                )}
 
               {/* Navigation Buttons */}
               <div className="flex gap-4 mt-8">
@@ -1136,8 +1219,8 @@ export default function BriefBrandForm() {
 
                 {/* Determinar si es el último paso basado en el tipo de proyecto */}
                 {(formData.tipoProyecto === "nuevo" && currentStep < 8) ||
-                (formData.tipoProyecto === "rebranding" && currentStep < 10) ||
-                (formData.tipoProyecto === "" && currentStep < 10) ? (
+                  (formData.tipoProyecto === "rebranding" && currentStep < 10) ||
+                  (formData.tipoProyecto === "" && currentStep < 10) ? (
                   <button
                     type="button"
                     onClick={handleNext}
@@ -1234,6 +1317,6 @@ export default function BriefBrandForm() {
           animation: fadeIn 0.5s ease-out;
         }
       `}</style>
-    </div>
+    </div >
   );
 }

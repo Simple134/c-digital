@@ -7,6 +7,7 @@ interface FormData {
   email: string;
   whatsapp: string;
   negocio: string;
+  posicion: string;
   sector: string;
   etapa: string;
   digital: string[];
@@ -43,6 +44,7 @@ const AuditoriaForm = () => {
       email: "",
       whatsapp: "",
       negocio: "",
+      posicion: "",
       sector: "",
       etapa: "",
       digital: [],
@@ -235,15 +237,26 @@ const AuditoriaForm = () => {
     setIsSubmitting(true);
 
     const submitData = {
-      ...data,
-      selectedDateTime: `${selectedDate} ${selectedTime}`,
-      timezone: selectedTimezone,
+      "Nombre": data.nombre,
+      "Correo": data.email,
+      "Negocio": data.negocio,
+      "Posicion": data.posicion,
+      "Whatsapp": data.whatsapp,
+      "Sector": data.sector,
+      "Etapa del negocio": data.etapa,
+      "Que tienes actualmente": data.digital.join(", "),
+      "Desafio actual": data.desafios.join(", "),
+      "Servicios": data.servicios.join(", "),
+      "Presupuesto": data.presupuesto,
+      "Informacion extra": data.adicional,
+      "Dia de reunion": `${selectedDate} ${selectedTime} (${selectedTimezone})`
     };
 
     console.log("Form Data:", submitData);
 
     try {
-      const response = await fetch("/api/contact-gestiono", {
+      const formId = 51
+      const response = await fetch(`/api/contact-gestiono/${formId}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -395,16 +408,16 @@ const AuditoriaForm = () => {
                   <div className="text-base font-semibold mb-4 pb-4 border-b border-[#1a1a1a]">
                     {selectedDate
                       ? (() => {
-                          const [year, month, day] = selectedDate.split("-");
-                          const date = new Date(
-                            parseInt(year),
-                            parseInt(month) - 1,
-                            parseInt(day),
-                          );
-                          const dayName = dayNames[date.getDay()];
-                          const monthName = monthNames[parseInt(month) - 1];
-                          return `${dayName}, ${parseInt(day)} de ${monthName}`;
-                        })()
+                        const [year, month, day] = selectedDate.split("-");
+                        const date = new Date(
+                          parseInt(year),
+                          parseInt(month) - 1,
+                          parseInt(day),
+                        );
+                        const dayName = dayNames[date.getDay()];
+                        const monthName = monthNames[parseInt(month) - 1];
+                        return `${dayName}, ${parseInt(day)} de ${monthName}`;
+                      })()
                       : "Selecciona una fecha"}
                   </div>
                   <div className="flex flex-col gap-3 overflow-y-auto max-h-[350px] pr-2 custom-scrollbar">
@@ -421,11 +434,10 @@ const AuditoriaForm = () => {
                         <div
                           key={time}
                           onClick={() => handleTimeSelect(time)}
-                          className={`px-4 py-3.5 border rounded-lg text-center text-sm font-medium cursor-pointer transition-all ${
-                            selectedTime === time
+                          className={`px-4 py-3.5 border rounded-lg text-center text-sm font-medium cursor-pointer transition-all ${selectedTime === time
                               ? "bg-[#00d9ff] text-black border-[#00d9ff]"
                               : "border-[#1a1a1a] hover:border-[#00d9ff] hover:bg-[#00d9ff]/5"
-                          }`}
+                            }`}
                         >
                           {time}
                         </div>
@@ -601,6 +613,27 @@ const AuditoriaForm = () => {
                       className="w-full px-4 py-3.5 bg-transparent border border-[#1a1a1a] rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-[#00d9ff] focus:shadow-[0_0_0_3px_rgba(0,217,255,0.1)]"
                     />
                     {errors.nombre && (
+                      <span className="text-red-500 text-xs">
+                        Este campo es obligatorio
+                      </span>
+                    )}
+                  </div>
+
+                  <div>
+                    <label
+                      htmlFor="posicion"
+                      className="block text-sm font-medium mb-2.5"
+                    >
+                      Posición / Cargo <span className="text-[#00d9ff]">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      id="posicion"
+                      placeholder="Ej: Dueño, Gerente, Marketing..."
+                      {...register("posicion", { required: true })}
+                      className="w-full px-4 py-3.5 bg-transparent border border-[#1a1a1a] rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-[#00d9ff] focus:shadow-[0_0_0_3px_rgba(0,217,255,0.1)]"
+                    />
+                    {errors.posicion && (
                       <span className="text-red-500 text-xs">
                         Este campo es obligatorio
                       </span>
