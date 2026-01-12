@@ -35,7 +35,7 @@ export const InfiniteReviewCards = ({
     if (containerRef.current) {
       containerRef.current.style.setProperty(
         "--animation-direction",
-        direction === "left" ? "forwards" : "reverse"
+        direction === "left" ? "forwards" : "reverse",
       );
     }
   }, [direction]);
@@ -45,18 +45,30 @@ export const InfiniteReviewCards = ({
       const speeds = {
         fast: "20s",
         normal: "40s",
-        slow: "80s"
+        slow: "80s",
       };
-      containerRef.current.style.setProperty("--animation-duration", speeds[speed]);
+      containerRef.current.style.setProperty(
+        "--animation-duration",
+        speeds[speed],
+      );
     }
   }, [speed]);
 
   const addAnimation = useCallback(() => {
-    if (containerRef.current && scrollerRef.current && !animationCreated.current) {
-      const originalChildren = Array.from(scrollerRef.current.children).slice(0, items.length);
-      scrollerRef.current.innerHTML = '';
-      originalChildren.forEach(child => scrollerRef.current?.appendChild(child));
-      
+    if (
+      containerRef.current &&
+      scrollerRef.current &&
+      !animationCreated.current
+    ) {
+      const originalChildren = Array.from(scrollerRef.current.children).slice(
+        0,
+        items.length,
+      );
+      scrollerRef.current.innerHTML = "";
+      originalChildren.forEach((child) =>
+        scrollerRef.current?.appendChild(child),
+      );
+
       originalChildren.forEach((item) => {
         const duplicatedItem = item.cloneNode(true);
         scrollerRef.current?.appendChild(duplicatedItem);
@@ -83,7 +95,10 @@ export const InfiniteReviewCards = ({
 
   const renderStars = (rating: number) => {
     return Array.from({ length: 5 }).map((_, i) => (
-      <span key={i} className={i < rating ? "text-yellow-400" : "text-gray-300"}>
+      <span
+        key={i}
+        className={i < rating ? "text-yellow-400" : "text-gray-300"}
+      >
         ★
       </span>
     ));
@@ -94,7 +109,7 @@ export const InfiniteReviewCards = ({
       ref={containerRef}
       className={cn(
         "scroller relative z-20 overflow-hidden w-full [mask-image:linear-gradient(to_right,transparent,white_10%,white_90%,transparent)]",
-        className
+        className,
       )}
     >
       <ul
@@ -102,7 +117,7 @@ export const InfiniteReviewCards = ({
         className={cn(
           "flex min-w-full shrink-0 gap-6 py-4 w-max flex-nowrap",
           start && "animate-scroll",
-          pauseOnHover && "hover:[animation-play-state:paused]"
+          pauseOnHover && "hover:[animation-play-state:paused]",
         )}
       >
         {items.map((item, idx) => (
@@ -125,9 +140,7 @@ export const InfiniteReviewCards = ({
             </h3>
 
             {/* Fecha */}
-            <p className="text-gray-400 text-sm mb-3">
-              {item.date}
-            </p>
+            <p className="text-gray-400 text-sm mb-3">{item.date}</p>
 
             {/* Estrellas */}
             <div className="flex gap-0.5 text-xl mb-4">
@@ -148,10 +161,22 @@ export const InfiniteReviewCards = ({
 
             {/* Logo de Google */}
             <svg className="w-6 h-6" viewBox="0 0 24 24">
-              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-              <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-              <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+              <path
+                fill="#4285F4"
+                d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+              />
+              <path
+                fill="#34A853"
+                d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+              />
+              <path
+                fill="#FBBC05"
+                d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+              />
+              <path
+                fill="#EA4335"
+                d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+              />
             </svg>
           </li>
         ))}
@@ -167,7 +192,8 @@ export const InfiniteReviewCards = ({
           }
         }
         .animate-scroll {
-          animation: scroll var(--animation-duration, 80s) var(--animation-direction, forwards) linear infinite;
+          animation: scroll var(--animation-duration, 80s)
+            var(--animation-direction, forwards) linear infinite;
         }
       `}</style>
     </div>
@@ -182,41 +208,46 @@ export default function ReviewCarouselDemo() {
       name: "Maren Calzoni",
       date: "14/03/2023",
       rating: 5,
-      review: "The place is super clean, everything is new and the beds are super comfortable!",
-      score: "10/10"
+      review:
+        "The place is super clean, everything is new and the beds are super comfortable!",
+      score: "10/10",
     },
     {
       image: "https://i.pravatar.cc/150?img=2",
       name: "Sarah Johnson",
       date: "20/04/2023",
       rating: 5,
-      review: "Amazing experience! The staff was incredibly friendly and the location is perfect.",
-      score: "10/10"
+      review:
+        "Amazing experience! The staff was incredibly friendly and the location is perfect.",
+      score: "10/10",
     },
     {
       image: "https://i.pravatar.cc/150?img=3",
       name: "Carlos Méndez",
       date: "05/05/2023",
       rating: 5,
-      review: "Exceeded all expectations. Would definitely recommend to anyone visiting the area.",
-      score: "9/10"
+      review:
+        "Exceeded all expectations. Would definitely recommend to anyone visiting the area.",
+      score: "9/10",
     },
     {
       image: "https://i.pravatar.cc/150?img=4",
       name: "Emma Wilson",
       date: "12/06/2023",
       rating: 4,
-      review: "Great value for money. Clean, comfortable, and conveniently located.",
-      score: "9/10"
+      review:
+        "Great value for money. Clean, comfortable, and conveniently located.",
+      score: "9/10",
     },
     {
       image: "https://i.pravatar.cc/150?img=5",
       name: "Michael Chen",
       date: "28/06/2023",
       rating: 5,
-      review: "Outstanding service and beautiful facilities. Will definitely come back!",
-      score: "10/10"
-    }
+      review:
+        "Outstanding service and beautiful facilities. Will definitely come back!",
+      score: "10/10",
+    },
   ];
 
   return (

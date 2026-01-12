@@ -6,7 +6,9 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "eslint",
+    "format": "npx prettier --write .",
+    "type": "npx tsc --noEmit"
   },
   "dependencies": {
     "@bitnation-dev/components": "^2.0.4",
@@ -14,6 +16,7 @@
     "@tsparticles/engine": "^3.8.1",
     "@tsparticles/react": "^3.0.0",
     "clsx": "^2.1.1",
+    "dotenv": "^17.2.3",
     "framer-motion": "^12.4.2",
     "lucide-react": "^0.562.0",
     "next": "15.1.11",
