@@ -3,6 +3,7 @@ import { Container } from "@bitnation-dev/components";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Mail, MapPin, Phone, Facebook, Instagram, Youtube } from "lucide-react";
 
 const navigation = {
@@ -22,9 +23,12 @@ const navigation = {
 
 const Footer = () => {
   const router = useRouter();
+  const pathname = usePathname();
   const handleClick = () => {
     router.push("/");
   };
+
+  if (pathname === "/linktree") return null;
   return (
     <footer className="bg-black py-16 relative">
       <Container>
@@ -51,7 +55,7 @@ const Footer = () => {
           </div>
 
           {/* Navigation Column */}
-          <div className="ml-12">
+          <div className="lg:ml-12">
             <h3 className="text-white font-semibold text-lg mb-6">Navegación</h3>
             <ul className="space-y-4">
               {navigation.main.map((item) => (

@@ -2,7 +2,7 @@
 import { Container, Grid, Column } from "@bitnation-dev/components";
 import { motion, AnimatePresence, Variants } from "framer-motion";
 import Image from "next/image";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import InfiniteLogo from "@/components/infiniteLogo";
 import Link from "next/link";
 import { RedirectButton } from "@/components/RedirectButton";
@@ -48,6 +48,29 @@ export default function Home() {
   const [currentMarcasSet, setCurrentMarcasSet] = useState(0);
   const [currentSupportSet, setSupportSet] = useState(0);
   const PLACE_ID = process.env.NEXT_PUBLIC_WIDGET_ID;
+
+  // useEffect para obtener usuario de Gestiono
+  useEffect(() => {
+    const getUserFromGestiono = async () => {
+      try {
+        console.log('🔄 Obteniendo usuario de Gestiono...');
+        const response = await fetch('/api/get-user');
+        const data = await response.json();
+
+        if (data.success) {
+          console.log('✅ Usuario obtenido de Gestiono:');
+          console.log('📊 Datos completos del usuario:', data.user);
+          console.log('📋 Estructura JSON:', JSON.stringify(data.user, null, 2));
+        } else {
+          console.error('❌ Error al obtener usuario:', data.error);
+        }
+      } catch (error) {
+        console.error('❌ Error en la petición:', error);
+      }
+    };
+
+    getUserFromGestiono();
+  }, []); // Solo se ejecuta una vez al montar el componente
 
   // Servicios para el componente ServiceCheckList
   const mainServices = [
@@ -1445,7 +1468,7 @@ export default function Home() {
         </Grid>
       </Container>
       <div className="h-48"></div>
-      <Comotrabajamos/>
+      <Comotrabajamos />
       <div className="h-48"></div>
       <div className="bg-white  lg:h-[75vh] w-full flex flex-col text-center overflow-hidden pt-20 !m-0">
         <p className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#00C5FF] to-[#00FF7C]">
@@ -1454,15 +1477,15 @@ export default function Home() {
         <h2 className="text-black text-4xl md:text-6xl font-bold font-['Poppins'] pb-16">
           Nuestros Clientes
         </h2>
-          <ReactGoogleReviews
-            layout="carousel"
-            featurableId={PLACE_ID as string}
-            maxItems={3}
-            carouselAutoplay={true}
-            carouselSpeed={2500}
-            showDots={false}
+        <ReactGoogleReviews
+          layout="carousel"
+          featurableId={PLACE_ID as string}
+          maxItems={3}
+          carouselAutoplay={true}
+          carouselSpeed={2500}
+          showDots={false}
 
-          />
+        />
       </div>
       <div className="h-48 mt-28 md:mt-0"></div>
       <Meeting />

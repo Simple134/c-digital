@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Search } from "lucide-react";
 import Comotrabajamos from "@/components/Comotrabajamos";
 
@@ -126,18 +127,24 @@ const creceServices = [
 ];
 
 const Servicios = () => {
+    const router = useRouter();
     const [searchQuery, setSearchQuery] = useState("");
     const [activeConecta, setActiveConecta] = useState(0);
     const [activeCrea, setActiveCrea] = useState(0);
     const [activeCrece, setActiveCrece] = useState(0);
     const [showSuggestions, setShowSuggestions] = useState(false);
 
+    // Función para redirigir a contacto con la categoría seleccionada
+    const handleNecesitoEsto = (categoria: 'conecta' | 'crea' | 'crece') => {
+        router.push(`/contacto?categoria=${categoria}`);
+    };
+
     useEffect(() => {
         const handleHash = () => {
             const hash = window.location.hash.substring(1);
             if (!hash) return;
 
-            const findService = (services: {id: number, slug: string, title: string, description: string, purpose: string}[]) => {
+            const findService = (services: { id: number, slug: string, title: string, description: string, purpose: string }[]) => {
                 return services.find(s => s.slug === hash);
             };
 
@@ -271,7 +278,10 @@ const Servicios = () => {
                         Aquí trabajamos contigo en: auditoría digital, estrategia de marketing, posicionamiento local y consultoría, para que tengas un plan concreto y dejes de tomar decisiones a ciegas.</p>
 
                     <div className="pt-4">
-                        <button className="bg-transparent border border-white text-white px-8 py-3 rounded-md hover:bg-white hover:text-black transition-all duration-300 font-['Poppins'] font-medium">
+                        <button
+                            onClick={() => handleNecesitoEsto('conecta')}
+                            className="bg-transparent border border-white text-white px-8 py-3 rounded-md font-['Poppins'] font-medium hover:bg-white/10 transition-all"
+                        >
                             <span className="bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] text-transparent bg-clip-text flex items-center justify-center w-fit">
                                 Necesito esto <span className="text-white ml-2">+</span>
                             </span>
@@ -333,7 +343,10 @@ const Servicios = () => {
                         Creamos contigo los activos digitales que te representan: identidad de marca, página web, tienda online, redes listas para vender, contenido visual y hasta aplicaciones si tu negocio lo necesita.
                     </p>
                     <div className="pt-4">
-                        <button className="bg-transparent border border-white text-white px-8 py-3 rounded-md hover:bg-white hover:text-black transition-all duration-300 font-['Poppins'] font-medium">
+                        <button
+                            onClick={() => handleNecesitoEsto('crea')}
+                            className="bg-transparent border border-white text-white px-8 py-3 rounded-md font-['Poppins'] font-medium hover:bg-white/10 transition-all"
+                        >
                             <span className="bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] text-transparent bg-clip-text flex items-center justify-center w-fit">
                                 Necesito esto <span className="text-white ml-2">+</span>
                             </span>
@@ -396,9 +409,12 @@ const Servicios = () => {
                     </p>
 
                     <div className="pt-4">
-                        <button className="bg-transparent border border-white text-white px-8 py-3 rounded-md hover:bg-white hover:text-black transition-all duration-300 font-['Poppins'] font-medium">
+                        <button
+                            onClick={() => handleNecesitoEsto('crece')}
+                            className="bg-transparent border border-white text-white px-8 py-3 rounded-md font-['Poppins'] font-medium hover:bg-white/10 transition-all"
+                        >
                             <span className="bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] text-transparent bg-clip-text flex items-center justify-center w-fit">
-                                Necesito esto <span className="text-white ml-2"> + </span>
+                                Necesito esto <span className="text-white ml-2">+</span>
                             </span>
                         </button>
                     </div>
@@ -452,7 +468,7 @@ const Servicios = () => {
                     <h2 className="text-6xl font-bold font-['Poppins'] w-48">
                         Encontraste lo que buscabas?
                     </h2>
-                    <button className="bg-transparent border border-white text-white px-8 py-3 rounded-md hover:bg-white hover:text-black transition-all w-fit duration-300 font-['Poppins'] font-medium">
+                    <button className="bg-transparent border border-white text-white px-8 py-3 rounded-md w-fit duration-300 font-['Poppins'] font-medium">
                         <span className="bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] text-transparent bg-clip-text flex items-center justify-center">
                             No, necesito asistencia
                         </span>

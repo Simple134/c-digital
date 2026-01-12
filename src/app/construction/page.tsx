@@ -13,7 +13,7 @@ const Construction = () => {
     // }
 
     return (
-        <div className="relative flex flex-col items-center justify-center h-[90vh] w-full space-y-8 bg-black">
+        <div className="relative flex flex-col items-center justify-center h-[90vh] w-full space-y-8 ">
             <div className="flex flex-col items-center justify-center space-y-4 ">
                 <Image src="/muñeco.png" alt="logo" width={500} height={500} />
                 <h1 className="text-white text-6xl text-center font-bold font-['Poppins'] lg:text-9xl">
