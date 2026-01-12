@@ -1,5 +1,5 @@
-import { useRouter } from 'next/navigation';
-import { useScreenSize } from '@/hooks/useScreenSize';
+import { useRouter } from "next/navigation";
+import { useScreenSize } from "@/hooks/useScreenSize";
 
 interface RedirectButtonProps {
   children: React.ReactNode;
@@ -8,7 +8,12 @@ interface RedirectButtonProps {
   service?: string;
 }
 
-export const RedirectButton = ({ children, className = '', whatsappLink, service }: RedirectButtonProps) => {
+export const RedirectButton = ({
+  children,
+  className = "",
+  whatsappLink,
+  service,
+}: RedirectButtonProps) => {
   const router = useRouter();
   const isMobile = useScreenSize();
 
@@ -21,11 +26,8 @@ export const RedirectButton = ({ children, className = '', whatsappLink, service
   };
 
   return (
-    <button 
-      onClick={handleClick}
-      className={className}
-    >
+    <button onClick={handleClick} className={className}>
       {children}
     </button>
   );
-}; 
+};

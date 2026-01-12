@@ -6,7 +6,7 @@ interface Service {
 interface ServiceCheckListProps {
   services: Service[];
   onNavigate?: (route: string) => void;
-   back?: boolean;
+  back?: boolean;
 }
 
 export default function ServiceCheckList({
@@ -36,7 +36,9 @@ export default function ServiceCheckList({
   }
 
   return (
-    <div className={`flex flex-col justify-start items-start ${back ? 'w-2/4' : 'w-full'}`}>
+    <div
+      className={`flex flex-col justify-start items-start ${back ? "w-2/4" : "w-full"}`}
+    >
       {groupedServices.map((group, groupIndex) => (
         <div key={groupIndex} className="flex justify-start gap-2 flex-wrap">
           {group.map((service, serviceIndex) => (
@@ -56,4 +58,3 @@ export default function ServiceCheckList({
     </div>
   );
 }
-

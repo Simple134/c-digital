@@ -26,6 +26,7 @@ SMTP_PASS=tu_contraseña
 #### Si usas Hostinger:
 
 1. Usa la siguiente configuración en `.env.local`:
+
 ```
 SMTP_HOST=smtp.hostinger.com
 SMTP_PORT=465
@@ -37,6 +38,7 @@ SMTP_PASS=tu_contraseña_de_hostinger
 2. Reemplaza `tu_contraseña_de_hostinger` con la contraseña real de tu correo en Hostinger.
 
 3. Si tienes problemas con el puerto 465, puedes probar con el puerto 587 (cambiando también SMTP_SECURE a false):
+
 ```
 SMTP_PORT=587
 SMTP_SECURE=false

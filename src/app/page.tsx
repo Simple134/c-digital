@@ -6,9 +6,7 @@ import { useState, useEffect } from "react";
 import InfiniteLogo from "@/components/infiniteLogo";
 import Link from "next/link";
 import { RedirectButton } from "@/components/RedirectButton";
-import {
-  EmailIcon,
-} from "@/components/icons";
+import { EmailIcon } from "@/components/icons";
 import SocialMedia from "@/components/socialMedia";
 import Meeting from "@/components/meeting";
 import ServiceCheckList from "@/components/ServiceCheckList";
@@ -53,19 +51,22 @@ export default function Home() {
   useEffect(() => {
     const getUserFromGestiono = async () => {
       try {
-        console.log('🔄 Obteniendo usuario de Gestiono...');
-        const response = await fetch('/api/get-user');
+        console.log("🔄 Obteniendo usuario de Gestiono...");
+        const response = await fetch("/api/get-user");
         const data = await response.json();
 
         if (data.success) {
-          console.log('✅ Usuario obtenido de Gestiono:');
-          console.log('📊 Datos completos del usuario:', data.user);
-          console.log('📋 Estructura JSON:', JSON.stringify(data.user, null, 2));
+          console.log("✅ Usuario obtenido de Gestiono:");
+          console.log("📊 Datos completos del usuario:", data.user);
+          console.log(
+            "📋 Estructura JSON:",
+            JSON.stringify(data.user, null, 2),
+          );
         } else {
-          console.error('❌ Error al obtener usuario:', data.error);
+          console.error("❌ Error al obtener usuario:", data.error);
         }
       } catch (error) {
-        console.error('❌ Error en la petición:', error);
+        console.error("❌ Error en la petición:", error);
       }
     };
 
@@ -117,7 +118,7 @@ export default function Home() {
       staggerChildren: number;
       scale: number;
       y: number;
-    }>
+    }>,
   ) => {
     const defaults = {
       duration: 1,
@@ -180,7 +181,7 @@ export default function Home() {
   }) as FadeScaleVariants;
 
   const containerVariants = createAnimationVariants(
-    "stagger"
+    "stagger",
   ) as StaggerVariants;
 
   const itemVariants = createAnimationVariants("fade", {
@@ -188,7 +189,7 @@ export default function Home() {
   }) as FadeVariants;
 
   const marcasVariants = createAnimationVariants(
-    "fadeScale"
+    "fadeScale",
   ) as FadeScaleVariants;
 
   const firstProjects = [
@@ -362,11 +363,9 @@ export default function Home() {
     },
   ];
 
-
-
   const handleNext = (
     setter: React.Dispatch<React.SetStateAction<number>>,
-    elementId: string
+    elementId: string,
   ) => {
     setter((prev) => (prev + 1) % 3);
     const element = document.getElementById(elementId);
@@ -433,7 +432,7 @@ export default function Home() {
               <Link
                 href="/contacto"
                 className={`border-2 border-white px-6 py-2 mt-10 font-['Poppins'] lg:text-2xl bg-white text-black`}
-              //onClick={() => router.push("/trabajos-ux/ui")}
+                //onClick={() => router.push("/trabajos-ux/ui")}
               >
                 <span className="font-semibold">Contactar </span>
               </Link>
@@ -535,8 +534,8 @@ export default function Home() {
               La Solución Completa para Digitalizar tu Negocio
             </span>
             <span className="text-white text-xl md:text-3xl font-['Avenir']  text-center">
-              Agencia de Marketing Digital, Diseño de Marca y Desarrollo Web <br /> desde
-              La Vega, República Dominicana.
+              Agencia de Marketing Digital, Diseño de Marca y Desarrollo Web{" "}
+              <br /> desde La Vega, República Dominicana.
             </span>
           </motion.div>
         </div>
@@ -811,7 +810,9 @@ export default function Home() {
                     }}
                     service="branding"
                   >
-                    <span className="font-semibold text-xl">Me Interesa Esto</span>
+                    <span className="font-semibold text-xl">
+                      Me Interesa Esto
+                    </span>
                     <EmailIcon />
                   </RedirectButton>
                 </div>
@@ -831,10 +832,11 @@ export default function Home() {
             transition={{ duration: 0.5 }}
           >
             <div
-              className={`hidden md:grid grid-cols-3 gap-4 ${currentSupportSet === 0 || currentSupportSet === 2
-                ? "grid-cols-4"
-                : ""
-                }`}
+              className={`hidden md:grid grid-cols-3 gap-4 ${
+                currentSupportSet === 0 || currentSupportSet === 2
+                  ? "grid-cols-4"
+                  : ""
+              }`}
             >
               {currentSupportSet === 0 && (
                 <>
@@ -1089,7 +1091,9 @@ export default function Home() {
                   }}
                   service="diseño-app"
                 >
-                  <span className="font-semibold text-xl">Me Interesa Esto</span>
+                  <span className="font-semibold text-xl">
+                    Me Interesa Esto
+                  </span>
                   <EmailIcon />
                 </RedirectButton>
               </div>
@@ -1184,7 +1188,9 @@ export default function Home() {
                     }}
                     service="branding"
                   >
-                    <span className="font-semibold text-xl">Me Intersa Esto</span>
+                    <span className="font-semibold text-xl">
+                      Me Intersa Esto
+                    </span>
                     <EmailIcon />
                   </RedirectButton>
                 </div>
@@ -1315,7 +1321,9 @@ export default function Home() {
                   window.location.href = "https://wa.me/7867557025";
                 }}
               >
-                <span className="font-semibold font-['Avenir']">Necesito Esto +</span>
+                <span className="font-semibold font-['Avenir']">
+                  Necesito Esto +
+                </span>
               </RedirectButton>
             </div>
           </div>
@@ -1484,7 +1492,6 @@ export default function Home() {
           carouselAutoplay={true}
           carouselSpeed={2500}
           showDots={false}
-
         />
       </div>
       <div className="h-48 mt-28 md:mt-0"></div>

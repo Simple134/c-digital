@@ -23,7 +23,6 @@ export default {
           },
         },
       },
-      
     },
   },
   plugins: [],

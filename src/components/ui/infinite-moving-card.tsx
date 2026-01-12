@@ -29,7 +29,7 @@ export const InfiniteMovingCards = ({
     if (containerRef.current) {
       containerRef.current.style.setProperty(
         "--animation-direction",
-        direction === "left" ? "forwards" : "reverse"
+        direction === "left" ? "forwards" : "reverse",
       );
     }
   }, [direction]);
@@ -39,18 +39,30 @@ export const InfiniteMovingCards = ({
       const speeds = {
         fast: "20s",
         normal: "40s",
-        slow: "100s"
+        slow: "100s",
       };
-      containerRef.current.style.setProperty("--animation-duration", speeds[speed]);
+      containerRef.current.style.setProperty(
+        "--animation-duration",
+        speeds[speed],
+      );
     }
   }, [speed]);
 
   const addAnimation = useCallback(() => {
-    if (containerRef.current && scrollerRef.current && !animationCreated.current) {
+    if (
+      containerRef.current &&
+      scrollerRef.current &&
+      !animationCreated.current
+    ) {
       // Limpiar contenido duplicado existente
-      const originalChildren = Array.from(scrollerRef.current.children).slice(0, items.length);
-      scrollerRef.current.innerHTML = '';
-      originalChildren.forEach(child => scrollerRef.current?.appendChild(child));
+      const originalChildren = Array.from(scrollerRef.current.children).slice(
+        0,
+        items.length,
+      );
+      scrollerRef.current.innerHTML = "";
+      originalChildren.forEach((child) =>
+        scrollerRef.current?.appendChild(child),
+      );
 
       // Duplicar contenido una sola vez
       originalChildren.forEach((item) => {
@@ -84,7 +96,7 @@ export const InfiniteMovingCards = ({
       ref={containerRef}
       className={cn(
         "scroller relative z-20 overflow-hidden max-w-[95vw] flex items-center justify-center [mask-image:linear-gradient(to_right,transparent,white_20%,white_80%,transparent)]",
-        className
+        className,
       )}
     >
       <ul
@@ -92,14 +104,15 @@ export const InfiniteMovingCards = ({
         className={cn(
           "flex min-w-full shrink-0 gap-4 py-4 w-max flex-nowrap overflow-hidden",
           start && "animate-scroll",
-          pauseOnHover && "hover:[animation-play-state:paused]"
+          pauseOnHover && "hover:[animation-play-state:paused]",
         )}
       >
         {items.map((item, idx) => (
           <li
             className="w-[350px] max-w-full relative rounded-2xl flex items-center justify-center overflow-hidden flex-shrink-0 px-8 py-6 md:w-[450px]"
             style={{
-              background: "linear-gradient(180deg, var(--slate-800), var(--slate-900)"
+              background:
+                "linear-gradient(180deg, var(--slate-800), var(--slate-900)",
             }}
             key={`${item.name}-${idx}`}
           >
@@ -113,7 +126,7 @@ export const InfiniteMovingCards = ({
                 alt={item?.name || ""}
                 className="w-24 h-24 md:w-48 md:h-48 object-contain overflow-hidden"
                 style={{
-                  aspectRatio: "4/3"
+                  aspectRatio: "4/3",
                 }}
               />
             </blockquote>

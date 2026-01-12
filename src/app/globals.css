@@ -1,8 +1,7 @@
-@import url('https://fonts.googleapis.com/css2?family=Heebo:wght@100..900&family=Poppins:wght@400;800&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Heebo:wght@100..900&family=Poppins:wght@400;800&display=swap");
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
 
 :root {
   --background: #000000;
@@ -22,7 +21,6 @@ body {
   font-family: Arial, Helvetica, sans-serif;
   height: 100vh;
 }
-
 
 .poppins-regular {
   font-family: "Poppins", serif;
@@ -45,22 +43,31 @@ body {
   background-position: 50% 50%;
 }
 
-
 @layer utilities {
   /* Hide scrollbar for Chrome, Safari and Opera */
   .no-scrollbar::-webkit-scrollbar {
-      display: none;
+    display: none;
   }
- /* Hide scrollbar for IE, Edge and Firefox */
+  /* Hide scrollbar for IE, Edge and Firefox */
   .no-scrollbar {
-      -ms-overflow-style: none;  /* IE and Edge */
-      scrollbar-width: none;  /* Firefox */
-}
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
+  }
 }
 
 /* Hide React Google Reviews controls for a fluid carousel */
-.carousel .slick-dots { display: none !important; }
-.carousel .carousel__btn { display: none !important; }
-.carousel:hover .slick-slider { animation-play-state: running !important; }
-.carousel .carousel__btn--left { display: none !important; }
-.carousel .carousel__btn--right { display: none !important; }
+.carousel .slick-dots {
+  display: none !important;
+}
+.carousel .carousel__btn {
+  display: none !important;
+}
+.carousel:hover .slick-slider {
+  animation-play-state: running !important;
+}
+.carousel .carousel__btn--left {
+  display: none !important;
+}
+.carousel .carousel__btn--right {
+  display: none !important;
+}

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
 
 export const useScreenSize = () => {
   const [isMobile, setIsMobile] = useState(false);
@@ -12,11 +12,11 @@ export const useScreenSize = () => {
     checkScreenSize();
 
     // Agregar listener para cambios de tamaño
-    window.addEventListener('resize', checkScreenSize);
+    window.addEventListener("resize", checkScreenSize);
 
     // Limpiar listener
-    return () => window.removeEventListener('resize', checkScreenSize);
+    return () => window.removeEventListener("resize", checkScreenSize);
   }, []);
 
   return isMobile;
-}; 
+};
