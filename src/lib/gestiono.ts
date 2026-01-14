@@ -51,9 +51,9 @@ export class GestionoAPI {
     const queryString =
       method === "GET"
         ? "?" +
-        new URLSearchParams(
-          Object.entries(data).map(([k, v]) => [k, String(v)]),
-        ).toString()
+          new URLSearchParams(
+            Object.entries(data).map(([k, v]) => [k, String(v)]),
+          ).toString()
         : "";
 
     const url = `${this.baseURL}${endpoint}${queryString}`;

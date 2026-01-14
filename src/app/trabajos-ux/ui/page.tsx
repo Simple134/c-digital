@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { Column, Container, Grid } from "@bitnation-dev/components";
+import { Container, Grid, Column } from "@bitnation-dev/components";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import Background from "@/components/background";

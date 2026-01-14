@@ -1,4 +1,4 @@
-import { Grid, Container } from "@bitnation-dev/components";
+import { Container, Grid } from "@bitnation-dev/components";
 import Image from "next/image";
 import { Camara } from "./icons";
 
@@ -32,7 +32,7 @@ const Meeting = () => {
               }}
               href="https://calendly.com/marketing-agency-rd/consultoria-cdigital"
             >
-              <span className="font-semibold">Agendar ahora</span>
+              <span className="font-semibold">Contacto</span>
               <div className="bg-black rounded-full  ml-4">
                 <Camara />
               </div>

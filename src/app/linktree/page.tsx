@@ -2,8 +2,6 @@
 import React from "react";
 import {
   Globe,
-  ClipboardList,
-  Calendar,
   Palette,
   Monitor,
   BarChart3,
@@ -62,25 +60,24 @@ const LinksPage = () => {
           style={{ animation: "fadeInUp 0.8s ease-out 0.3s both" }}
         >
           <a
-            href="http://estudiocdigital.com"
+            href="http://estudiocdigital.com/contacto"
             target="_blank"
             rel="noopener noreferrer"
-            onClick={() => handleLinkClick("Visita Nuestro Sitio Web")}
+            onClick={() => handleLinkClick("Brief de Auditoría")}
             className="group rounded-xl p-6 flex items-center gap-4 transition-all duration-300 hover:translate-x-2 relative overflow-hidden bg-gradient-to-br from-[#00d9ff]/10 to-[#00d9ff]/5 border border-[#00FF7C]"
           >
             <div className="absolute left-0 top-0 h-full w-[3px] bg-[#00d9ff] scale-y-0 group-hover:scale-y-100 transition-transform duration-300 origin-top" />
 
             <div className="w-12 h-12 min-w-[48px] rounded-[10px] flex items-center justify-center bg-[#00FF7C] text-black">
-              {/* C Digital Logo Placeholder or Globe */}
               <Globe size={24} />
             </div>
 
             <div className="flex-1">
               <span className="block text-base font-semibold mb-1">
-                Visita Nuestro Sitio Web
+                Brief de Auditoría
               </span>
               <span className="block text-[13px] text-gray-400 leading-[1.4]">
-                Descubre todos nuestros servicios y portafolio completo
+                Solicita una auditoría digital completa para tu negocio
               </span>
             </div>
 
@@ -99,24 +96,24 @@ const LinksPage = () => {
           style={{ animation: "fadeInUp 0.8s ease-out 0.4s both" }}
         >
           <a
-            href="https://gestiono.app/shared/93bd6d5e-df41-45c2-95f4-eca977ab4710"
+            href="https://www.estudiocdigital.com"
             target="_blank"
             rel="noopener noreferrer"
-            onClick={() => handleLinkClick("Brief de Auditoría")}
+            onClick={() => handleLinkClick("WhatsApp de Asistente")}
             className="group bg-[#0a0a0a] border border-[#1a1a1a] rounded-xl p-5 px-6 flex items-center gap-4 transition-all duration-300 hover:border-[#00d9ff] hover:bg-[#00d9ff]/5 hover:translate-x-2 relative overflow-hidden"
           >
             <div className="absolute left-0 top-0 h-full w-[3px] bg-[#00d9ff] scale-y-0 group-hover:scale-y-100 transition-transform duration-300 origin-top" />
 
             <div className="w-12 h-12 min-w-[48px] bg-gray-800 rounded-[10px] flex items-center justify-center text-white">
-              <ClipboardList size={24} />
+              <Globe size={24} />
             </div>
 
             <div className="flex-1">
               <span className="block text-base font-semibold mb-1">
-                Brief de Auditoría
+                Visita Nuestro Sitio Web
               </span>
               <span className="block text-[13px] text-gray-400 leading-[1.4]">
-                Solicita una auditoría digital completa para tu negocio
+                Descubre todos nuestros servicios y portafolio completo
               </span>
             </div>
 
@@ -152,7 +149,7 @@ const LinksPage = () => {
             </span>
           </a>
 
-          <a
+          {/* <a
             href="https://calendly.com/marketing-agency-rd/consultoria-cdigital"
             target="_blank"
             rel="noopener noreferrer"
@@ -162,7 +159,6 @@ const LinksPage = () => {
             <div className="absolute left-0 top-0 h-full w-[3px] bg-[#00d9ff] scale-y-0 group-hover:scale-y-100 transition-transform duration-300 origin-top" />
 
             <div className="w-12 h-12 min-w-[48px] bg-gray-800 rounded-[10px] flex items-center justify-center text-white">
-              {/* Calendar or Calendly SVG if needed, keeping Calendar for now as generic 'Agenda' unless specified Calendly brand specifically */}
               <Calendar size={24} />
             </div>
 
@@ -178,7 +174,7 @@ const LinksPage = () => {
             <span className="text-[#00d9ff] text-xl opacity-0 -translate-x-[10px] group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300">
               →
             </span>
-          </a>
+          </a> */}
         </div>
 
         {/* Social Media */}
