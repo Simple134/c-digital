@@ -187,35 +187,6 @@ const AuditoriaForm = () => {
     setValue(name, newValues);
   };
 
-  const formatWhatsApp = (value: string) => {
-    const cleaned = value.replace(/\D/g, "");
-    let formatted = "";
-
-    if (cleaned.length > 0) {
-      if (cleaned.length <= 3) formatted = "+1 (" + cleaned;
-      else if (cleaned.length <= 6)
-        formatted = "+1 (" + cleaned.slice(0, 3) + ") " + cleaned.slice(3);
-      else if (cleaned.length <= 10)
-        formatted =
-          "+1 (" +
-          cleaned.slice(0, 3) +
-          ") " +
-          cleaned.slice(3, 6) +
-          "-" +
-          cleaned.slice(6);
-      else
-        formatted =
-          "+1 (" +
-          cleaned.slice(0, 3) +
-          ") " +
-          cleaned.slice(3, 6) +
-          "-" +
-          cleaned.slice(6, 10);
-    }
-
-    return formatted;
-  };
-
   const getEndTime = (startTime: string) => {
     const [hours, minutes] = startTime.split(":");
     const endMinutes = parseInt(minutes) + 30;
@@ -237,25 +208,26 @@ const AuditoriaForm = () => {
     setIsSubmitting(true);
 
     const submitData = {
-      "Nombre": data.nombre,
-      "Correo": data.email,
-      "Negocio": data.negocio,
-      "Posicion": data.posicion,
-      "Whatsapp": data.whatsapp,
-      "Sector": data.sector,
-      "Etapa del negocio": data.etapa,
-      "Que tienes actualmente": data.digital.join(", "),
-      "Desafio actual": data.desafios.join(", "),
-      "Servicios": data.servicios.join(", "),
-      "Presupuesto": data.presupuesto,
-      "Informacion extra": data.adicional,
-      "Dia de reunion": `${selectedDate} ${selectedTime} (${selectedTimezone})`
+      Nombre: data.nombre || "nothing",
+      Correo: data.email || "nothing",
+      Negocio: data.negocio || "nothing",
+      Posicion: data.posicion || "nothing",
+      Whatsapp: data.whatsapp || "nothing",
+      Sector: data.sector || "nothing",
+      "Etapa del negocio": data.etapa || "nothing",
+      "Que tienes actualmente": data.digital.join(", ") || "nothing",
+      "Desafio actual": data.desafios.join(", ") || "nothing",
+      Servicios: data.servicios.join(", ") || "nothing",
+      Presupuesto: data.presupuesto || "nothing",
+      "Informacion extra": data.adicional || "nothing",
+      "Dia de reunion":
+        `${selectedDate} ${selectedTime} (${selectedTimezone})` || "nothing",
     };
 
     console.log("Form Data:", submitData);
 
     try {
-      const formId = 51
+      const formId = 51;
       const response = await fetch(`/api/contact-gestiono/${formId}`, {
         method: "POST",
         headers: {
@@ -408,16 +380,16 @@ const AuditoriaForm = () => {
                   <div className="text-base font-semibold mb-4 pb-4 border-b border-[#1a1a1a]">
                     {selectedDate
                       ? (() => {
-                        const [year, month, day] = selectedDate.split("-");
-                        const date = new Date(
-                          parseInt(year),
-                          parseInt(month) - 1,
-                          parseInt(day),
-                        );
-                        const dayName = dayNames[date.getDay()];
-                        const monthName = monthNames[parseInt(month) - 1];
-                        return `${dayName}, ${parseInt(day)} de ${monthName}`;
-                      })()
+                          const [year, month, day] = selectedDate.split("-");
+                          const date = new Date(
+                            parseInt(year),
+                            parseInt(month) - 1,
+                            parseInt(day),
+                          );
+                          const dayName = dayNames[date.getDay()];
+                          const monthName = monthNames[parseInt(month) - 1];
+                          return `${dayName}, ${parseInt(day)} de ${monthName}`;
+                        })()
                       : "Selecciona una fecha"}
                   </div>
                   <div className="flex flex-col gap-3 overflow-y-auto max-h-[350px] pr-2 custom-scrollbar">
@@ -434,10 +406,11 @@ const AuditoriaForm = () => {
                         <div
                           key={time}
                           onClick={() => handleTimeSelect(time)}
-                          className={`px-4 py-3.5 border rounded-lg text-center text-sm font-medium cursor-pointer transition-all ${selectedTime === time
+                          className={`px-4 py-3.5 border rounded-lg text-center text-sm font-medium cursor-pointer transition-all ${
+                            selectedTime === time
                               ? "bg-[#00d9ff] text-black border-[#00d9ff]"
                               : "border-[#1a1a1a] hover:border-[#00d9ff] hover:bg-[#00d9ff]/5"
-                            }`}
+                          }`}
                         >
                           {time}
                         </div>
@@ -679,10 +652,6 @@ const AuditoriaForm = () => {
                         id="whatsapp"
                         placeholder="+1 (809) 000-0000"
                         {...register("whatsapp", { required: true })}
-                        onChange={(e) => {
-                          const formatted = formatWhatsApp(e.target.value);
-                          setValue("whatsapp", formatted);
-                        }}
                         className="w-full pl-12 pr-4 py-3.5 bg-transparent border border-[#1a1a1a] rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-[#00d9ff] focus:shadow-[0_0_0_3px_rgba(0,217,255,0.1)]"
                       />
                     </div>
