@@ -387,7 +387,8 @@ export default function Home() {
         <AnimatePresence>
           <motion.div
             initial="hidden"
-            animate="visible"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.3 }}
             variants={containerVariants}
             className="flex flex-col items-center justify-center h-[85vh] w-full space-y-8"
           >
@@ -444,10 +445,22 @@ export default function Home() {
         className="w-full px-0 mx-0 max-w-none bg-black"
         id="quienes-somos"
       >
-        <div className="w-full h-56 flex justify-end md:justify-center items-end md:items-center ">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.2 }}
+          transition={{ duration: 0.6 }}
+          className="w-full h-56 flex justify-end md:justify-center items-end md:items-center "
+        >
           <div className="h-1 bg-white w-48 md:w-96 mb-14"></div>
-        </div>
-        <div className="flex w-full justify-start items-start ">
+        </motion.div>
+        <motion.div
+          initial={{ opacity: 0, x: -30 }}
+          whileInView={{ opacity: 1, x: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+          className="flex w-full justify-start items-start "
+        >
           <div className="w-full">
             <span className="bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] text-transparent bg-clip-text font-bold text-lg md:text-2xl   ">
               ¿Quienes somos?
@@ -462,8 +475,14 @@ export default function Home() {
               />
             </div>
           </div>
-        </div>
-        <div className="w-full flex mt-12 justify-end items-end">
+        </motion.div>
+        <motion.div
+          initial={{ opacity: 0, x: 30 }}
+          whileInView={{ opacity: 1, x: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6, delay: 0.4 }}
+          className="w-full flex mt-12 justify-end items-end"
+        >
           <div className="w-full md:w-[50%]  flex justify-end items-end">
             <p className="text-white text-md md:text-2xl pl-0 text-left font-['Avenir']">
               Somos una agencia de marketing digital y diseño especializada en
@@ -472,12 +491,24 @@ export default function Home() {
               posicionamiento que generan resultados reales.
             </p>
           </div>
-        </div>
+        </motion.div>
         {/* Sección de Servicios con checkmarks */}
-        <div className="flex w-full mt-6 md:justify-end md:items-end">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6, delay: 0.6 }}
+          className="flex w-full mt-6 md:justify-end md:items-end"
+        >
           <ServiceCheckList back={true} services={mainServices} />
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 w-full mt-24 ">
+        </motion.div>
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.3 }}
+          transition={{ duration: 0.8, delay: 0.2 }}
+          className="grid grid-cols-1 md:grid-cols-2 w-full mt-24 "
+        >
           <div className="flex flex-col justify-center items-start mt-12 md:mt-0 gap-6 pl-8 order-last md:order-first">
             <h3
               style={{
@@ -513,7 +544,7 @@ export default function Home() {
               className="w-[60%] "
             />
           </div>
-        </div>
+        </motion.div>
       </Container>
       <div className="h-64"></div>
       <Container className="py-20">
@@ -537,14 +568,20 @@ export default function Home() {
       </Container>
       <div className="h-64"></div>
       <Container id="cont-1">
-        <div className="flex flex-col lg:mb-20 mb-12">
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.5 }}
+          transition={{ duration: 0.8 }}
+          className="flex flex-col lg:mb-20 mb-12"
+        >
           <span className="bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] text-transparent bg-clip-text font-bold text-2xl w-fit text-center">
             Servicios Destacados
           </span>
           <span className="text-white font-bold text-5xl md:text-7xl font-['Poppins']">
             Somos Especialistas En
           </span>
-        </div>
+        </motion.div>
         <Grid columns={{ xl: 4, lg: 4, md: 1, sm: 1 }} id="marcas">
           <AnimatePresence mode="wait">
             {currentMarcasSet === 0 && (
@@ -783,7 +820,13 @@ export default function Home() {
           </AnimatePresence>
 
           <Column columns={{ xl: { width: 2 }, md: { width: 1 } }}>
-            <div className="lg:ml-4 w-full">
+            <motion.div
+              initial={{ opacity: 0, x: 30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true, amount: 0.3 }}
+              transition={{ duration: 0.8 }}
+              className="lg:ml-4 w-full"
+            >
               <span className="bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] text-transparent bg-clip-text font-bold text-2xl">
                 {" "}
                 Branding / Rebranding
@@ -820,7 +863,7 @@ export default function Home() {
                   </RedirectButton>
                 </div>
               </div>
-            </div>
+            </motion.div>
           </Column>
         </Grid>
       </Container>
@@ -980,7 +1023,13 @@ export default function Home() {
         </AnimatePresence>
 
         <Grid columns={{ xl: 2, lg: 2, md: 1, sm: 1 }} className="!p-0">
-          <div className="mt-10 !p-0">
+          <motion.div
+            initial={{ opacity: 0, x: -30 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true, amount: 0.3 }}
+            transition={{ duration: 0.8 }}
+            className="mt-10 !p-0"
+          >
             <span className="bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] text-transparent bg-clip-text font-bold text-2xl">
               {" "}
               Agencia de Marketing
@@ -988,8 +1037,14 @@ export default function Home() {
             <h2 className="text-white text-5xl lg:text-8xl font-bold font-['Poppins'] whitespace-normal leading-[1.1] pb-2">
               Marketing Digital
             </h2>
-          </div>
-          <div className="mt-0 md:mt-6 h-full justify-center flex flex-col ">
+          </motion.div>
+          <motion.div
+            initial={{ opacity: 0, x: 30 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true, amount: 0.3 }}
+            transition={{ duration: 0.8, delay: 0.2 }}
+            className="mt-0 md:mt-6 h-full justify-center flex flex-col "
+          >
             <ServiceCheckList services={marketingServices} />
             <div className="flex gap-4">
               <button
@@ -1012,7 +1067,7 @@ export default function Home() {
                 <EmailIcon />
               </RedirectButton>
             </div>
-          </div>
+          </motion.div>
         </Grid>
       </Container>
       <div className="h-64"></div>
@@ -1065,7 +1120,12 @@ export default function Home() {
         </AnimatePresence>
         <div className="mt-6 w-full ">
           <Grid columns={{ xl: 2, lg: 2, md: 1, sm: 1 }}>
-            <div>
+            <motion.div
+              initial={{ opacity: 0, x: -30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true, amount: 0.3 }}
+              transition={{ duration: 0.8 }}
+            >
               <span className="bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] text-transparent bg-clip-text font-bold text-2xl">
                 {" "}
                 UX/UI Design
@@ -1073,8 +1133,14 @@ export default function Home() {
               <h2 className="text-white text-5xl lg:text-7xl font-bold font-['Poppins'] whitespace-normal leading-[1.1]">
                 Diseño Web <br /> Y Sistemas
               </h2>
-            </div>
-            <div className="lg:mt-6 w-full h-full justify-center flex flex-col">
+            </motion.div>
+            <motion.div
+              initial={{ opacity: 0, x: 30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true, amount: 0.3 }}
+              transition={{ duration: 0.8, delay: 0.2 }}
+              className="lg:mt-6 w-full h-full justify-center flex flex-col"
+            >
               <ServiceCheckList services={webSystemsServices} />
               <div className="flex gap-4">
                 <button
@@ -1100,7 +1166,7 @@ export default function Home() {
                   <EmailIcon />
                 </RedirectButton>
               </div>
-            </div>
+            </motion.div>
           </Grid>
         </div>
       </Container>
@@ -1160,7 +1226,13 @@ export default function Home() {
           </Column>
 
           <Column columns={{ xl: { width: 2 }, md: { width: 1 } }}>
-            <div className="lg:ml-4 w-full">
+            <motion.div
+              initial={{ opacity: 0, x: 30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true, amount: 0.3 }}
+              transition={{ duration: 0.8 }}
+              className="lg:ml-4 w-full"
+            >
               <span className="bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] text-transparent bg-clip-text font-bold text-2xl">
                 {" "}
                 Posicionamiento SEO
@@ -1198,13 +1270,19 @@ export default function Home() {
                   </RedirectButton>
                 </div>
               </div>
-            </div>
+            </motion.div>
           </Column>
         </Grid>
       </Container>
       <div className="h-64"></div>
       <Container className="bg-white h-[65vh] w-full  flex flex-col overflow-hidden !p-0 !m-0  ">
-        <div className="flex flex-col items-center  ">
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.5 }}
+          transition={{ duration: 0.8 }}
+          className="flex flex-col items-center  "
+        >
           <p className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#00C5FF] to-[#00FF7C]">
             Conoce algunos de
           </p>
@@ -1212,12 +1290,18 @@ export default function Home() {
             Nuestros Clientes
           </h2>
           <InfiniteLogo />
-        </div>
+        </motion.div>
       </Container>
       <div className="h-48"></div>
       <Container className="h-[100vh] flex ">
         <Grid columns={{ xl: 2, lg: 2, md: 1, sm: 1 }}>
-          <div className="flex flex-col ">
+          <motion.div
+            initial={{ opacity: 0, x: -30 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true, amount: 0.3 }}
+            transition={{ duration: 0.8 }}
+            className="flex flex-col "
+          >
             <span className="bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] text-transparent bg-clip-text font-bold text-2xl w-fit">
               Fases y Servicios
             </span>
@@ -1228,8 +1312,14 @@ export default function Home() {
               Para simplificar el proceso de trabajo hemos creados 3 fases donde
               se agrupan los diferentes servicios.
             </p>
-          </div>
-          <div className="flex flex-col space-y-6 mt-8 md:mt-0">
+          </motion.div>
+          <motion.div
+            initial={{ opacity: 0, x: 30 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true, amount: 0.3 }}
+            transition={{ duration: 0.8, delay: 0.2 }}
+            className="flex flex-col space-y-6 mt-8 md:mt-0"
+          >
             <div className="flex flex-col justify-center items-end">
               <span
                 className="text-[#AFAFAF] hover:text-white text-3xl font-bold font-['Poppins'] hover:cursor-pointer"
@@ -1263,12 +1353,18 @@ export default function Home() {
               width={1000}
               height={1000}
             />
-          </div>
+          </motion.div>
         </Grid>
       </Container>
       <div className="h-48" id="conecta-1"></div>
       <Container className="h-[80vh]">
-        <div className="flex justify-between">
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.3 }}
+          transition={{ duration: 0.6 }}
+          className="flex justify-between"
+        >
           <div className="">
             <h2 className="text-white text-6xl text-center font-bold font-['Poppins'] lg:text-9xl">
               1.
@@ -1279,10 +1375,22 @@ export default function Home() {
               Conecta
             </h2>
           </div>
-        </div>
-        <div className="flex w-full h-[2px] bg-[#AFAFAF] mt-4"></div>
+        </motion.div>
+        <motion.div
+          initial={{ opacity: 0, scaleX: 0 }}
+          whileInView={{ opacity: 1, scaleX: 1 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.8, delay: 0.2 }}
+          className="flex w-full h-[2px] bg-[#AFAFAF] mt-4"
+        ></motion.div>
         <Grid columns={{ xl: 2, lg: 2, md: 1, sm: 1 }}>
-          <div className="flex items-start justify-start mt-8">
+          <motion.div
+            initial={{ opacity: 0, x: -30 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true, amount: 0.3 }}
+            transition={{ duration: 0.8, delay: 0.4 }}
+            className="flex items-start justify-start mt-8"
+          >
             <ul className="text-xl pl-0 space-y-1">
               <li className="flex items-center">
                 <span className="inline-block w-2 h-2 rounded-full bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] mr-4"></span>
@@ -1309,8 +1417,14 @@ export default function Home() {
                 </span>
               </li>
             </ul>
-          </div>
-          <div className="flex flex-col items-start justify-start mt-8">
+          </motion.div>
+          <motion.div
+            initial={{ opacity: 0, x: 30 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true, amount: 0.3 }}
+            transition={{ duration: 0.8, delay: 0.6 }}
+            className="flex flex-col items-start justify-start mt-8"
+          >
             <span className="text-white text-xl md:text-2xl font-['Avenir']">
               Todo comienza con entender tu negocio y definir cómo te conectarás
               con tus clientes ideales en el ecosistema digital. En esta fase
@@ -1329,12 +1443,18 @@ export default function Home() {
                 </span>
               </RedirectButton>
             </div>
-          </div>
+          </motion.div>
         </Grid>
       </Container>
       <div className="h-64 md:h-48" id="crea-2"></div>
       <Container className="h-[80vh]">
-        <div className="flex justify-between ">
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.3 }}
+          transition={{ duration: 0.6 }}
+          className="flex justify-between "
+        >
           <div className="">
             <h2 className="text-white text-6xl text-center font-bold font-['Poppins'] lg:text-9xl">
               2.
@@ -1345,10 +1465,22 @@ export default function Home() {
               Crea
             </h2>
           </div>
-        </div>
-        <div className="flex w-full h-[2px] bg-[#AFAFAF] mt-4"></div>
+        </motion.div>
+        <motion.div
+          initial={{ opacity: 0, scaleX: 0 }}
+          whileInView={{ opacity: 1, scaleX: 1 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.8, delay: 0.2 }}
+          className="flex w-full h-[2px] bg-[#AFAFAF] mt-4"
+        ></motion.div>
         <Grid columns={{ xl: 2, lg: 2, md: 1, sm: 1 }}>
-          <div className="flex items-start justify-start mt-8">
+          <motion.div
+            initial={{ opacity: 0, x: -30 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true, amount: 0.3 }}
+            transition={{ duration: 0.8, delay: 0.4 }}
+            className="flex items-start justify-start mt-8"
+          >
             <ul className="text-xl pl-0 space-y-1">
               <li className="flex items-center">
                 <span className="inline-block w-2 h-2 rounded-full bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] mr-4"></span>
@@ -1381,8 +1513,14 @@ export default function Home() {
                 </span>
               </li>
             </ul>
-          </div>
-          <div className="flex flex-col items-start justify-start mt-8">
+          </motion.div>
+          <motion.div
+            initial={{ opacity: 0, x: 30 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true, amount: 0.3 }}
+            transition={{ duration: 0.8, delay: 0.6 }}
+            className="flex flex-col items-start justify-start mt-8"
+          >
             <span className="text-white text-xl ">
               Con la estrategia definida, pasamos a la acción. Creamos todos los
               activos digitales que necesitas: desde tu marca profesional hasta
@@ -1399,12 +1537,18 @@ export default function Home() {
                 <span className="font-semibold">Necesito Esto +</span>
               </RedirectButton>
             </div>
-          </div>
+          </motion.div>
         </Grid>
       </Container>
       <div className="h-64 md:h-48" id="crece-3"></div>
       <Container className="h-[80vh]">
-        <div className="flex justify-between ">
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.3 }}
+          transition={{ duration: 0.6 }}
+          className="flex justify-between "
+        >
           <div className="">
             <h2 className="text-white text-6xl text-center font-bold font-['Poppins'] lg:text-9xl">
               3.
@@ -1415,10 +1559,22 @@ export default function Home() {
               Crece
             </h2>
           </div>
-        </div>
-        <div className="flex w-full h-[2px] bg-[#AFAFAF] mt-4"></div>
+        </motion.div>
+        <motion.div
+          initial={{ opacity: 0, scaleX: 0 }}
+          whileInView={{ opacity: 1, scaleX: 1 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.8, delay: 0.2 }}
+          className="flex w-full h-[2px] bg-[#AFAFAF] mt-4"
+        ></motion.div>
         <Grid columns={{ xl: 2, lg: 2, md: 1, sm: 1 }}>
-          <div className="flex items-start justify-start mt-8">
+          <motion.div
+            initial={{ opacity: 0, x: -30 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true, amount: 0.3 }}
+            transition={{ duration: 0.8, delay: 0.4 }}
+            className="flex items-start justify-start mt-8"
+          >
             <ul className="text-xl pl-0 space-y-1">
               <li className="flex items-center">
                 <span className="inline-block w-2 h-2 rounded-full bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] mr-4"></span>
@@ -1457,8 +1613,14 @@ export default function Home() {
                 </span>
               </li>
             </ul>
-          </div>
-          <div className="flex flex-col items-start justify-start mt-8">
+          </motion.div>
+          <motion.div
+            initial={{ opacity: 0, x: 30 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true, amount: 0.3 }}
+            transition={{ duration: 0.8, delay: 0.6 }}
+            className="flex flex-col items-start justify-start mt-8"
+          >
             <span className="text-white text-xl ">
               Una vez lanzado, el verdadero trabajo comienza. Implementamos
               campañas de marketing digital, optimizamos tu posicionamiento en
@@ -1475,27 +1637,41 @@ export default function Home() {
                 <span className="font-semibold">Necesito Esto +</span>
               </RedirectButton>
             </div>
-          </div>
+          </motion.div>
         </Grid>
       </Container>
       <div className="h-48"></div>
       <Comotrabajamos />
       <div className="h-48"></div>
       <div className="bg-white  lg:h-[75vh] w-full flex flex-col text-center overflow-hidden pt-20 !m-0">
-        <p className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#00C5FF] to-[#00FF7C]">
-          Testimonios Reales
-        </p>
-        <h2 className="text-black text-4xl md:text-6xl font-bold font-['Poppins'] pb-16">
-          Nuestros Clientes
-        </h2>
-        <ReactGoogleReviews
-          layout="carousel"
-          featurableId={PLACE_ID as string}
-          maxItems={3}
-          carouselAutoplay={true}
-          carouselSpeed={2500}
-          showDots={false}
-        />
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.5 }}
+          transition={{ duration: 0.8 }}
+        >
+          <p className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#00C5FF] to-[#00FF7C]">
+            Testimonios Reales
+          </p>
+          <h2 className="text-black text-4xl md:text-6xl font-bold font-['Poppins'] pb-16">
+            Nuestros Clientes
+          </h2>
+        </motion.div>
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          whileInView={{ opacity: 1, scale: 1 }}
+          viewport={{ once: true, amount: 0.3 }}
+          transition={{ duration: 0.8, delay: 0.2 }}
+        >
+          <ReactGoogleReviews
+            layout="carousel"
+            featurableId={PLACE_ID as string}
+            maxItems={3}
+            carouselAutoplay={true}
+            carouselSpeed={2500}
+            showDots={false}
+          />
+        </motion.div>
       </div>
       <div className="h-48 mt-28 md:mt-0"></div>
       <Meeting />

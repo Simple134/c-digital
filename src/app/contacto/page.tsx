@@ -397,16 +397,16 @@ const AuditoriaForm = () => {
                   <div className="text-base font-semibold mb-4 pb-4 border-b border-[#1a1a1a]">
                     {selectedDate
                       ? (() => {
-                        const [year, month, day] = selectedDate.split("-");
-                        const date = new Date(
-                          parseInt(year),
-                          parseInt(month) - 1,
-                          parseInt(day),
-                        );
-                        const dayName = dayNames[date.getDay()];
-                        const monthName = monthNames[parseInt(month) - 1];
-                        return `${dayName}, ${parseInt(day)} de ${monthName}`;
-                      })()
+                          const [year, month, day] = selectedDate.split("-");
+                          const date = new Date(
+                            parseInt(year),
+                            parseInt(month) - 1,
+                            parseInt(day),
+                          );
+                          const dayName = dayNames[date.getDay()];
+                          const monthName = monthNames[parseInt(month) - 1];
+                          return `${dayName}, ${parseInt(day)} de ${monthName}`;
+                        })()
                       : "Selecciona una fecha"}
                   </div>
                   <div className="flex flex-col gap-3 overflow-y-auto max-h-[350px] pr-2 custom-scrollbar">
@@ -423,10 +423,11 @@ const AuditoriaForm = () => {
                         <div
                           key={time}
                           onClick={() => handleTimeSelect(time)}
-                          className={`px-4 py-3.5 border rounded-lg text-center text-sm font-medium cursor-pointer transition-all ${selectedTime === time
+                          className={`px-4 py-3.5 border rounded-lg text-center text-sm font-medium cursor-pointer transition-all ${
+                            selectedTime === time
                               ? "bg-[#00d9ff] text-black border-[#00d9ff]"
                               : "border-[#1a1a1a] hover:border-[#00d9ff] hover:bg-[#00d9ff]/5"
-                            }`}
+                          }`}
                         >
                           {time}
                         </div>

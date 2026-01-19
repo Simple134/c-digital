@@ -1,15 +1,28 @@
 import { Container, Grid } from "@bitnation-dev/components";
 import Image from "next/image";
+import { motion } from "framer-motion";
 import { Camara } from "./icons";
 
 const Meeting = () => {
   return (
     <Container>
       <Grid columns={{ xl: 2, lg: 2, md: 1, sm: 1 }}>
-        <div className="flex items-start justify-start">
+        <motion.div
+          initial={{ opacity: 0, x: -30 }}
+          whileInView={{ opacity: 1, x: 0 }}
+          viewport={{ once: true, amount: 0.3 }}
+          transition={{ duration: 0.8 }}
+          className="flex items-start justify-start"
+        >
           <Image src="/muñeco.png" alt="carlos" width={500} height={500} />
-        </div>
-        <div className="flex flex-col items-start justify-center space-y-2">
+        </motion.div>
+        <motion.div
+          initial={{ opacity: 0, x: 30 }}
+          whileInView={{ opacity: 1, x: 0 }}
+          viewport={{ once: true, amount: 0.3 }}
+          transition={{ duration: 0.8, delay: 0.2 }}
+          className="flex flex-col items-start justify-center space-y-2"
+        >
           <span className="bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] text-transparent bg-clip-text font-bold text-2xl w-fit">
             Dudas o Preguntas?
           </span>
@@ -38,7 +51,7 @@ const Meeting = () => {
               </div>
             </a>
           </div>
-        </div>
+        </motion.div>
       </Grid>
     </Container>
   );

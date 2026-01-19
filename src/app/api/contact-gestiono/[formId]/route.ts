@@ -48,10 +48,11 @@ export async function POST(
 
     // Enviar a Gestiono en background (no esperamos la respuesta)
     // Esto evita el timeout de gateway
-    gestionoAPI.submitForm({
-      formId: Number(formId),
-      data: contactData,
-    })
+    gestionoAPI
+      .submitForm({
+        formId: Number(formId),
+        data: contactData,
+      })
       .then((result) => {
         console.log("Formulario enviado a Gestiono exitosamente:", result);
       })
@@ -79,4 +80,3 @@ export async function POST(
     );
   }
 }
-

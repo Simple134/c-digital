@@ -1,5 +1,6 @@
 import { Container } from "@bitnation-dev/components";
 import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Diseño,
   DiseñoColor,
@@ -41,15 +42,27 @@ const Comotrabajamos = () => {
   };
   return (
     <Container className="h-[80vh] ">
-      <div className="flex flex-col w-full items-start justify-start md:items-center md:justify-center">
+      <motion.div
+        initial={{ opacity: 0, y: 30 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, amount: 0.5 }}
+        transition={{ duration: 0.8 }}
+        className="flex flex-col w-full items-start justify-start md:items-center md:justify-center"
+      >
         <span className="bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] text-transparent bg-clip-text text-2xl w-fit font-bold">
           ¿Cómo trabajamos?
         </span>
         <h2 className="text-white text-4xl md:text-6xl  font-bold font-['Poppins'] lg:text-9xl">
           Nuestro Proceso
         </h2>
-      </div>
-      <div className="flex items-center w-full h-[40vh] justify-between px-20 overflow-x-auto">
+      </motion.div>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, amount: 0.3 }}
+        transition={{ duration: 0.8, delay: 0.2 }}
+        className="flex items-center w-full h-[40vh] justify-between px-20 overflow-x-auto"
+      >
         <div
           className="flex flex-col items-center justify-center gap-4 cursor-pointer"
           onClick={() => handleProcessClick(0)}
@@ -97,17 +110,26 @@ const Comotrabajamos = () => {
           {selectedProcess === 4 ? <EntregaColor /> : <Entrega />}
           <span className="text-white text-xl font-bold">Entrega</span>
         </div>
-      </div>
-      {selectedProcess !== null && (
-        <div className="flex flex-col gap-4 mt-8 w-full">
-          <span className="bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] text-transparent bg-clip-text font-bold text-3xl w-fit ">
-            {processText[selectedProcess].title}
-          </span>
-          <span className="text-white text-xl w-full md:w-1/2">
-            {processText[selectedProcess].text}
-          </span>
-        </div>
-      )}
+      </motion.div>
+      <AnimatePresence mode="wait">
+        {selectedProcess !== null && (
+          <motion.div
+            key={selectedProcess}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.4 }}
+            className="flex flex-col gap-4 mt-8 w-full"
+          >
+            <span className="bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] text-transparent bg-clip-text font-bold text-3xl w-fit ">
+              {processText[selectedProcess].title}
+            </span>
+            <span className="text-white text-xl w-full md:w-1/2">
+              {processText[selectedProcess].text}
+            </span>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </Container>
   );
 };

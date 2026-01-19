@@ -189,9 +189,9 @@ export default function BlogArticle() {
                 Challenges we faced
               </h2>
               <p className="text-gray-300 mb-4">
-                <strong className="text-white">Main Issue:</strong> Coverslee&apos;s
-                products were lost in the vast online marketplace. They faced
-                several hurdles:
+                <strong className="text-white">Main Issue:</strong>{" "}
+                Coverslee&apos;s products were lost in the vast online
+                marketplace. They faced several hurdles:
               </p>
               <ul className="space-y-3 my-6">
                 <li className="flex gap-3 text-gray-300">
@@ -208,8 +208,8 @@ export default function BlogArticle() {
                     •
                   </span>
                   <span>
-                    They weren&apos;t fully utilising the features of Google Merchant
-                    Centre, affecting their visibility.
+                    They weren&apos;t fully utilising the features of Google
+                    Merchant Centre, affecting their visibility.
                   </span>
                 </li>
               </ul>
@@ -220,9 +220,9 @@ export default function BlogArticle() {
 
               <div className="bg-gradient-to-r from-[#00C5FF]/10 to-[#00FF7C]/10 border-l-4 border-[#00C5FF] p-6 rounded-lg">
                 <p className="text-gray-300 m-0">
-                  Our challenge was clear: transform Coverslee&apos;s underperforming
-                  listings into high-converting assets that would stand out in a
-                  competitive market.
+                  Our challenge was clear: transform Coverslee&apos;s
+                  underperforming listings into high-converting assets that
+                  would stand out in a competitive market.
                 </p>
               </div>
             </section>
@@ -233,8 +233,8 @@ export default function BlogArticle() {
                 The Growth Method
               </h2>
               <p className="text-gray-300 mb-8">
-                To elevate Coverslee&apos;s presence on Google Shopping, we employed
-                a multi-faceted approach:
+                To elevate Coverslee&apos;s presence on Google Shopping, we
+                employed a multi-faceted approach:
               </p>
 
               <h3 className="text-2xl font-bold font-['Poppins'] mt-10 mb-4">
@@ -297,8 +297,8 @@ export default function BlogArticle() {
                   <span className="text-gray-300">
                     {" "}
                     We injected relevant keywords into titles and crafted
-                    compelling descriptions highlighting the products&apos; unique
-                    benefits.
+                    compelling descriptions highlighting the products&apos;
+                    unique benefits.
                   </span>
                 </div>
               </div>
@@ -337,9 +337,9 @@ export default function BlogArticle() {
 
               <div className="bg-gradient-to-r from-[#00C5FF]/10 to-[#00FF7C]/10 border-l-4 border-[#00C5FF] p-6 rounded-lg mt-8">
                 <p className="text-gray-300 m-0">
-                  These results not only met but exceeded Coverslee&apos;s initial
-                  goals, establishing them as a strong competitor in the online
-                  intimate accessories market.
+                  These results not only met but exceeded Coverslee&apos;s
+                  initial goals, establishing them as a strong competitor in the
+                  online intimate accessories market.
                 </p>
               </div>
             </section>
@@ -436,10 +436,10 @@ export default function BlogArticle() {
                 ))}
               </ul>
               <p className="text-gray-300">
-                By focusing on these areas, we transformed Coverslee&apos;s Google
-                Shopping presence from underperforming to thriving, proving that
-                thoughtful, data-driven strategies can deliver outstanding
-                results.
+                By focusing on these areas, we transformed Coverslee&apos;s
+                Google Shopping presence from underperforming to thriving,
+                proving that thoughtful, data-driven strategies can deliver
+                outstanding results.
               </p>
             </section>
 
