@@ -46,19 +46,24 @@ export async function POST(
       ...data,
     };
 
-    // Enviar a Gestiono usando submitForm
-    const result = await gestionoAPI.submitForm({
+    // Enviar a Gestiono en background (no esperamos la respuesta)
+    // Esto evita el timeout de gateway
+    gestionoAPI.submitForm({
       formId: Number(formId),
       data: contactData,
-    });
+    })
+      .then((result) => {
+        console.log("Formulario enviado a Gestiono exitosamente:", result);
+      })
+      .catch((error) => {
+        console.error("Error al enviar a Gestiono (background):", error);
+      });
 
-    console.log("Formulario enviado a Gestiono:", result);
-
+    // Responder inmediatamente al cliente
     return NextResponse.json(
       {
         success: true,
-        message: "Formulario enviado correctamente",
-        gestionoResponse: result,
+        message: "Formulario recibido y en proceso de envío",
       },
       { status: 200 },
     );
@@ -74,3 +79,4 @@ export async function POST(
     );
   }
 }
+

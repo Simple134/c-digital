@@ -432,7 +432,6 @@ export default function Home() {
               <Link
                 href="/contacto"
                 className={`border-2 border-white px-6 py-2 mt-10 font-['Poppins'] lg:text-2xl bg-white text-black`}
-                //onClick={() => router.push("/trabajos-ux/ui")}
               >
                 <span className="font-semibold">Contactar </span>
               </Link>
@@ -501,7 +500,7 @@ export default function Home() {
               }}
             >
               <span className="bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] text-transparent bg-clip-text font-bold text-2xl w-fit">
-                Me Interesa Iniciar
+                Hablemos
               </span>
             </button>
           </div>
