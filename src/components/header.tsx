@@ -112,8 +112,8 @@ const Header = () => {
               Servicios
             </Link>
             <Link
-              href="/construction"
-              className="text-lg text-white hover:text-[#9F9F9F]"
+              href="/blog"
+              className={`text-lg ${pathname === "/blog" ? "bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] text-transparent bg-clip-text font-bold" : "text-white hover:text-[#9F9F9F]"}`}
               onClick={closeMenu}
             >
               Blog
