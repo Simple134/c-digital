@@ -12,7 +12,9 @@ import Meeting from "@/components/meeting";
 import ServiceCheckList from "@/components/ServiceCheckList";
 import { ReactGoogleReviews } from "react-google-reviews";
 import "react-google-reviews/dist/index.css";
+import "@/styles/google-reviews-custom.css";
 import Comotrabajamos from "@/components/Comotrabajamos";
+import { Calendar1 } from "lucide-react";
 
 // Define interfaces para los tipos de animaciones
 interface AnimationTransition {
@@ -432,9 +434,10 @@ export default function Home() {
               </button>
               <Link
                 href="/contacto"
-                className={`border-2 border-white px-6 py-2 mt-10 font-['Poppins'] lg:text-2xl bg-white text-black`}
+                className={`border-2 flex items-center gap-2 border-white px-6 py-2 mt-10 font-['Poppins'] lg:text-2xl bg-white text-black`}
               >
                 <span className="font-semibold">Contactar </span>
+                <Calendar1 />
               </Link>
             </motion.div>
           </motion.div>
@@ -850,15 +853,13 @@ export default function Home() {
                     <span className="font-semibold text-xl">Ver más</span>
                   </button>
                   <RedirectButton
-                    className="bg-white text-black px-4 py-2 mt-10 font-['Avenir'] font-bold lg:text-2xl flex gap-2 items-center"
+                    className={`border-2 flex items-center gap-2 border-white px-6 py-2 mt-10 font-['Poppins'] lg:text-2xl bg-white text-black`}
                     whatsappLink={() => {
                       window.location.href = "https://wa.me/7867557025";
                     }}
                     service="branding"
                   >
-                    <span className="font-semibold text-xl">
-                      Me Interesa Esto
-                    </span>
+                    <span className="font-bold text-xl">Me Interesa Esto</span>
                     <EmailIcon />
                   </RedirectButton>
                 </div>
@@ -1057,7 +1058,7 @@ export default function Home() {
                 <span className="font-semibold text-xl">Ver más</span>
               </button>
               <RedirectButton
-                className="bg-white text-black px-4 py-2 mt-10 font-['Avenir'] font-bold lg:text-2xl flex gap-2 items-center"
+                className={`border-2 flex items-center gap-2 border-white px-6 py-2 mt-10 font-['Poppins'] lg:text-2xl bg-white text-black`}
                 whatsappLink={() => {
                   window.location.href = "https://wa.me/7867557025";
                 }}
@@ -1154,7 +1155,7 @@ export default function Home() {
                   <span className="font-semibold text-xl">Ver más</span>
                 </button>
                 <RedirectButton
-                  className="bg-white text-black px-4 py-2 mt-10 font-['Avenir'] font-bold lg:text-2xl flex gap-2 items-center"
+                  className={`border-2 flex items-center gap-2 border-white px-6 py-2 mt-10 font-['Poppins'] lg:text-2xl bg-white text-black`}
                   whatsappLink={() => {
                     window.location.href = "https://wa.me/7867557025";
                   }}
@@ -1643,7 +1644,7 @@ export default function Home() {
       <div className="h-48"></div>
       <Comotrabajamos />
       <div className="h-48"></div>
-      <div className="bg-white  lg:h-[75vh] w-full flex flex-col text-center overflow-hidden pt-20 !m-0">
+      <div className="bg-white lg:h-[80vh] w-full flex flex-col text-center overflow-hidden pt-20 !m-0">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -1664,11 +1665,12 @@ export default function Home() {
           transition={{ duration: 0.8, delay: 0.2 }}
         >
           <ReactGoogleReviews
+            carouselBtnStyle={{ display: "none" }}
             layout="carousel"
             featurableId={PLACE_ID as string}
             maxItems={3}
             carouselAutoplay={true}
-            carouselSpeed={2500}
+            carouselSpeed={1500}
             showDots={false}
           />
         </motion.div>

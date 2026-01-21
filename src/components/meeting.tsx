@@ -2,6 +2,7 @@ import { Container, Grid } from "@bitnation-dev/components";
 import Image from "next/image";
 import { motion } from "framer-motion";
 import { Camara } from "./icons";
+import Link from "next/link";
 
 const Meeting = () => {
   return (
@@ -37,19 +38,15 @@ const Meeting = () => {
             </p>
           </div>
           <div className="pt-4">
-            <a
-              target="_blank"
-              className={`flex items-center justify-center  border-2 border-white px-6 py-2 font-['Poppins'] lg:text-2xl text-white hover:text-transparent bg-clip-text hover:bg-gradient-to-r hover:from-[#00C5FF] hover:to-[#00FF7C]`}
-              style={{
-                borderImage: "linear-gradient(to right, #00C5FF, #00FF7C) 1",
-              }}
-              href="https://calendly.com/marketing-agency-rd/consultoria-cdigital"
+            <Link
+              href={"/contacto"}
+              className={`border-2 flex items-center gap-2 border-white px-6 py-2 mt-10 font-['Poppins'] lg:text-2xl bg-white text-black`}
             >
               <span className="font-semibold">Contacto</span>
               <div className="bg-black rounded-full  ml-4">
                 <Camara />
               </div>
-            </a>
+            </Link>
           </div>
         </motion.div>
       </Grid>

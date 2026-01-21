@@ -1,0 +1,124 @@
+/* Custom styles for Google Reviews cards - Using actual component class names */
+
+/* Main card container - ensure vertical layout with proper spacing */
+.css-b1vrbs {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 0 !important;
+  padding: 32px 24px !important;
+}
+
+/* CRITICAL: Use display: contents to flatten the nested structure */
+/* This allows all child elements to be direct flex children of the card */
+.css-b1vrbs > div:first-child,
+.css-b1vrbs > div:nth-child(2),
+.css-b1vrbs > div:nth-child(3) {
+  display: contents !important;
+}
+
+/* Avatar container - Order 1 (FIRST) */
+.css-1fjogy5 {
+  order: 1 !important;
+  margin: 0 0 12px 0 !important;
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+}
+
+/* Avatar image - make it big and centered */
+.css-1pelb8y {
+  width: 80px !important;
+  height: 80px !important;
+  border-radius: 50% !important;
+  object-fit: cover !important;
+}
+
+/* Avatar initial letter (when no image) */
+.css-inaxt1 {
+  width: 80px !important;
+  height: 80px !important;
+  border-radius: 50% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 32px !important;
+  font-weight: 600 !important;
+}
+
+/* Name - Order 2 (SECOND - after avatar) */
+.css-1yu6wn9 {
+  order: 2 !important;
+  text-align: center !important;
+  font-weight: 600 !important;
+  font-size: 16px !important;
+  color: #333 !important;
+  margin: 0 0 4px 0 !important;
+  width: 100% !important;
+}
+
+/* Date - Order 3 (THIRD - after name) */
+.css-uquvya {
+  order: 3 !important;
+  text-align: center !important;
+  font-size: 12px !important;
+  color: #999 !important;
+  margin: 0 0 16px 0 !important;
+  width: 100% !important;
+}
+
+/* Stars container wrapper - use display: contents */
+.css-12gk303 {
+  display: contents !important;
+}
+
+/* Stars - Order 4 (FOURTH - after date, before description) */
+.css-12gk303 > .css-1povu0j:first-child {
+  order: 4 !important;
+  display: flex !important;
+  flex-direction: row !important;
+  justify-content: center !important;
+  align-items: center !important;
+  gap: 4px !important;
+  margin: 0 0 16px 0 !important;
+  width: 100% !important;
+}
+
+/* Stars icons */
+.css-ctx7ii {
+  color: #fbbc04 !important;
+}
+
+/* Description/Testimonial container - Order 5 (FIFTH - after stars) */
+.css-8rybv8 {
+  order: 5 !important;
+  text-align: center !important;
+  margin: 0 0 16px 0 !important;
+  width: 100% !important;
+}
+
+/* Testimonial text */
+.css-1k2k5c6 {
+  text-align: center !important;
+  color: #666 !important;
+  font-size: 14px !important;
+  line-height: 1.6 !important;
+}
+
+/* Google logo - Order 6 (LAST - at bottom) */
+.css-1dfxm14 {
+  order: 6 !important;
+  margin: 8px 0 0 0 !important;
+  display: block !important;
+}
+
+/* Ensure the parent header container that holds name and date also uses contents */
+.css-1povu0j {
+  display: contents !important;
+}
+
+/* CRITICAL: Also flatten the div that wraps name and date together */
+.css-1povu0j > div {
+  display: contents !important;
+}

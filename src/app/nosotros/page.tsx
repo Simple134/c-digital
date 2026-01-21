@@ -2,7 +2,6 @@
 import { Container } from "@bitnation-dev/components";
 import { motion } from "framer-motion";
 import { useState, useEffect, useRef } from "react";
-import Link from "next/link";
 
 // Team member interface
 interface TeamMember {
@@ -15,7 +14,6 @@ interface TeamMember {
 }
 
 export default function EquipoPage() {
-  const [activeCardIndex, setActiveCardIndex] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [isAutoScrolling, setIsAutoScrolling] = useState(true);
   const autoScrollInterval = useRef<NodeJS.Timeout | null>(null);
@@ -23,7 +21,7 @@ export default function EquipoPage() {
   // Team members data
   const teamMembers: TeamMember[] = [
     {
-      name: "Carlos Digital",
+      name: "Carlos Díaz",
       role: "Founder & CEO",
       title: "CEO & Founder",
       bio: "Visionario digital con más de 10 años de experiencia. Lidera la estrategia y dirección de C Digital con pasión por la innovación.",
@@ -35,11 +33,11 @@ export default function EquipoPage() {
       ],
     },
     {
-      name: "María Rodríguez",
+      name: "Rachel Suero",
       role: "Creative Director",
       title: "Creative Director",
       bio: "Diseñadora gráfica especializada en branding y diseño de experiencias. Convierte conceptos en identidades visuales impactantes.",
-      initials: "MR",
+      initials: "RS",
       socials: [
         { platform: "linkedin", url: "#" },
         { platform: "youtube", url: "#" },
@@ -59,11 +57,11 @@ export default function EquipoPage() {
       ],
     },
     {
-      name: "Ana López",
+      name: "Sarahlia Villar",
       role: "UX Designer",
       title: "UX/UI Designer",
       bio: "Experta en diseño centrado en el usuario. Crea interfaces intuitivas que conectan emocionalmente con las personas.",
-      initials: "AL",
+      initials: "SV",
       socials: [
         { platform: "instagram", url: "#" },
         { platform: "linkedin", url: "#" },
@@ -71,11 +69,11 @@ export default function EquipoPage() {
       ],
     },
     {
-      name: "Pedro Martínez",
+      name: "Vladimir Gabriel",
       role: "Marketing Lead",
       title: "Marketing Strategist",
       bio: "Especialista en marketing digital y growth hacking. Desarrolla estrategias que generan resultados medibles y escalables.",
-      initials: "PM",
+      initials: "VG",
       socials: [
         { platform: "linkedin", url: "#" },
         { platform: "twitter", url: "#" },
@@ -83,11 +81,11 @@ export default function EquipoPage() {
       ],
     },
     {
-      name: "Laura García",
+      name: "Max Díaz",
       role: "Content Creator",
       title: "Content Strategist",
       bio: "Creadora de contenido y copywriter. Transforma ideas complejas en narrativas convincentes que conectan con audiencias.",
-      initials: "LG",
+      initials: "MD",
       socials: [
         { platform: "linkedin", url: "#" },
         { platform: "twitter", url: "#" },
@@ -98,10 +96,10 @@ export default function EquipoPage() {
 
   // Stats data
   const stats = [
-    { number: 150, label: "Proyectos Completados" },
-    { number: 50, label: "Clientes Felices" },
-    { number: 12, label: "Miembros del Equipo" },
-    { number: 5, label: "Años de Experiencia" },
+    { number: 150, label: "Proyectos" },
+    { number: 50, label: "Casos de éxito" },
+    { number: 8, label: "Países" },
+    { number: 12, label: "Años de Experiencia" },
   ];
 
   // Values data
@@ -176,21 +174,10 @@ export default function EquipoPage() {
     scrollRef.current.scrollBy({ left: cardWidth, behavior: "smooth" });
   };
 
-  const handleDotClick = (index: number) => {
-    if (!scrollRef.current) return;
-    setIsAutoScrolling(false);
-    const cardWidth = 360 + 32;
-    scrollRef.current.scrollTo({ left: cardWidth * index, behavior: "smooth" });
-  };
-
   // Update active card on scroll
   useEffect(() => {
     const handleScroll = () => {
       if (!scrollRef.current) return;
-      const scrollPosition = scrollRef.current.scrollLeft;
-      const cardWidth = 360 + 32;
-      const activeIndex = Math.round(scrollPosition / cardWidth);
-      setActiveCardIndex(activeIndex);
     };
 
     const scrollElement = scrollRef.current;
@@ -214,14 +201,14 @@ export default function EquipoPage() {
     label: string;
   }) => {
     const [count, setCount] = useState(0);
-    const [hasAnimated, setHasAnimated] = useState(false);
+    const hasAnimated = useRef(false);
     const ref = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
       const observer = new IntersectionObserver(
         (entries) => {
-          if (entries[0].isIntersecting && !hasAnimated) {
-            setHasAnimated(true);
+          if (entries[0].isIntersecting && !hasAnimated.current) {
+            hasAnimated.current = true;
             const duration = 2000;
             const step = target / (duration / 16);
             let current = 0;
@@ -235,6 +222,9 @@ export default function EquipoPage() {
                 setCount(Math.floor(current));
               }
             }, 16);
+
+            // Disconnect observer immediately after starting animation
+            observer.disconnect();
           }
         },
         { threshold: 0.1 },
@@ -245,7 +235,7 @@ export default function EquipoPage() {
       }
 
       return () => observer.disconnect();
-    }, [target, hasAnimated]);
+    }, [target]);
 
     return (
       <motion.div
@@ -302,9 +292,9 @@ export default function EquipoPage() {
             className="text-6xl md:text-7xl lg:text-8xl font-black mb-6 leading-tight"
           >
             <span className="bg-gradient-to-r from-white to-[#00C5FF] bg-clip-text text-transparent">
-              We Build Digital
+              Agencia de marketing digital y
               <br />
-              Experiences That Matter
+              diseño para pymes en República Dominicana
             </span>
           </motion.h1>
 
@@ -314,9 +304,9 @@ export default function EquipoPage() {
             transition={{ duration: 0.8, delay: 0.4 }}
             className="text-xl text-gray-400 max-w-3xl mx-auto leading-relaxed font-['Avenir']"
           >
-            Somos un equipo apasionado de creativos, estrategas y
-            desarrolladores dedicados a transformar ideas en realidades
-            digitales excepcionales.
+            Somos el estudio de diseño responsable que se encarga de todo el
+            proceso: desde la identidad visual y el contenido hasta el sitio web
+            y las campañas de marketing digital.
           </motion.p>
         </motion.section>
 
@@ -452,22 +442,6 @@ export default function EquipoPage() {
                 </svg>
               </button>
             </div>
-
-            {/* Scroll Indicators */}
-            <div className="flex justify-center gap-2 mt-6">
-              {teamMembers.map((_, index) => (
-                <button
-                  key={index}
-                  onClick={() => handleDotClick(index)}
-                  className={`h-2 rounded-full transition-all duration-300 ${
-                    activeCardIndex === index
-                      ? "w-6 bg-[#00C5FF]"
-                      : "w-2 bg-[#1a1a1a] hover:bg-[#00C5FF] hover:scale-125"
-                  }`}
-                  aria-label={`Go to team member ${index + 1}`}
-                />
-              ))}
-            </div>
           </div>
         </section>
 
@@ -552,45 +526,64 @@ export default function EquipoPage() {
         </section>
 
         {/* CTA Section */}
-        <section className="text-center py-24">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.8 }}
-            className="max-w-4xl mx-auto p-20 bg-gradient-to-br from-[#00C5FF]/10 to-[#00C5FF]/5 border-2 border-[#00C5FF]/30 rounded-[30px] relative overflow-hidden"
-          >
-            <div className="absolute -top-1/2 -right-1/2 w-full h-full bg-gradient-radial from-[#00C5FF]/10 to-transparent animate-spin-slow" />
-
-            <div className="relative z-10">
-              <h2 className="text-4xl md:text-5xl font-bold mb-5 font-['Poppins']">
-                ¿Listo para Trabajar Juntos?
-              </h2>
-              <p className="text-lg text-gray-400 mb-10">
-                Transformemos tu visión en una realidad digital excepcional.
-                Hablemos de tu próximo proyecto.
-              </p>
-
-              <Link
-                href="/contacto"
-                className="inline-flex items-center gap-3 px-10 py-4 bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] text-black font-bold rounded-xl hover:-translate-y-1 hover:shadow-[0_20px_40px_rgba(0,217,255,0.4)] transition-all duration-300"
+        <div className="relative my-20 p-12 bg-gradient-to-br from-[#00C5FF]/10 to-[#00FF7C]/10 border-2 border-[#00C5FF]/30 rounded-3xl overflow-hidden">
+          <div className="relative z-10 max-w-[600px] mx-auto text-center">
+            <div className="w-16 h-16 mx-auto mb-6 bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] rounded-2xl flex items-center justify-center">
+              <svg
+                width="32"
+                height="32"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                viewBox="0 0 24 24"
+                className="text-black"
               >
-                Comenzar Proyecto
-                <svg
-                  width="20"
-                  height="20"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  viewBox="0 0 24 24"
-                >
-                  <line x1="5" y1="12" x2="19" y2="12" />
-                  <polyline points="12 5 19 12 12 19" />
-                </svg>
-              </Link>
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75"
+                />
+              </svg>
             </div>
-          </motion.div>
-        </section>
+            <h3 className="text-3xl md:text-4xl font-bold font-['Poppins'] mb-3 bg-gradient-to-r from-white to-[#00C5FF] bg-clip-text text-transparent">
+              Mantente al Día con Nosotros
+            </h3>
+            <p className="text-gray-400 mb-8">
+              Únete a nuestra Comunidad y recibe contenido exclusivos,
+              estrategias y actualizaciones directamente en tu inbox o WhatsApp.
+            </p>
+
+            <form className="space-y-3">
+              <div className="flex flex-col md:flex-row gap-3">
+                <input
+                  type="text"
+                  placeholder="Tu nombre"
+                  className="flex-1 px-5 py-4 bg-black/50 border border-[#1a1a1a] rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-[#00C5FF]"
+                />
+                <input
+                  type="tel"
+                  placeholder="+1 (809) 000-0000"
+                  className="flex-1 px-5 py-4 bg-black/50 border border-[#1a1a1a] rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-[#00C5FF]"
+                />
+              </div>
+              <input
+                type="email"
+                placeholder="tu@email.com"
+                className="w-full px-5 py-4 bg-black/50 border border-[#1a1a1a] rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-[#00C5FF]"
+              />
+              <button
+                type="submit"
+                className="w-full px-8 py-4 bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] text-black font-bold rounded-xl hover:-translate-y-1 transition-transform"
+              >
+                Suscribirme Ahora
+              </button>
+              <p className="text-xs text-gray-500">
+                Al suscribirte, aceptas nuestra Política de Privacidad y
+                consientes recibir actualizaciones.
+              </p>
+            </form>
+          </div>
+        </div>
       </Container>
 
       <style jsx global>{`

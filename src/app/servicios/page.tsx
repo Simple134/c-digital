@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Search } from "lucide-react";
+import { motion } from "framer-motion";
 import Comotrabajamos from "@/components/Comotrabajamos";
 
 const conectaServices = [
@@ -277,7 +278,13 @@ const Servicios = () => {
   return (
     <div className="relative min-h-screen w-full bg-black text-white px-6 md:px-12 lg:px-24 py-12">
       {/* Search Bar */}
-      <div className="mb-16">
+      <motion.div
+        className="mb-16"
+        initial={{ opacity: 0, y: -20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, amount: 0.3 }}
+        transition={{ duration: 0.6 }}
+      >
         <div className="relative">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#01aaa8] w-5 h-5 z-10" />
           <input
@@ -313,10 +320,16 @@ const Servicios = () => {
             </div>
           )}
         </div>
-      </div>
+      </motion.div>
 
-      {/* Main Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-24">
+      {/* Main Content Grid - Conecta */}
+      <motion.div
+        className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-24"
+        initial={{ opacity: 0, y: 50 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, amount: 0.2 }}
+        transition={{ duration: 0.8 }}
+      >
         {/* Left Side - Main Content */}
         <div className="flex flex-col justify-center space-y-6">
           <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold font-['Poppins']">
@@ -364,7 +377,7 @@ const Servicios = () => {
                 <span
                   className={`text-lg md:text-xl font-['Poppins'] transition-colors duration-300 ${
                     activeConecta === service.id
-                      ? "text-white"
+                      ? "bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] text-transparent bg-clip-text"
                       : "text-[#AFAFAF] group-hover:text-white"
                   }`}
                 >
@@ -383,8 +396,12 @@ const Servicios = () => {
               >
                 <div className="pb-6">
                   <p className="text-[#AFAFAF] text-sm md:text-base leading-relaxed">
-                    {service.description} ¿Para qué sirve?
+                    {service.description}
+                    <br />
+                    <br />
+                    ¿Para qué sirve?
                   </p>
+
                   <p className="text-[#AFAFAF] text-sm md:text-base leading-relaxed mt-4">
                     {service.purpose}
                   </p>
@@ -393,9 +410,16 @@ const Servicios = () => {
             </div>
           ))}
         </div>
-      </div>
+      </motion.div>
       <div className="h-24 border-b border-[#333333]" />
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-24 mt-12">
+      {/* Main Content Grid - Crea */}
+      <motion.div
+        className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-24 mt-12"
+        initial={{ opacity: 0, y: 50 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, amount: 0.2 }}
+        transition={{ duration: 0.8 }}
+      >
         {/* Left Side - Main Content */}
         <div className="flex flex-col justify-center space-y-6">
           <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold font-['Poppins']">
@@ -440,7 +464,7 @@ const Servicios = () => {
                 <span
                   className={`text-lg md:text-xl font-['Poppins'] transition-colors duration-300 ${
                     activeCrea === service.id
-                      ? "text-white"
+                      ? "bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] text-transparent bg-clip-text"
                       : "text-[#AFAFAF] group-hover:text-white"
                   }`}
                 >
@@ -461,7 +485,7 @@ const Servicios = () => {
                   <p className="text-[#AFAFAF] text-sm md:text-base leading-relaxed">
                     {service.description} ¿Para qué sirve?
                   </p>
-                  <p className="text-[#AFAFAF] text-sm md:text-base leading-relaxed">
+                  <p className="text-[#AFAFAF] text-sm md:text-base leading-relaxed mt-4">
                     {service.purpose}
                   </p>
                 </div>
@@ -469,9 +493,16 @@ const Servicios = () => {
             </div>
           ))}
         </div>
-      </div>
+      </motion.div>
       <div className="h-24 border-b border-[#333333]" />
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-24 mt-12">
+      {/* Main Content Grid - Crece */}
+      <motion.div
+        className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-24 mt-12"
+        initial={{ opacity: 0, y: 50 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, amount: 0.2 }}
+        transition={{ duration: 0.8 }}
+      >
         {/* Left Side - Main Content */}
         <div className="flex flex-col justify-center space-y-6">
           <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold font-['Poppins']">
@@ -517,7 +548,7 @@ const Servicios = () => {
                 <span
                   className={`text-lg md:text-xl font-['Poppins'] transition-colors duration-300 ${
                     activeCrece === service.id
-                      ? "text-white"
+                      ? "bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] text-transparent bg-clip-text"
                       : "text-[#AFAFAF] group-hover:text-white"
                   }`}
                 >
@@ -536,7 +567,10 @@ const Servicios = () => {
               >
                 <div className="pb-6">
                   <p className="text-[#AFAFAF] text-sm md:text-base leading-relaxed">
-                    {service.description} ¿Para qué sirve?
+                    {service.description}
+                    <br />
+                    <br />
+                    ¿Para qué sirve?
                   </p>
                   <p className="text-[#AFAFAF] text-sm md:text-base leading-relaxed mt-4">
                     {service.purpose}
@@ -546,9 +580,16 @@ const Servicios = () => {
             </div>
           ))}
         </div>
-      </div>
+      </motion.div>
       <div className="h-24 border-b border-[#333333]" />
-      <div className="grid grid-cols-1 lg:grid-cols-2 mt-48">
+      {/* Bottom Illustration Section */}
+      <motion.div
+        className="grid grid-cols-1 lg:grid-cols-2 mt-48"
+        initial={{ opacity: 0, scale: 0.95 }}
+        whileInView={{ opacity: 1, scale: 1 }}
+        viewport={{ once: true, amount: 0.3 }}
+        transition={{ duration: 0.8 }}
+      >
         <img src="/ilustration.png" alt="Mujer digital" />
         <div className="flex flex-col justify-center space-y-6 mt-12 md:mt-0 md:ml-12">
           <h2 className="text-6xl font-bold font-['Poppins'] w-48">
@@ -560,9 +601,16 @@ const Servicios = () => {
             </span>
           </button>
         </div>
-      </div>
+      </motion.div>
       <div className="h-64" />
-      <Comotrabajamos />
+      <motion.div
+        initial={{ opacity: 0, y: 50 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, amount: 0.2 }}
+        transition={{ duration: 0.8 }}
+      >
+        <Comotrabajamos />
+      </motion.div>
       <div className="h-64" />
     </div>
   );

@@ -42,19 +42,19 @@ const Header = () => {
             </Link>
             <Link
               href="/servicios"
-              className={` ${pathname === "/servicios" ? "text-[#01aaa8] font-bold" : "hover:text-[#9F9F9F] font-normal"} `}
+              className={` ${pathname === "/servicios" ? "bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] text-transparent bg-clip-text font-bold" : "hover:text-[#9F9F9F] font-normal"} `}
             >
               Servicios
             </Link>
             <Link
-              href="/construction"
-              className={` ${pathname === "" ? "text-[#01aaa8] font-bold" : "hover:text-[#9F9F9F] font-normal"} `}
+              href="/blog"
+              className={` ${pathname === "/blog" ? "bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] text-transparent bg-clip-text font-bold" : "hover:text-[#9F9F9F] font-normal"} `}
             >
               Blog
             </Link>
             <Link
               href="/construction"
-              className={` ${pathname === "" ? "text-[#01aaa8] font-bold" : "hover:text-[#9F9F9F] font-normal"} `}
+              className={` ${pathname === "" ? "bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] text-transparent bg-clip-text font-bold" : "hover:text-[#9F9F9F] font-normal"} `}
             >
               Equipo
             </Link>
@@ -66,7 +66,7 @@ const Header = () => {
             </Link>
             <Link
               href="/construction"
-              className={` ${pathname === "" ? "text-[#01aaa8] font-bold" : "hover:text-[#9F9F9F] font-normal"} `}
+              className={` ${pathname === "" ? "bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] text-transparent bg-clip-text font-bold" : "hover:text-[#9F9F9F] font-normal"} `}
             >
               Recursos
             </Link>
@@ -106,7 +106,7 @@ const Header = () => {
             </Link>
             <Link
               href="/servicios"
-              className={`text-lg ${pathname === "/servicios" ? "text-[#01aaa8] font-bold" : "text-white hover:text-[#9F9F9F]"}`}
+              className={`text-lg ${pathname === "/servicios" ? "bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] text-transparent bg-clip-text font-bold" : "text-white hover:text-[#9F9F9F]"}`}
               onClick={closeMenu}
             >
               Servicios
