@@ -815,7 +815,7 @@ export default function BriefBrandForm() {
                             label: "Solo símbolo",
                             sub: "Ícono independiente",
                             letter: "C",
-                            image: "/logos/CafeLogo.png",
+                            image: "/logos/Cafelogo.png",
                           },
                           {
                             value: "logo-simbolo",
@@ -841,7 +841,11 @@ export default function BriefBrandForm() {
                         ].map((type) => (
                           <label
                             key={type.value}
-                            className={`relative group cursor-pointer overflow-hidden rounded-xl border-2 transition-all border-[#00d9ff] bg-[#00d9ff]/5`}
+                            className={`relative group cursor-pointer overflow-hidden rounded-xl border-2 transition-all ${
+                              watch("tipoLogo") === type.value
+                                ? "border-[#00d9ff] bg-[#00d9ff]/5"
+                                : "border-[#1a1a1a] bg-transparent hover:border-[#00d9ff]/30"
+                            }`}
                           >
                             <input
                               type="radio"
