@@ -57,22 +57,22 @@ const AuditoriaForm = () => {
 
   const formData = watch(); // Watch all fields for conditional logic if needed, or simply to track state for debugging/display
 
-  // Available slots (simulated - replace with API call)
-  const availableSlots: Record<string, string[]> = {
-    "2026-01-13": ["19:00", "19:30", "20:00", "20:30"],
-    "2026-01-14": ["19:00", "19:30", "20:00", "20:30"],
-    "2026-01-15": ["19:00", "20:00"],
-    "2026-01-16": ["19:00", "19:30", "20:00", "20:30"],
-    "2026-01-17": ["19:00", "20:00", "20:30"],
-    "2026-01-20": ["19:00", "19:30", "20:00", "20:30"],
-    "2026-01-21": ["19:00", "19:30", "20:00", "20:30"],
-    "2026-01-22": ["19:00", "19:30", "20:00"],
-    "2026-01-23": ["19:00", "19:30", "20:00", "20:30"],
-    "2026-01-27": ["19:00", "19:30", "20:00", "20:30"],
-    "2026-01-28": ["19:00", "19:30", "20:00", "20:30"],
-    "2026-01-29": ["19:00", "20:00", "20:30"],
-    "2026-01-30": ["19:00", "19:30", "20:00", "20:30"],
+  // Generate time slots from 9am to 5pm (9:00 to 17:00) in 30-minute intervals
+  const generateTimeSlots = () => {
+    const slots: string[] = [];
+    for (let hour = 9; hour <= 17; hour++) {
+      if (hour < 17) {
+        slots.push(`${String(hour).padStart(2, "0")}:00`);
+        slots.push(`${String(hour).padStart(2, "0")}:30`);
+      } else {
+        // Add 5:00pm as the last slot
+        slots.push("17:00");
+      }
+    }
+    return slots;
   };
+
+  const timeSlots = generateTimeSlots();
 
   const monthNames = [
     "enero",
@@ -120,7 +120,8 @@ const AuditoriaForm = () => {
       const isPast =
         currentDateObj <
         new Date(today.getFullYear(), today.getMonth(), today.getDate());
-      const hasSlots = availableSlots[dateStr];
+      const dayOfWeek = currentDateObj.getDay();
+      const isSunday = dayOfWeek === 0; // Sunday = 0
       const isToday = currentDateObj.toDateString() === today.toDateString();
       const isSelected = selectedDate === dateStr;
 
@@ -128,7 +129,7 @@ const AuditoriaForm = () => {
         day,
         dateStr,
         isPast,
-        hasSlots,
+        isSunday,
         isToday,
         isSelected,
         key: dateStr,
@@ -273,7 +274,7 @@ const AuditoriaForm = () => {
   };
 
   const calendar = generateCalendar();
-  const timeSlots = selectedDate ? availableSlots[selectedDate] || [] : [];
+  const availableTimeSlots = selectedDate ? timeSlots : [];
   const formattedDate = getFormattedDate();
 
   return (
@@ -364,7 +365,7 @@ const AuditoriaForm = () => {
                       let classes =
                         "aspect-square flex items-center justify-center rounded-lg text-sm cursor-pointer transition-all border ";
 
-                      if (dayData.isPast || !dayData.hasSlots) {
+                      if (dayData.isPast || dayData.isSunday) {
                         classes +=
                           "text-gray-400 opacity-30 cursor-not-allowed border-transparent";
                       } else {
@@ -379,11 +380,15 @@ const AuditoriaForm = () => {
                         <div
                           key={dayData.key}
                           className={classes}
-                          onClick={() =>
-                            dayData.hasSlots && !dayData.isPast
-                              ? handleDateSelect(dayData.dateStr)
-                              : null
-                          }
+                          onClick={() => {
+                            if (
+                              !dayData.isPast &&
+                              !dayData.isSunday &&
+                              dayData.dateStr
+                            ) {
+                              handleDateSelect(dayData.dateStr);
+                            }
+                          }}
                         >
                           {dayData.day}
                         </div>
@@ -414,12 +419,12 @@ const AuditoriaForm = () => {
                       <div className="text-center text-gray-400 py-16 text-sm">
                         👈 Selecciona una fecha del calendario
                       </div>
-                    ) : timeSlots.length === 0 ? (
+                    ) : availableTimeSlots.length === 0 ? (
                       <div className="text-center text-gray-400 py-16 text-sm">
                         No hay horarios disponibles
                       </div>
                     ) : (
-                      timeSlots.map((time) => (
+                      availableTimeSlots.map((time) => (
                         <div
                           key={time}
                           onClick={() => handleTimeSelect(time)}
