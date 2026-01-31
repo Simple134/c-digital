@@ -29,7 +29,7 @@ export async function POST(
     // Inicializar API de Gestiono
     const publicKey = process.env.NEXT_PUBLIC_GESTIONO_PUBLIC_KEY;
     const privateKey = process.env.NEXT_PUBLIC_GESTIONO_SECRET_KEY;
-    const organizationId = process.env.GESTIONO_ORGANIZATION_ID;
+    const organizationId = process.env.NEXT_PUBLIC_GESTIONO_ORGANIZATION_ID;
 
     if (!publicKey || !privateKey || !organizationId) {
       console.error("Faltan credenciales de Gestiono");
@@ -41,13 +41,10 @@ export async function POST(
 
     const gestionoAPI = new GestionoAPI(publicKey, privateKey, organizationId);
 
-    // Preparar datos para Gestiono
     const contactData = {
       ...data,
     };
 
-    // Enviar a Gestiono en background (no esperamos la respuesta)
-    // Esto evita el timeout de gateway
     gestionoAPI
       .submitForm({
         formId: Number(formId),
@@ -60,7 +57,6 @@ export async function POST(
         console.error("Error al enviar a Gestiono (background):", error);
       });
 
-    // Responder inmediatamente al cliente
     return NextResponse.json(
       {
         success: true,
