@@ -209,17 +209,17 @@ const AuditoriaForm = () => {
     setIsSubmitting(true);
 
     const submitData = {
-      Nombre: data.nombre || "nothing",
-      Correo: data.email || "nothing",
-      Negocio: data.negocio || "nothing",
-      Posicion: data.posicion || "nothing",
-      Whatsapp: data.whatsapp || "nothing",
-      Sector: data.sector || "nothing",
+      "Nombre": data.nombre || "nothing",
+      "Correo": data.email || "nothing",
+      "Negocio": data.negocio || "nothing",
+      "Posicion": data.posicion || "nothing",
+      "Whatsapp": data.whatsapp || "nothing",
+      "Sector": data.sector || "nothing",
       "Etapa del negocio": data.etapa || "nothing",
       "Que tienes actualmente": data.digital.join(", ") || "nothing",
       "Desafio actual": data.desafios.join(", ") || "nothing",
-      Servicios: data.servicios.join(", ") || "nothing",
-      Presupuesto: data.presupuesto || "nothing",
+      "Servicios": data.servicios.join(", ") || "nothing",
+      "Presupuesto": data.presupuesto || "nothing",
       "Informacion extra": data.adicional || "nothing",
       "Dia de reunion":
         `${selectedDate} ${selectedTime} (${selectedTimezone})` || "nothing",
