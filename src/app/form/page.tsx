@@ -228,12 +228,12 @@ export default function BriefBrandForm() {
     setIsSubmitting(true);
 
     const submitData = {
-      Nombre: data.nombreCompleto || "nothing",
+      "Nombre": data.nombreCompleto || "nothing",
       "Correo Principal": data.email || "nothing",
-      Pais: data.pais || "nothing",
-      Sociedad: data.enSociedad || "nothing",
+      "Pais": data.pais || "nothing",
+      "Sociedad": data.enSociedad || "nothing",
       "Tipo de Proyecto": data.tipoProyecto || "nothing",
-      Whatsapp: data.whatsapp || "nothing",
+      "Whatsapp": data.whatsapp || "nothing",
       "Redes actuales":
         data.redes?.length > 0 ? data.redes.join(", ") : "nothing",
       "Por que el cambio": data.problemaActual || "nothing",
@@ -244,9 +244,9 @@ export default function BriefBrandForm() {
           : "nothing",
       "Tipo de Logo": data.tipoLogo || "nothing",
       "Abierto a Sugerencias": data.abiertoSugerencias ? "Si" : "No",
-      Presupuesto: data.presupuesto || "nothing",
+      "Presupuesto": data.presupuesto || "nothing",
       "Informacion extra": data.adicional || "nothing",
-      Servicios: data.servicios || "nothing",
+      "Servicios": data.servicios || "nothing",
       "dia de reunion": data.diaReunion || "nothing",
     };
 
