@@ -55,8 +55,8 @@ const Footer = () => {
               />
             </button>
             <p className="text-gray-400 text-sm leading-relaxed max-w-xs">
-              Diseñando tus sueños para construir tu realidad. Más de 12 años
-              transformando la arquitectura en República Dominicana.
+              Somos un estudio de diseño especializado en soluciones digitales
+              para empresas. Si buscas crecer necesitas C Digital.
             </p>
             <div className="flex gap-4">
               <a

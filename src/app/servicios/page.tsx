@@ -595,11 +595,16 @@ const Servicios = () => {
           <h2 className="text-6xl font-bold font-['Poppins'] w-48">
             Encontraste lo que buscabas?
           </h2>
-          <button className="bg-transparent border border-white text-white px-8 py-3 rounded-md w-fit duration-300 font-['Poppins'] font-medium">
+          <a
+            href="https://wa.me/7867557025?text=Hola%2C%20necesito%20asistencia%20con%20los%20servicios%20digitales"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="bg-transparent border border-white text-white px-8 py-3 rounded-md w-fit duration-300 font-['Poppins'] font-medium hover:bg-white/10 transition-all cursor-pointer"
+          >
             <span className="bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] text-transparent bg-clip-text flex items-center justify-center">
               No, necesito asistencia
             </span>
-          </button>
+          </a>
         </div>
       </motion.div>
       <div className="h-64" />
