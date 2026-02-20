@@ -60,11 +60,11 @@ export default function Sales() {
             <MouseParallaxSection depth={12} centerX={0.3} centerY={0.7}>
               <div className=" flex flex-col gap-10 max-w-[740px]">
                 <p>
-                  <GradientText>En Bitnation</GradientText> podemos ayudarlo a
+                  <GradientText>En C-Digital</GradientText> podemos ayudarlo a
                   realizar su proyecto con un enfoque en la calidad y el tiempo.
                   Nos comprometemos en volvemos su Partner tecnológico.
                 </p>
-                <Header>¿Por qué trabajar con Bitnation?</Header>
+                <Header>¿Por qué trabajar con C-Digital?</Header>
                 <div className="pl-5">
                   <ul className="list-disc">
                     <li>
@@ -140,7 +140,7 @@ export default function Sales() {
                   </strong>
                 </p>
                 <p>
-                  En Bitnation, somos el socio tecnológico ideal para empresas y
+                  En C-Digital, somos el socio tecnológico ideal para empresas y
                   emprendedores, brindando soluciones de desarrollo de software
                   nativo, aplicaciones móviles (iOS, Android) y web.
                 </p>
