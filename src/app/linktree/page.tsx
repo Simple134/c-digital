@@ -512,10 +512,8 @@ const LinksPage = () => {
           className="text-center mt-16 pt-8 border-t border-[#1a1a1a] text-gray-400 text-sm"
           style={{ animation: "fadeIn 1s ease-out 0.8s both" }}
         >
-          <p>© 2025 C Digital. Todos los derechos reservados.</p>
-          <p className="mt-2 text-xs">
-            Diseñando tus sueños para construir tu realidad.
-          </p>
+          <p>© 2026 C Digital. Todos los derechos reservados.</p>
+       
         </footer>
       </div>
 
