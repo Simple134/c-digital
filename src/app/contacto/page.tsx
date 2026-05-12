@@ -1,6 +1,7 @@
 "use client";
 import React, { useState } from "react";
 import { useForm, SubmitHandler } from "react-hook-form";
+import Header from "@/components/layout/Header";
 
 interface FormData {
   nombre: string;
@@ -278,6 +279,33 @@ const AuditoriaForm = () => {
   const formattedDate = getFormattedDate();
 
   return (
+    <>
+      <Header dark />
+
+      {/* Dark Hero */}
+      <section style={{ minHeight: "100vh", background: "#0a0a0a", display: "flex", alignItems: "center", padding: "160px 0 100px" }}>
+        <div className="container" style={{ width: "100%" }}>
+          <h1 style={{ fontSize: "clamp(3.5rem,9vw,9rem)", fontWeight: 800, lineHeight: "0.9", letterSpacing: "-3px", textTransform: "uppercase", color: "#fff", marginBottom: "80px" }}>
+            Hablemos <br /><span className="cursive" style={{ color: "#fff" }}>- juntos</span>
+          </h1>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: "1px", background: "rgba(255,255,255,0.08)", borderTop: "1px solid rgba(255,255,255,0.08)" }}>
+            {[
+              { label: "WhatsApp", value: "+1 (809) 000-0000", href: "https://wa.me/18090000000" },
+              { label: "Email", value: "hola@estudiocdigital.com", href: "mailto:hola@estudiocdigital.com" },
+              { label: "Auditoría gratis", value: "Agenda una llamada →", href: "#form" },
+            ].map(opt => (
+              <a key={opt.label} href={opt.href}
+                style={{ textDecoration: "none", color: "inherit", padding: "40px 36px", background: "#0a0a0a", display: "flex", flexDirection: "column", gap: "14px" }}>
+                <span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "3px", color: "rgba(255,255,255,0.4)" }}>{opt.label}</span>
+                <span style={{ fontSize: "clamp(1.1rem,1.8vw,1.5rem)", fontWeight: 700, color: "#fff" }}>{opt.value}</span>
+              </a>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Form Section */}
+      <div id="form" style={{ background: "#fff" }}>
     <div className=" text-white min-h-screen font-sans relative">
       {/* Background Pattern */}
       <div
@@ -1129,6 +1157,8 @@ const AuditoriaForm = () => {
         }
       `}</style>
     </div>
+      </div>
+    </>
   );
 };
 
