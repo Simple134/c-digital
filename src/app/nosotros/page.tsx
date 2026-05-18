@@ -160,7 +160,14 @@ export default function Nosotros() {
         <h2 style={{ fontSize: "clamp(2.4rem,4vw,4rem)", letterSpacing: "-2px", marginBottom: "60px" }}>
           ¿Qué dicen <br />nuestros clientes?
         </h2>
-        {WIDGET_ID && <ReactGoogleReviews layout="badge" featurableId={WIDGET_ID} />}
+        <ReactGoogleReviews
+          carouselBtnStyle={{ display: "none" }}
+          layout="carousel"
+          maxItems={3}
+          carouselAutoplay={true}
+          carouselSpeed={1500}
+          showDots={false}
+          featurableId={WIDGET_ID} />
       </section>
 
       {/* CTA */}

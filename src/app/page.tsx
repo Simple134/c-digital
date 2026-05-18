@@ -20,21 +20,27 @@ const PORTFOLIO = [
 ];
 
 const LOGOS = [
-  "Cafelogo","Dubiel","Eddward","Elainne","Espuma del Caribe","Fenix care",
-  "Gotransfer","HG","HR","Innacorp","Linkup","Merk2","Murcia","Nenox",
-  "Nutriopcion","Omelefit","RC Motoprestamos","TheBillis","Thunder","Urbano","Yerdoza","ZR Logo",
+  "Cafelogo", "Dubiel", "Eddward", "Elainne", "Espuma del Caribe", "Fenix care",
+  "Gotransfer", "HG", "HR", "Innacorp", "Linkup", "Merk2", "Murcia", "Nenox",
+  "Nutriopcion", "Omelefit", "RC Motoprestamos", "TheBillis", "Thunder", "Urbano", "Yerdoza", "ZR Logo",
 ];
 
 const PLANS = [
-  { name: "Aliado Esencial", usd: "$450", period: "/mes", dop: "RD$26,000", slug: "esencial",
-    features: ["Estrategia de contenido mensual","Gestión de 2 redes sociales","Producción de contenido estático y motion","Google My Business optimizado y posicionado en IAs","Reporte mensual"],
-    team: "Carlos · Rachel · Vladimir" },
-  { name: "Aliado Activo", usd: "$1,100", period: "/mes", dop: "RD$64,000", slug: "activo", featured: true,
-    features: ["Estrategia de contenido personalizada","Gestión de 3 redes sociales","Producción audiovisual (reels y videos cortos)","Fotografía mensual","Presupuesto para influencer","SEO local + posicionamiento en Google e IAs","Automatizaciones de WhatsApp","Sesión estratégica mensual + reporte avanzado"],
-    team: "Equipo completo" },
-  { name: "Aliado Estratégico", usd: "A medida", dop: "Según diagnóstico", slug: "estrategico",
-    features: ["Ecosistema digital completo","Google Ads","Desarrollo de sistema o app","CRM integrado","Reuniones quincenales","Cualquier combinación de servicios anteriores"],
-    team: "Equipo completo · incl. Programador", limit: "Máx. 5 clientes en este nivel" },
+  {
+    name: "Aliado Esencial", usd: "$450", period: "/mes", dop: "RD$26,000", slug: "esencial",
+    features: ["Estrategia de contenido mensual", "Gestión de 2 redes sociales", "Producción de contenido estático y motion", "Google My Business optimizado y posicionado en IAs", "Reporte mensual"],
+    team: "Carlos · Rachel · Vladimir"
+  },
+  {
+    name: "Aliado Activo", usd: "$1,100", period: "/mes", dop: "RD$64,000", slug: "activo", featured: true,
+    features: ["Estrategia de contenido personalizada", "Gestión de 3 redes sociales", "Producción audiovisual (reels y videos cortos)", "Fotografía mensual", "Presupuesto para influencer", "SEO local + posicionamiento en Google e IAs", "Automatizaciones de WhatsApp", "Sesión estratégica mensual + reporte avanzado"],
+    team: "Equipo completo"
+  },
+  {
+    name: "Aliado Estratégico", usd: "A medida", dop: "Según diagnóstico", slug: "estrategico",
+    features: ["Ecosistema digital completo", "Google Ads", "Desarrollo de sistema o app", "CRM integrado", "Reuniones quincenales", "Cualquier combinación de servicios anteriores"],
+    team: "Equipo completo · incl. Programador", limit: "Máx. 5 clientes en este nivel"
+  },
 ];
 
 const HERO_WORD = "Estudio";
@@ -42,6 +48,7 @@ const HERO_WORD = "Estudio";
 export default function Home() {
   const containerRef = useRef<HTMLDivElement>(null);
   const WIDGET_ID = process.env.NEXT_PUBLIC_WIDGET_ID ?? "";
+  console.log(WIDGET_ID);
 
   useGSAP(() => {
     gsap.from(".letter", {
@@ -110,6 +117,7 @@ export default function Home() {
 
       {/* Why Us */}
       <section className="why-us">
+        <Background id="tsparticles-why" />
         <div className="why-us-inner">
           <div>
             <span className="why-us-tag">¿Por qué elegirnos?</span>
@@ -193,7 +201,14 @@ export default function Home() {
           <p className="pricing-tag">Testimonios</p>
           <h2 className="reveal-up">De empresas</h2>
         </div>
-        {WIDGET_ID && <ReactGoogleReviews layout="badge" featurableId={WIDGET_ID} />}
+        <ReactGoogleReviews
+          carouselBtnStyle={{ display: "none" }}
+          layout="carousel"
+          maxItems={3}
+          carouselAutoplay={true}
+          carouselSpeed={1500}
+          showDots={false}
+          featurableId={WIDGET_ID} />
       </section>
 
       {/* CTA */}

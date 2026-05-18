@@ -42,7 +42,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <CustomCursor />
         <SidebarLeft />
         <SidebarRight />
-        <Header />
+        <Header dark />
         {children}
         <Footer />
       </body>

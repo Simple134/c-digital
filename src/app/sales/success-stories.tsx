@@ -1,5 +1,4 @@
 import { Header } from "@/components/headerBitnation";
-import { Container, Grid } from "@bitnation-dev/components";
 
 const projects = [
   {
@@ -24,14 +23,15 @@ const projects = [
 
 export const SuccessStories = ({ cta }: { cta?: React.ReactNode }) => {
   return (
-    <Container className="backdrop-blur-xl bg-black/30 !py-28">
+    <div className="backdrop-blur-xl bg-black/30 py-28">
+      <div className="max-w-[1400px] mx-auto px-6 md:px-10 lg:px-16">
       <Header className=" text-center">Últimos Proyectos Exitosos</Header>
       <p className=" text-center mb-10 mt-5 max-w-md mx-auto">
         Contamos con amplia experiencia desarrollando software y aplicativos
         móviles de alta performance
       </p>
       {/* Desktop Grid */}
-      <Grid className="!hidden md:!grid" columns={{ xl: 3, md: 1 }}>
+      <div className="hidden md:grid md:grid-cols-3 gap-8">
         {projects.map((project) => (
           <div
             className="opacity-30 hover:opacity-100 transition-all duration-300"
@@ -44,7 +44,7 @@ export const SuccessStories = ({ cta }: { cta?: React.ReactNode }) => {
             <p className="text-center px-4">{project.description}</p>
           </div>
         ))}
-      </Grid>
+      </div>
       {/* Mobile Snap Scroll */}
       <div className="md:hidden overflow-x-auto snap-x snap-mandatory -mx-4 px-4">
         <div className="flex gap-6 pb-6">
@@ -70,6 +70,7 @@ export const SuccessStories = ({ cta }: { cta?: React.ReactNode }) => {
         </div>
       </div>
       <div className=" flex justify-center mt-4">{cta}</div>
-    </Container>
+      </div>
+    </div>
   );
 };
