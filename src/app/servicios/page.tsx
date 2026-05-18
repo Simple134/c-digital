@@ -4,8 +4,8 @@ import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import Image from "next/image";
-import Link from "next/link";
 import Header from "@/components/layout/Header";
+import CtaSection from "@/components/CtaSection";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -74,21 +74,10 @@ export default function Servicios() {
       ))}
 
       {/* CTA */}
-      <section className="cta-section reveal-up">
-        <div className="cta-inner container">
-          <div className="cta-video-wrap">
-            <video autoPlay loop muted playsInline>
-              <source src="/Video de mujer.mp4" type="video/mp4" />
-            </video>
-          </div>
-          <div className="cta-content">
-            <p className="pricing-tag">Hora de decidir</p>
-            <h2>¿Listo para crecer?</h2>
-            <p className="cta-text">Agenda una auditoría gratuita y te decimos exactamente qué necesita tu negocio digital.</p>
-            <Link href="/contacto" className="cta-btn">Agendar auditoría</Link>
-          </div>
-        </div>
-      </section>
+      <CtaSection
+        title="¿Listo para crecer?"
+        text="Agenda una auditoría gratuita y te decimos exactamente qué necesita tu negocio digital."
+      />
     </div>
   );
 }

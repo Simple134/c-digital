@@ -163,7 +163,7 @@ header {
 .item-5 { grid-column: 1 / 13; margin-top: 40px; }
 
 /* Why Us */
-.why-us { background-color: #0a0a0a; color: #fff; padding: var(--section-pad-y) 0; position: relative; overflow: hidden; }
+.why-us { background-color: #000; color: #fff; padding: var(--section-pad-y) 0; position: relative; overflow: hidden; }
 .why-us-inner { max-width: 1400px; margin: 0 auto; padding: 0 40px; display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: center; position: relative; z-index: 1; }
 .why-us-tag { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 3px; color: rgba(255,255,255,0.5); margin-bottom: 60px; display: block; }
 .why-items { display: flex; flex-direction: column; }
@@ -209,15 +209,21 @@ header {
 .pricing-card--featured .pricing-btn:hover { background: #fff; color: #000; }
 
 /* Logos Carousel */
-.logos-section { padding: var(--section-pad-y) 0; border-top: 1px solid var(--border-color); }
-.logos-carousel { overflow: hidden; margin-top: 60px; }
+.logos-section { background-color: #000; color: #fff; overflow: hidden; }
+.logos-section .pricing-tag { margin-bottom: var(--label-title-gap); }
+.logos-section h2 { font-size: clamp(2.5rem, 5vw, 4rem); margin-bottom: var(--section-header-gap); }
+.logos-carousel {
+  width: 100%; overflow: hidden; padding: 20px 0;
+  mask-image: linear-gradient(to right, transparent, black 15%, black 85%, transparent);
+  -webkit-mask-image: linear-gradient(to right, transparent, black 15%, black 85%, transparent);
+}
 .logos-track {
-  display: flex; gap: 60px; align-items: center;
+  display: flex; gap: 100px; align-items: center;
   animation: logos-scroll 30s linear infinite;
   width: max-content;
 }
-.logos-track img { height: 32px; width: auto; opacity: 0.45; filter: invert(1); transition: opacity 0.3s; flex-shrink: 0; }
-.logos-track img:hover { opacity: 1; filter: invert(1); }
+.logos-track img { height: 45px; width: auto; filter: brightness(0) invert(1); transition: all 0.5s cubic-bezier(0.19, 1, 0.22, 1); flex-shrink: 0; }
+.logos-track img:hover { transform: scale(1.1); }
 @keyframes logos-scroll { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
 
 /* Testimonials */
@@ -230,13 +236,13 @@ header {
 .testimonial-author span { font-size: 12px; color: var(--muted-color); text-transform: none; letter-spacing: 0; }
 
 /* CTA Section */
-.cta-section { background: #0a0a0a; color: #fff; padding: var(--section-pad-y) 0; }
-.cta-inner { display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: center; }
-.cta-video-wrap { overflow: hidden; aspect-ratio: 4/5; }
-.cta-video-wrap video { width: 100%; height: 100%; object-fit: cover; }
-.cta-content { display: flex; flex-direction: column; gap: 24px; }
-.cta-content h2 { font-size: clamp(2.5rem, 5vw, 4.5rem); color: #fff; line-height: 1; }
-.cta-text { font-size: 16px; line-height: 1.7; color: rgba(255,255,255,0.6); }
+.cta-section { background: #000; color: #fff; padding: var(--section-pad-y) 0; }
+.cta-inner { display: grid; grid-template-columns: 1.3fr 0.7fr; gap: 60px; align-items: center; }
+.cta-video-wrap { width: 90%; margin-left: 0; margin-right: auto; overflow: hidden; border-radius: 4px; }
+.cta-video-wrap video { width: 100%; height: auto; display: block; }
+.cta-content { display: flex; flex-direction: column; gap: 12px; }
+.cta-content h2 { font-size: clamp(2rem, 4vw, 3.5rem); color: #fff; line-height: 1.1; margin-top: -8px; margin-bottom: 24px; }
+.cta-text { font-size: 18px; line-height: 1.6; color: rgba(255,255,255,0.6); max-width: 480px; margin-bottom: 40px; }
 .cta-btn {
   display: inline-flex; align-items: center; gap: 12px;
   padding: 18px 32px; background: #fff; color: #000;
@@ -246,6 +252,18 @@ header {
 }
 .cta-btn:hover { background: var(--accent-color); color: #fff; }
 .btn-icon { flex-shrink: 0; }
+
+/* Contact page — option items (global scope required: Link no hereda styled-jsx hash) */
+.contact-options { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: rgba(255,255,255,0.08); border-top: 1px solid rgba(255,255,255,0.08); }
+.option-item { text-decoration: none; color: inherit; padding: 40px 36px; background: #0a0a0a; display: flex; flex-direction: column; justify-content: center; gap: 14px; position: relative; overflow: hidden; transition: background 0.4s ease; }
+.option-item::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, #00b3e8, #00c25f); opacity: 0; transition: opacity 0.4s ease; }
+.option-item:hover::after { opacity: 0.06; }
+.option-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 3px; color: rgba(255,255,255,0.4); display: block; position: relative; z-index: 1; }
+.option-value { font-size: clamp(1.1rem, 1.8vw, 1.5rem); font-weight: 700; color: #fff; display: flex; align-items: center; gap: 12px; transition: all 0.3s ease; position: relative; z-index: 1; }
+.opt-arrow { font-size: 18px; background: linear-gradient(90deg, #00b3e8, #00c25f); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; transform: translateX(0); transition: transform 0.3s ease; }
+.option-item:hover .opt-arrow { transform: translateX(6px); }
+.option-item:hover .option-value { background: linear-gradient(90deg, #00b3e8, #00c25f); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+@media (max-width: 768px) { .contact-options { grid-template-columns: 1fr; } }
 
 /* Footer */
 .site-footer { padding: 80px 0; border-top: 1px solid var(--border-color); }
@@ -315,7 +333,8 @@ header {
 @media (max-width: 991px) {
   .pricing-grid { grid-template-columns: 1fr; max-width: 480px; margin: 0 auto; }
   .testimonials-grid { grid-template-columns: 1fr; }
-  .cta-inner { grid-template-columns: 1fr; }
+  .cta-inner { grid-template-columns: 1fr; gap: 60px; }
+  .cta-video-wrap { width: 100%; max-width: 400px; margin: 0 auto; }
   .why-us-inner { grid-template-columns: 1fr; }
   .portfolio-grid { grid-template-columns: 1fr 1fr; gap: 24px; }
   .item-1, .item-2, .item-3, .item-4, .item-5 { grid-column: auto; margin-top: 0; }
@@ -334,4 +353,5 @@ header {
   .article-layout { grid-template-columns: 1fr; }
   .article-toc { display: none; }
   .article-hero h1 { letter-spacing: -2px; }
+  .logos-section h2 { margin-bottom: 48px; }
 }

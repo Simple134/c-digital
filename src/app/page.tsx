@@ -1,11 +1,12 @@
 "use client";
-import { useRef } from "react";
+import { useRef, useState, useEffect } from "react";
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import Image from "next/image";
 import Link from "next/link";
 import Background from "@/components/background";
+import CtaSection from "@/components/CtaSection";
 import { ReactGoogleReviews } from "react-google-reviews";
 import "react-google-reviews/dist/index.css";
 
@@ -43,12 +44,13 @@ const PLANS = [
   },
 ];
 
-const HERO_WORD = "Estudio";
+const HERO_WORDS = ["Estudio", "Agencia", "Equipo", "Expertos"];
 
 export default function Home() {
   const containerRef = useRef<HTMLDivElement>(null);
+  const wordRef = useRef<HTMLSpanElement>(null);
+  const [wordIndex, setWordIndex] = useState(0);
   const WIDGET_ID = process.env.NEXT_PUBLIC_WIDGET_ID ?? "";
-  console.log(WIDGET_ID);
 
   useGSAP(() => {
     gsap.from(".letter", {
@@ -69,6 +71,33 @@ export default function Home() {
     });
   }, { scope: containerRef });
 
+  const isMounted = useRef(false);
+
+  // Ciclar la palabra cada 2.5 s: animar salida → cambiar índice
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (!wordRef.current) return;
+      const letters = wordRef.current.querySelectorAll<HTMLElement>(".letter");
+      gsap.to(letters, {
+        y: "-110%", opacity: 0, stagger: 0.03,
+        duration: 0.4, ease: "power2.in",
+        onComplete: () => setWordIndex(prev => (prev + 1) % HERO_WORDS.length),
+      });
+    }, 2500);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Animar entrada de las letras nuevas tras cada cambio de índice
+  useEffect(() => {
+    if (!isMounted.current) { isMounted.current = true; return; }
+    if (!wordRef.current) return;
+    const letters = wordRef.current.querySelectorAll<HTMLElement>(".letter");
+    gsap.fromTo(letters,
+      { y: "110%", opacity: 0 },
+      { y: "0%", opacity: 1, stagger: 0.05, duration: 0.6, ease: "power4.out" }
+    );
+  }, [wordIndex]);
+
   return (
     <div ref={containerRef}>
       {/* Hero */}
@@ -77,8 +106,8 @@ export default function Home() {
         <div className="container">
           <h1>
             <span className="rotating-text-wrapper">
-              <span className="rotating-word">
-                {HERO_WORD.split("").map((letter, i) => (
+              <span className="rotating-word" ref={wordRef}>
+                {HERO_WORDS[wordIndex].split("").map((letter, i) => (
                   <span key={i} className="letter">{letter}</span>
                 ))}
               </span>
@@ -212,21 +241,10 @@ export default function Home() {
       </section>
 
       {/* CTA */}
-      <section className="cta-section reveal-up">
-        <div className="cta-inner container">
-          <div className="cta-video-wrap">
-            <video autoPlay loop muted playsInline>
-              <source src="/Video de mujer.mp4" type="video/mp4" />
-            </video>
-          </div>
-          <div className="cta-content">
-            <p className="pricing-tag">Hora de decidir</p>
-            <h2>¿No sabes por dónde iniciar?</h2>
-            <p className="cta-text">La solución para tu incertidumbre es una auditoría gratis. No procrastines más y agenda sin compromiso.</p>
-            <Link href="/contacto" className="cta-btn">Agendar auditoría</Link>
-          </div>
-        </div>
-      </section>
+      <CtaSection
+        title="¿No sabes por dónde iniciar?"
+        text="La solución para tu incertidumbre es una auditoría gratis. No procrastines más y agenda sin compromiso."
+      />
     </div>
   );
 }

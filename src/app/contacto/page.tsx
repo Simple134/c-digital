@@ -469,84 +469,6 @@ function ContactoContent() {
           margin-bottom: 80px;
         }
 
-        .contact-options {
-          display: grid;
-          grid-template-columns: repeat(3, 1fr);
-          gap: 1px;
-          background: rgba(255, 255, 255, 0.08);
-          border-top: 1px solid rgba(255, 255, 255, 0.08);
-        }
-
-        .option-item {
-          text-decoration: none;
-          color: inherit;
-          padding: 40px 36px;
-          background: #0a0a0a;
-          display: flex;
-          flex-direction: column;
-          gap: 14px;
-          position: relative;
-          overflow: hidden;
-          transition: background 0.4s ease;
-        }
-
-        .option-item::after {
-          content: "";
-          position: absolute;
-          inset: 0;
-          background: linear-gradient(90deg, #00b3e8, #00c25f);
-          opacity: 0;
-          transition: opacity 0.4s ease;
-        }
-
-        .option-item:hover::after {
-          opacity: 0.06;
-        }
-
-        .option-label {
-          font-size: 11px;
-          font-weight: 700;
-          text-transform: uppercase;
-          letter-spacing: 3px;
-          color: rgba(255, 255, 255, 0.4);
-          display: block;
-          position: relative;
-          z-index: 1;
-        }
-
-        .option-value {
-          font-size: clamp(1.1rem, 1.8vw, 1.5rem);
-          font-weight: 700;
-          color: #fff;
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          transition: all 0.3s ease;
-          position: relative;
-          z-index: 1;
-        }
-
-        .opt-arrow {
-          font-size: 18px;
-          background: linear-gradient(90deg, #00b3e8, #00c25f);
-          -webkit-background-clip: text;
-          background-clip: text;
-          -webkit-text-fill-color: transparent;
-          transform: translateX(0);
-          transition: transform 0.3s ease;
-        }
-
-        .option-item:hover .opt-arrow {
-          transform: translateX(6px);
-        }
-
-        .option-item:hover .option-value {
-          background: linear-gradient(90deg, #00b3e8, #00c25f);
-          -webkit-background-clip: text;
-          background-clip: text;
-          -webkit-text-fill-color: transparent;
-        }
-
         /* ── Form Section ── */
         .contact-form-section {
           padding: 160px 0;
@@ -854,9 +776,6 @@ function ContactoContent() {
         }
 
         @media (max-width: 768px) {
-          .contact-options {
-            grid-template-columns: 1fr;
-          }
           .contact-form-grid {
             grid-template-columns: 1fr;
             gap: 60px;

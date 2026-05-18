@@ -4,8 +4,8 @@ import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import Image from "next/image";
-import Link from "next/link";
 import { ReactGoogleReviews } from "react-google-reviews";
+import CtaSection from "@/components/CtaSection";
 import "react-google-reviews/dist/index.css";
 import Header from "@/components/layout/Header";
 
@@ -171,21 +171,10 @@ export default function Nosotros() {
       </section>
 
       {/* CTA */}
-      <section className="cta-section reveal-up">
-        <div className="cta-inner container">
-          <div className="cta-video-wrap">
-            <video autoPlay loop muted playsInline>
-              <source src="/Video de mujer.mp4" type="video/mp4" />
-            </video>
-          </div>
-          <div className="cta-content">
-            <p className="pricing-tag">Hora de decidir</p>
-            <h2>¿No sabes por dónde iniciar?</h2>
-            <p className="cta-text">La solución para tu incertidumbre es una auditoría gratis. No procrastines más y agenda sin compromiso.</p>
-            <Link href="/contacto" className="cta-btn">Agendar auditoría</Link>
-          </div>
-        </div>
-      </section>
+      <CtaSection
+        title="¿No sabes por dónde iniciar?"
+        text="La solución para tu incertidumbre es una auditoría gratis. No procrastines más y agenda sin compromiso."
+      />
     </div>
   );
 }
