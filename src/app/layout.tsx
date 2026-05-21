@@ -1,11 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import Header from "@/components/layout/Header";
-import Footer from "@/components/layout/Footer";
-import BgGrid from "@/components/layout/BgGrid";
-import SidebarLeft from "@/components/layout/SidebarLeft";
-import SidebarRight from "@/components/layout/SidebarRight";
-import CustomCursor from "@/components/ui/CustomCursor";
+import { EditorialShell } from "@/components/layout/EditorialShell";
 import Script from "next/script";
 
 export const metadata: Metadata = {
@@ -38,13 +33,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <iframe src="https://www.googletagmanager.com/ns.html?id=GTM-NLPZ3SLZ"
             height="0" width="0" style={{ display: "none", visibility: "hidden" }} />
         </noscript>
-        <BgGrid />
-        <CustomCursor />
-        <SidebarLeft />
-        <SidebarRight />
-        <Header dark />
-        {children}
-        <Footer />
+        <EditorialShell>{children}</EditorialShell>
       </body>
     </html>
   );

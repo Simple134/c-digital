@@ -166,7 +166,7 @@ function ContactoContent() {
       <section className="contact-hero">
         <div className="container">
           <h1 id="heroTitle">
-            Hablemos <br /> de tu <span className="cursive">proyecto</span>
+            Hablemos <br /> de tu <span className="cursive" style={{ color: "#fff" }}>proyecto</span>
           </h1>
           <div className="contact-options" id="contactOptions">
             <a href="#form" className="option-item">

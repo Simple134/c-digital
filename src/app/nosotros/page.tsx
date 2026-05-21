@@ -64,19 +64,20 @@ export default function Nosotros() {
       <Header />
 
       {/* Hero */}
-      <section className="container" style={{ minHeight: "100vh", display: "flex", alignItems: "center" }}>
+      <section className="container" style={{ height: "100vh", display: "flex", alignItems: "center", padding: "0 40px" }}>
         <div style={{ display: "grid", gridTemplateColumns: "1.2fr 0.8fr", alignItems: "center", gap: "40px", width: "100%" }}>
-          <h1 className="reveal-up" style={{ fontSize: "clamp(4rem,12vw,10rem)", lineHeight: "0.85" }}>
-            Agencia <br /><span className="cursive">- nosotros</span>
+          <h1 className="reveal-up" style={{ fontSize: "clamp(4rem,12vw,10rem)", lineHeight: "0.85", margin: 0 }}>
+            Agencia <br />
+            <span className="cursive" style={{ fontSize: "clamp(3rem,8vw,6rem)", display: "block", marginTop: "-20px" }}>- nosotros</span>
           </h1>
-          <p className="reveal-up" style={{ fontSize: "16px", color: "var(--muted-color)", maxWidth: "300px" }}>
+          <p className="reveal-up" style={{ fontSize: "16px", color: "var(--muted-color)", maxWidth: "300px", marginBottom: "20px" }}>
             Creamos historias de experiencia impactantes. Nos apasiona nuestro trabajo y cómo impacta positivamente en nuestros clientes.
           </p>
         </div>
       </section>
 
       {/* Photo strip */}
-      <section style={{ padding: "80px 0", overflow: "hidden", background: "#fff" }}>
+      <section style={{ padding: "100px 0", overflow: "hidden", background: "#fff" }}>
         <div style={{ display: "flex", gap: "20px", padding: "0 40px" }}>
           {PHOTOS.map((src, i) => (
             <div key={i} style={{ flex: "0 0 600px", height: "400px", overflow: "hidden" }}>
@@ -88,7 +89,7 @@ export default function Nosotros() {
       </section>
 
       {/* Philosophy */}
-      <section className="container reveal-up" style={{ display: "grid", gridTemplateColumns: "1.2fr 0.8fr", gap: "100px" }}>
+      <section className="container reveal-up" style={{ display: "grid", gridTemplateColumns: "1.2fr 0.8fr", gap: "100px", padding: "120px 40px" }}>
         <h2 style={{ fontSize: "clamp(2.5rem,5vw,4.5rem)", lineHeight: "1.1", fontWeight: 700 }}>
           Somos la <span className="cursive">solución completa</span> para las PYMES.
         </h2>
@@ -103,7 +104,7 @@ export default function Nosotros() {
       </section>
 
       {/* Stats */}
-      <section className="container reveal-up" style={{ border: "1px solid rgba(0,0,0,0.1)", borderRadius: "20px", margin: "100px auto" }}>
+      <section className="container reveal-up" style={{ border: "1px solid rgba(0,0,0,0.1)", borderRadius: "20px", margin: "100px auto", padding: "100px 40px" }}>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: "40px", padding: "80px 40px" }}>
           {STATS.map(s => (
             <div key={s.label} style={{ textAlign: "center" }}>

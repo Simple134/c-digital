@@ -54,7 +54,7 @@ export default function Home() {
 
   useGSAP(() => {
     gsap.from(".letter", {
-      y: "110%", opacity: 0, stagger: 0.05,
+      x: "-110%", opacity: 0, stagger: 0.05,
       duration: 1, ease: "power4.out", delay: 0.3,
     });
 
@@ -69,6 +69,35 @@ export default function Home() {
       scaleX: 1, duration: 1.2, ease: "power4.out",
       scrollTrigger: { trigger: ".portfolio-header", start: "top 85%" },
     });
+
+    const mm = gsap.matchMedia();
+
+    mm.add("(min-width: 769px)", () => {
+      const whyItems = gsap.utils.toArray<HTMLElement>(".why-item");
+      const whyTl = gsap.timeline({
+        scrollTrigger: {
+          trigger: ".why-us",
+          pin: true,
+          start: "top top",
+          end: `+=${whyItems.length * 500}`,
+          scrub: 0.8,
+        },
+      });
+      whyItems.forEach(item => {
+        whyTl
+          .to(item, { opacity: 1, y: 0, duration: 0.4, ease: "power2.out" })
+          .to({}, { duration: 0.3 });
+      });
+    });
+
+    mm.add("(max-width: 768px)", () => {
+      gsap.utils.toArray<HTMLElement>(".why-item").forEach(item => {
+        gsap.to(item, {
+          opacity: 1, y: 0, duration: 0.9, ease: "power3.out",
+          scrollTrigger: { trigger: item, start: "top 85%", toggleActions: "play none none none" },
+        });
+      });
+    });
   }, { scope: containerRef });
 
   const isMounted = useRef(false);
@@ -79,7 +108,7 @@ export default function Home() {
       if (!wordRef.current) return;
       const letters = wordRef.current.querySelectorAll<HTMLElement>(".letter");
       gsap.to(letters, {
-        y: "-110%", opacity: 0, stagger: 0.03,
+        x: "110%", opacity: 0, stagger: 0.03,
         duration: 0.4, ease: "power2.in",
         onComplete: () => setWordIndex(prev => (prev + 1) % HERO_WORDS.length),
       });
@@ -93,8 +122,8 @@ export default function Home() {
     if (!wordRef.current) return;
     const letters = wordRef.current.querySelectorAll<HTMLElement>(".letter");
     gsap.fromTo(letters,
-      { y: "110%", opacity: 0 },
-      { y: "0%", opacity: 1, stagger: 0.05, duration: 0.6, ease: "power4.out" }
+      { x: "-110%", opacity: 0 },
+      { x: "0%", opacity: 1, stagger: 0.05, duration: 0.6, ease: "power4.out" }
     );
   }, [wordIndex]);
 
@@ -184,7 +213,7 @@ export default function Home() {
           {PLANS.map(plan => (
             <div key={plan.slug} className={`pricing-card reveal-up${plan.featured ? " pricing-card--featured" : ""}`}>
               {plan.featured && <div className="plan-badge">Más popular</div>}
-              <div>
+              <div className="pricing-card-top">
                 <h3 className="plan-name">{plan.name}</h3>
                 <div className="plan-price">
                   <span className={`plan-usd${plan.slug === "estrategico" ? " plan-custom" : ""}`}>
