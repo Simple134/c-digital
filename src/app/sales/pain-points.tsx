@@ -1,3 +1,4 @@
+import { Grid, Container } from "@bitnation-dev/components";
 import { GradientText } from "@/components/gradient-text";
 import { Header } from "@/components/headerBitnation";
 import {
@@ -110,11 +111,11 @@ export default function PainPoints() {
         }`}
       >
         <div className="backdrop-blur-xl h-screen flex items-center justify-center">
-          <div className="max-w-[840px] mx-auto px-6 py-10 md:py-28 overflow-hidden">
+          <Container className=" [&_.container-inside]:max-w-[840px] !md:py-28 !py-10 overflow-hidden">
             <Header className="text-white max-w-[440px] md:mb-16 mb-5">
               ¿Se identifica con algo de esto?
             </Header>
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 h-full">
+            <Grid className="h-full" columns={{ xl: 2, md: 1 }}>
               <div>
                 <ul>
                   <motion.li
@@ -289,8 +290,8 @@ export default function PainPoints() {
                   </motion.div>
                 </div>
               </div>
-            </div>
-          </div>
+            </Grid>
+          </Container>
         </div>
       </div>
     </div>
