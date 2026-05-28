@@ -9,7 +9,11 @@ export const metadata: Metadata = {
     "La mejor agencia de marketing digital y diseño especializada en acompañar desde cero a pymes de Rep. Dom. a posicionar sus negocios y digitalizar sus negocios.",
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <html lang="es">
       <head>
@@ -20,7 +24,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
           })(window,document,'script','dataLayer','GTM-NLPZ3SLZ');
         `}</Script>
-        <Script strategy="afterInteractive" src="https://www.googletagmanager.com/gtag/js?id=G-RYKF36ME89" />
+        <Script
+          strategy="afterInteractive"
+          src="https://www.googletagmanager.com/gtag/js?id=G-RYKF36ME89"
+        />
         <Script id="google-analytics" strategy="afterInteractive">{`
           window.dataLayer = window.dataLayer || [];
           function gtag(){dataLayer.push(arguments);}
@@ -30,8 +37,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body suppressHydrationWarning>
         <noscript>
-          <iframe src="https://www.googletagmanager.com/ns.html?id=GTM-NLPZ3SLZ"
-            height="0" width="0" style={{ display: "none", visibility: "hidden" }} />
+          <iframe
+            src="https://www.googletagmanager.com/ns.html?id=GTM-NLPZ3SLZ"
+            height="0"
+            width="0"
+            style={{ display: "none", visibility: "hidden" }}
+          />
         </noscript>
         <EditorialShell>{children}</EditorialShell>
       </body>

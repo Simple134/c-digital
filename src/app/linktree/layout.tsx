@@ -4,7 +4,11 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Background from "@/components/background";
 
-export default function LinktreeLayout({ children }: { children: React.ReactNode }) {
+export default function LinktreeLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   useEffect(() => {
     document.body.classList.add("linktree-layout");
 
@@ -50,10 +54,7 @@ export default function LinktreeLayout({ children }: { children: React.ReactNode
     <div className="relative min-h-screen bg-black text-white">
       <Background />
       <div className="relative z-10 flex justify-center pt-4">
-        <div
-          className="cursor-pointer"
-          onClick={() => router.push("/")}
-        >
+        <div className="cursor-pointer" onClick={() => router.push("/")}>
           <Image
             src="/Layer_1.png"
             alt="C Digital"

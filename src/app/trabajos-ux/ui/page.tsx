@@ -78,7 +78,10 @@ const Trabajos = () => {
     <div className="relative h-[80vh] no-scrollbar">
       <Background />
       <div className="relative z-10">
-        <div className="max-w-[1400px] mx-auto px-6 md:px-10 lg:px-16" id="cont-1">
+        <div
+          className="max-w-[1400px] mx-auto px-6 md:px-10 lg:px-16"
+          id="cont-1"
+        >
           <AnimatePresence>
             <div
               key={showNewProjects ? "new-projects" : "initial-projects"}
@@ -176,7 +179,10 @@ const Trabajos = () => {
           </AnimatePresence>
         </div>
         <div className="h-48"></div>
-        <div className="max-w-[1400px] mx-auto px-6 md:px-10 lg:px-16" id="cont-2">
+        <div
+          className="max-w-[1400px] mx-auto px-6 md:px-10 lg:px-16"
+          id="cont-2"
+        >
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-8" id="marcas">
             <div className="col-span-1 lg:col-span-2">
               <div className="flex h-full">

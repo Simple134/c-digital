@@ -20,7 +20,9 @@ export default function Header({ dark = false }: { dark?: boolean }) {
     document.body.style.overflow = open ? "hidden" : "";
   }, [open]);
 
-  useEffect(() => { setOpen(false); }, [pathname]);
+  useEffect(() => {
+    setOpen(false);
+  }, [pathname]);
 
   const isActive = (href: string) =>
     href === "/" ? pathname === "/" : pathname.startsWith(href);
@@ -28,37 +30,65 @@ export default function Header({ dark = false }: { dark?: boolean }) {
   return (
     <>
       <header className={dark ? "header-dark on-dark" : ""}>
-        <Link href="/" className="logo"><CDigitalLogo /></Link>
+        <Link href="/" className="logo">
+          <CDigitalLogo />
+        </Link>
         <nav className="main-nav">
           <ul>
             {NAV.map(({ href, label }) => (
               <li key={href}>
-                <Link href={href} className={isActive(href) ? "active" : ""}>{label}</Link>
+                <Link href={href} className={isActive(href) ? "active" : ""}>
+                  {label}
+                </Link>
               </li>
             ))}
           </ul>
         </nav>
         <button
           className={`nav-toggle${open ? " is-open" : ""}`}
-          onClick={() => setOpen(v => !v)}
+          onClick={() => setOpen((v) => !v)}
           aria-label="Menú"
         >
-          <span /><span />
+          <span />
+          <span />
         </button>
       </header>
 
-      <nav className={`mobile-nav-overlay${open ? " is-open" : ""}`} aria-hidden={!open}>
+      <nav
+        className={`mobile-nav-overlay${open ? " is-open" : ""}`}
+        aria-hidden={!open}
+      >
         <ul>
           {NAV.map(({ href, label }) => (
             <li key={href}>
-              <Link href={href} className={isActive(href) ? "active" : ""}>{label}</Link>
+              <Link href={href} className={isActive(href) ? "active" : ""}>
+                {label}
+              </Link>
             </li>
           ))}
         </ul>
         <div className="mobile-nav-social">
-          <a href="https://www.instagram.com/cdigitalestudio/" target="_blank" rel="noopener">Instagram</a>
-          <a href="https://www.youtube.com/@cdigitalestudio" target="_blank" rel="noopener">YouTube</a>
-          <a href="https://www.linkedin.com/company/c-digital-estudio/" target="_blank" rel="noopener">LinkedIn</a>
+          <a
+            href="https://www.instagram.com/cdigitalestudio/"
+            target="_blank"
+            rel="noopener"
+          >
+            Instagram
+          </a>
+          <a
+            href="https://www.youtube.com/@cdigitalestudio"
+            target="_blank"
+            rel="noopener"
+          >
+            YouTube
+          </a>
+          <a
+            href="https://www.linkedin.com/company/c-digital-estudio/"
+            target="_blank"
+            rel="noopener"
+          >
+            LinkedIn
+          </a>
         </div>
       </nav>
     </>

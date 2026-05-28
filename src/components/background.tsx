@@ -121,7 +121,15 @@ const Background = ({ id = "tsparticles" }: { id?: string }) => {
 
   if (init) {
     return (
-      <div style={{ position: "absolute", inset: 0, overflow: "hidden", zIndex: 0, pointerEvents: "none" }}>
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          overflow: "hidden",
+          zIndex: 0,
+          pointerEvents: "none",
+        }}
+      >
         <Particles
           id={id}
           particlesLoaded={particlesLoaded}

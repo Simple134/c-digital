@@ -50,7 +50,13 @@ function ContactoContent() {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showModal, setShowModal] = useState(false);
-  const [captcha, setCaptcha] = useState({ a: 1, b: 1, answer: 2, input: "", error: false });
+  const [captcha, setCaptcha] = useState({
+    a: 1,
+    b: 1,
+    answer: 2,
+    input: "",
+    error: false,
+  });
 
   const generateCaptcha = () => {
     const a = Math.floor(Math.random() * 9) + 1;
@@ -67,13 +73,21 @@ function ContactoContent() {
     if (!plan || !PLAN_PREFILL[plan]) return;
     setForm((prev) => ({ ...prev, ...PLAN_PREFILL[plan] }));
     setTimeout(() => {
-      document.getElementById("form")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      document
+        .getElementById("form")
+        ?.scrollIntoView({ behavior: "smooth", block: "start" });
     }, 400);
   }, [searchParams]);
 
   useGSAP(
     () => {
-      gsap.from("#heroTitle", { x: -100, opacity: 0, duration: 1.6, ease: "power4.out", delay: 0.2 });
+      gsap.from("#heroTitle", {
+        x: -100,
+        opacity: 0,
+        duration: 1.6,
+        ease: "power4.out",
+        delay: 0.2,
+      });
       gsap.from("#contactOptions .option-item", {
         y: 40,
         opacity: 0,
@@ -89,14 +103,20 @@ function ContactoContent() {
           opacity: 1,
           duration: 1.2,
           ease: "power3.out",
-          scrollTrigger: { trigger: el, start: "top 88%", toggleActions: "play none none none" },
+          scrollTrigger: {
+            trigger: el,
+            start: "top 88%",
+            toggleActions: "play none none none",
+          },
         });
       });
     },
     { scope: containerRef },
   );
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+  ) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
@@ -132,21 +152,39 @@ function ContactoContent() {
       clearTimeout(timeoutId);
 
       if (response.ok) {
-        setForm({ nombre: "", email: "", empresa: "", asunto: "", mensaje: "", honeypot: "" });
+        setForm({
+          nombre: "",
+          email: "",
+          empresa: "",
+          asunto: "",
+          mensaje: "",
+          honeypot: "",
+        });
         generateCaptcha();
         setShowModal(true);
         document.body.style.overflow = "hidden";
       } else {
-        alert("Hubo un error al enviar el formulario. Por favor intenta de nuevo.");
+        alert(
+          "Hubo un error al enviar el formulario. Por favor intenta de nuevo.",
+        );
       }
     } catch (error) {
       if (error instanceof Error && error.name === "AbortError") {
-        setForm({ nombre: "", email: "", empresa: "", asunto: "", mensaje: "", honeypot: "" });
+        setForm({
+          nombre: "",
+          email: "",
+          empresa: "",
+          asunto: "",
+          mensaje: "",
+          honeypot: "",
+        });
         generateCaptcha();
         setShowModal(true);
         document.body.style.overflow = "hidden";
       } else {
-        alert("Hubo un error al enviar el formulario. Por favor intenta de nuevo.");
+        alert(
+          "Hubo un error al enviar el formulario. Por favor intenta de nuevo.",
+        );
       }
     } finally {
       setIsSubmitting(false);
@@ -166,7 +204,10 @@ function ContactoContent() {
       <section className="contact-hero">
         <div className="container">
           <h1 id="heroTitle">
-            Hablemos <br /> de tu <span className="cursive" style={{ color: "#fff" }}>proyecto</span>
+            Hablemos <br /> de tu{" "}
+            <span className="cursive" style={{ color: "#fff" }}>
+              proyecto
+            </span>
           </h1>
           <div className="contact-options" id="contactOptions">
             <a href="#form" className="option-item">
@@ -210,8 +251,8 @@ function ContactoContent() {
                 <span className="cursive">proyecto.</span>
               </h2>
               <p>
-                Cuéntanos tu idea y te respondemos en menos de 24 horas con una propuesta
-                personalizada.
+                Cuéntanos tu idea y te respondemos en menos de 24 horas con una
+                propuesta personalizada.
               </p>
             </div>
 
@@ -321,12 +362,19 @@ function ContactoContent() {
                     aria-label="Respuesta de verificación"
                     value={captcha.input}
                     onChange={(e) =>
-                      setCaptcha((prev) => ({ ...prev, input: e.target.value, error: false }))
+                      setCaptcha((prev) => ({
+                        ...prev,
+                        input: e.target.value,
+                        error: false,
+                      }))
                     }
                     required
                   />
                   {captcha.error && (
-                    <span className="captcha-error" style={{ display: "inline" }}>
+                    <span
+                      className="captcha-error"
+                      style={{ display: "inline" }}
+                    >
                       Respuesta incorrecta
                     </span>
                   )}
@@ -391,8 +439,8 @@ function ContactoContent() {
             <span className="cursive">escribirnos!</span>
           </h2>
           <p>
-            Te respondemos en menos de 24 horas con una propuesta pensada para tu negocio. Mientras
-            tanto, conoce más sobre lo que hacemos.
+            Te respondemos en menos de 24 horas con una propuesta pensada para
+            tu negocio. Mientras tanto, conoce más sobre lo que hacemos.
           </p>
 
           <div className="success-modal-divider" />
@@ -723,7 +771,9 @@ function ContactoContent() {
           letter-spacing: 1.5px;
           color: rgba(255, 255, 255, 0.5);
           text-decoration: none;
-          transition: border-color 0.25s, color 0.25s;
+          transition:
+            border-color 0.25s,
+            color 0.25s;
           white-space: nowrap;
         }
 

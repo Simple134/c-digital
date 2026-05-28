@@ -7,7 +7,10 @@ export default function SidebarRight() {
   useEffect(() => {
     const onScroll = () => {
       if (!barRef.current) return;
-      const pct = (window.scrollY / (document.documentElement.scrollHeight - window.innerHeight)) * 100;
+      const pct =
+        (window.scrollY /
+          (document.documentElement.scrollHeight - window.innerHeight)) *
+        100;
       barRef.current.style.height = `${pct}%`;
     };
     window.addEventListener("scroll", onScroll, { passive: true });

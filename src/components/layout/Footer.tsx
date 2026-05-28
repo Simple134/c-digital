@@ -3,7 +3,9 @@ export default function Footer() {
     <footer className="site-footer container">
       <div className="footer-inner">
         <div>
-          <h2 className="footer-heading">LET&apos;S WORK <br /> TOGETHER</h2>
+          <h2 className="footer-heading">
+            LET&apos;S WORK <br /> TOGETHER
+          </h2>
         </div>
         <div className="footer-right">
           <p className="cursive footer-email">hola@estudiocdigital.com</p>
