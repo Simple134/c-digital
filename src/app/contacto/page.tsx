@@ -6,6 +6,7 @@ import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import Link from "next/link";
 import Header from "@/components/layout/Header";
+import posthog from "posthog-js";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -72,6 +73,7 @@ function ContactoContent() {
     const plan = searchParams.get("plan");
     if (!plan || !PLAN_PREFILL[plan]) return;
     setForm((prev) => ({ ...prev, ...PLAN_PREFILL[plan] }));
+    posthog.capture("plan_contact_initiated", { plan });
     setTimeout(() => {
       document
         .getElementById("form")
@@ -152,6 +154,15 @@ function ContactoContent() {
       clearTimeout(timeoutId);
 
       if (response.ok) {
+        posthog.identify(form.email, {
+          email: form.email,
+          name: form.nombre,
+          empresa: form.empresa || undefined,
+        });
+        posthog.capture("contact_form_submitted", {
+          empresa: form.empresa || undefined,
+          asunto: form.asunto,
+        });
         setForm({
           nombre: "",
           email: "",
@@ -170,6 +181,15 @@ function ContactoContent() {
       }
     } catch (error) {
       if (error instanceof Error && error.name === "AbortError") {
+        posthog.identify(form.email, {
+          email: form.email,
+          name: form.nombre,
+          empresa: form.empresa || undefined,
+        });
+        posthog.capture("contact_form_submitted", {
+          empresa: form.empresa || undefined,
+          asunto: form.asunto,
+        });
         setForm({
           nombre: "",
           email: "",
@@ -229,6 +249,7 @@ function ContactoContent() {
               target="_blank"
               rel="noopener noreferrer"
               className="option-item"
+              onClick={() => posthog.capture("whatsapp_clicked")}
             >
               <span className="option-label">¿Tienes dudas rápidas?</span>
               <span className="option-value">

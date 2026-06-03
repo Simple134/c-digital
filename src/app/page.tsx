@@ -9,6 +9,7 @@ import Background from "@/components/background";
 import CtaSection from "@/components/CtaSection";
 import { ReactGoogleReviews } from "react-google-reviews";
 import "react-google-reviews/dist/index.css";
+import posthog from "posthog-js";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -284,6 +285,13 @@ export default function Home() {
               key={item.href}
               href={item.href}
               className={`portfolio-item ${item.cls} reveal-up`}
+              onClick={() =>
+                posthog.capture("portfolio_item_clicked", {
+                  title: item.title,
+                  category: item.category,
+                  href: item.href,
+                })
+              }
             >
               <Image
                 src={item.img}

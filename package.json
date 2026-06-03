@@ -25,6 +25,8 @@
     "lucide-react": "^0.562.0",
     "next": "15.1.11",
     "nodemailer": "^6.10.0",
+    "posthog-js": "^1.379.0",
+    "posthog-node": "^5.35.12",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-google-reviews": "^1.7.4",

@@ -1,6 +1,7 @@
 "use client";
 import React, { useState } from "react";
 import Link from "next/link";
+import posthog from "posthog-js";
 
 const MONTHS_ES = [
   "enero",
@@ -219,6 +220,22 @@ export default function AgendarPage() {
       });
       clearTimeout(timeoutId);
       if (response.ok) {
+        posthog.identify(email, {
+          email,
+          name,
+          business,
+          sector,
+        });
+        posthog.capture("consultation_scheduled", {
+          sector,
+          stage,
+          services,
+          budget,
+          meeting_date: selectedDate
+            ? selectedDate.toLocaleDateString("es-DO")
+            : undefined,
+          meeting_time: selectedTime ?? undefined,
+        });
         setConfirmed(true);
         window.scrollTo({ top: 0, behavior: "smooth" });
       } else {
@@ -228,6 +245,22 @@ export default function AgendarPage() {
       }
     } catch (error) {
       if (error instanceof Error && error.name === "AbortError") {
+        posthog.identify(email, {
+          email,
+          name,
+          business,
+          sector,
+        });
+        posthog.capture("consultation_scheduled", {
+          sector,
+          stage,
+          services,
+          budget,
+          meeting_date: selectedDate
+            ? selectedDate.toLocaleDateString("es-DO")
+            : undefined,
+          meeting_time: selectedTime ?? undefined,
+        });
         setConfirmed(true);
         window.scrollTo({ top: 0, behavior: "smooth" });
       } else {
