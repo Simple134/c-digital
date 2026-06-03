@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { EditorialShell } from "@/components/layout/EditorialShell";
+import { PostHogProvider } from "@/components/PostHogProvider";
 import Script from "next/script";
 
 export const metadata: Metadata = {
@@ -44,7 +45,9 @@ export default function RootLayout({
             style={{ display: "none", visibility: "hidden" }}
           />
         </noscript>
-        <EditorialShell>{children}</EditorialShell>
+        <PostHogProvider>
+          <EditorialShell>{children}</EditorialShell>
+        </PostHogProvider>
       </body>
     </html>
   );
