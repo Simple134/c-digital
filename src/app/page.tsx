@@ -10,10 +10,24 @@ import CtaSection from "@/components/CtaSection";
 import { ReactGoogleReviews } from "react-google-reviews";
 import "react-google-reviews/dist/index.css";
 import posthog from "posthog-js";
+import { getPlans, getPortfolio } from "@/lib/content";
+import { revealPending } from "@/lib/reveal";
 
 gsap.registerPlugin(ScrollTrigger);
 
-const PORTFOLIO = [
+type PlanView = {
+  name: string;
+  slug: string;
+  usd: string;
+  period?: string;
+  dop: string;
+  featured?: boolean;
+  features: string[];
+  team: string;
+  limit?: string;
+};
+
+const PORTFOLIO_DEFAULT = [
   {
     href: "/trabajos/branding",
     img: "/proyectos/portada-branding.jpg",
@@ -76,7 +90,7 @@ const LOGOS = [
   "ZR Logo",
 ];
 
-const PLANS = [
+const PLANS_DEFAULT = [
   {
     name: "Aliado Esencial",
     usd: "$450",
@@ -136,6 +150,28 @@ export default function Home() {
   const wordRef = useRef<HTMLSpanElement>(null);
   const [wordIndex, setWordIndex] = useState(0);
   const WIDGET_ID = process.env.NEXT_PUBLIC_WIDGET_ID ?? "";
+
+  // Contenido editable desde el panel (con respaldo a los valores por defecto).
+  const [portfolio, setPortfolio] = useState(PORTFOLIO_DEFAULT);
+  const [plans, setPlans] = useState<PlanView[]>(PLANS_DEFAULT);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const [dbPortfolio, dbPlans] = await Promise.all([
+        getPortfolio(),
+        getPlans(),
+      ]);
+      if (cancelled) return;
+      if (dbPortfolio) setPortfolio(dbPortfolio);
+      if (dbPlans) setPlans(dbPlans);
+      // Revela cualquier ítem nuevo que llegue tras el montaje.
+      requestAnimationFrame(() => revealPending(containerRef.current));
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useGSAP(
     () => {
@@ -280,7 +316,7 @@ export default function Home() {
         </div>
         <h2 className="portfolio-title-main reveal-up">Recientes</h2>
         <div className="portfolio-grid">
-          {PORTFOLIO.map((item) => (
+          {portfolio.map((item) => (
             <Link
               key={item.href}
               href={item.href}
@@ -358,7 +394,7 @@ export default function Home() {
           <h2>Elige tu nivel</h2>
         </div>
         <div className="pricing-grid">
-          {PLANS.map((plan) => (
+          {plans.map((plan) => (
             <div
               key={plan.slug}
               className={`pricing-card reveal-up${plan.featured ? " pricing-card--featured" : ""}`}

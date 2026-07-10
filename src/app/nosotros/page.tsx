@@ -1,5 +1,5 @@
 "use client";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
@@ -8,10 +8,12 @@ import { ReactGoogleReviews } from "react-google-reviews";
 import CtaSection from "@/components/CtaSection";
 import "react-google-reviews/dist/index.css";
 import Header from "@/components/layout/Header";
+import { getTeam } from "@/lib/content";
+import { revealPending } from "@/lib/reveal";
 
 gsap.registerPlugin(ScrollTrigger);
 
-const TEAM = [
+const TEAM_DEFAULT = [
   {
     name: "Rachel Suero",
     role: "Directora General",
@@ -95,6 +97,21 @@ export default function Nosotros() {
   const containerRef = useRef<HTMLDivElement>(null);
   const [teamIdx, setTeamIdx] = useState(0);
   const [fading, setFading] = useState(false);
+  const [team, setTeam] = useState(TEAM_DEFAULT);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const data = await getTeam();
+      if (cancelled || !data) return;
+      setTeam(data);
+      setTeamIdx(0);
+      requestAnimationFrame(() => revealPending(containerRef.current));
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
   const WIDGET_ID = process.env.NEXT_PUBLIC_WIDGET_ID ?? "";
 
   const goTo = (idx: number) => {
@@ -124,7 +141,7 @@ export default function Nosotros() {
     { scope: containerRef },
   );
 
-  const member = TEAM[teamIdx];
+  const member = team[teamIdx] ?? team[0];
 
   return (
     <div ref={containerRef}>
@@ -333,7 +350,7 @@ export default function Nosotros() {
                 mejorar los resultados de tu negocio.
               </p>
               <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-                {TEAM.map((m, i) => (
+                {team.map((m, i) => (
                   <button
                     key={i}
                     onClick={() => goTo(i)}
@@ -437,7 +454,7 @@ export default function Nosotros() {
               >
                 <button
                   onClick={() =>
-                    goTo((teamIdx - 1 + TEAM.length) % TEAM.length)
+                    goTo((teamIdx - 1 + team.length) % team.length)
                   }
                   style={{
                     width: "44px",
@@ -451,7 +468,7 @@ export default function Nosotros() {
                   ←
                 </button>
                 <button
-                  onClick={() => goTo((teamIdx + 1) % TEAM.length)}
+                  onClick={() => goTo((teamIdx + 1) % team.length)}
                   style={{
                     width: "44px",
                     height: "44px",

@@ -10,7 +10,12 @@ import CustomCursor from "../ui/CustomCursor";
 export function EditorialShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
-  if (pathname.startsWith("/sales") || pathname.startsWith("/linktree")) {
+  if (
+    pathname.startsWith("/sales") ||
+    pathname.startsWith("/linktree") ||
+    pathname.startsWith("/login") ||
+    pathname.startsWith("/dashboard")
+  ) {
     return <>{children}</>;
   }
 
