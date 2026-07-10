@@ -25,7 +25,7 @@ export default function ProyectoApp() {
       challengeText="El reto principal fue la accesibilidad: crear una herramienta tecnológica robusta, pero diseñada con una curva de aprendizaje mínima para usuarios con competencias digitales básicas y en poco tiempo."
       galleryImg2="/proyectos/app/Laptop.jpg"
       galleryWord2="EXPERIENCE"
-      resultText="Desarrollamos una aplicación web estratégica que centraliza la gestión de la brigada mediante un flujo de inscripción controlado. Implementamos un formulario de registro de acceso restringido para filtrar solicitudes no autorizadas, vinculado a un panel de administración robusto. La solución culmina en un sistema de acreditación mediante códigos QR de baja carga de datos, lo que garantiza una lectura instantánea incluso en condiciones de baja conectividad. Para los auditores, el resultado es una herramienta de navegación simplificada que permite validar el estatus de cualquier miembro en segundos con un solo escaneo."
+      resultText="El resultado es un sistema automatizado que dio vida a la idea de control de identidad, optimizando drásticamente el tiempo de validación. Transformamos un proceso manual y propenso a errores en una web app robusta con acreditación QR instantánea. Los administradores y auditores ahora ahorran horas de trabajo repetitivo, validando credenciales de forma remota en segundos y recuperando el control de su tiempo operativo desde el primer día."
       carouselImages={[
         "/proyectos/app/POrtada de App.jpg",
         "/proyectos/app/Laptop.jpg",

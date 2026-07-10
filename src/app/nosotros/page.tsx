@@ -16,43 +16,37 @@ const TEAM = [
     name: "Rachel Suero",
     role: "Directora General",
     bio: "La mente detrás de cada decisión que mueve la agencia hacia adelante. Rachel combina visión de negocio con instinto creativo para liderar proyectos que no solo se ven bien, sino que generan resultados reales.",
-    photo: "/assets/p1.png",
+    photo: "/equipo/rachel.jpg",
   },
   {
     name: "Vladimir Gabriel",
     role: "Director Creativo",
     bio: "Donde otros ven un brief, Vladimir ve una historia. Guía la dirección creativa de cada campaña con un estándar visual que desafía lo ordinario.",
-    photo: "/assets/p1.png",
+    photo: "/equipo/vladimir.jpg",
   },
   {
     name: "Carlos Díaz",
     role: "Product Designer",
     bio: "Carlos transforma ideas complejas en experiencias simples y poderosas. Su obsesión por el detalle y la usabilidad convierte cada producto digital en algo que los usuarios disfrutan.",
-    photo: "/assets/p2.png",
-  },
-  {
-    name: "Elberth Corniell",
-    role: "Senior Developer",
-    bio: "La arquitectura detrás de cada plataforma. Elberth lleva años convirtiendo diseños ambiciosos en código limpio, rápido y escalable.",
-    photo: "/assets/p2.png",
+    photo: "/equipo/actualizando.jpg",
   },
   {
     name: "Josue Sanchez",
-    role: "Programador",
+    role: "Desarrollador",
     bio: "Josue es quien hace que todo funcione. Con una mentalidad orientada a soluciones, desarrolla funcionalidades robustas al servicio del usuario final.",
-    photo: "/assets/p3.png",
+    photo: "/equipo/josue.jpg",
   },
   {
     name: "Sarahlia Villar",
     role: "Graphic Designer",
     bio: "Sarahlia traduce la identidad de cada marca en piezas visuales que detienen el scroll y generan conversación.",
-    photo: "/assets/p3.png",
+    photo: "/equipo/actualizando.jpg",
   },
   {
     name: "Maximo Ismael",
     role: "Audiovisual",
     bio: "Maximo convierte horas de grabación en piezas que enganchan desde el primer segundo. Su edición tiene ritmo, intención y ese toque premium.",
-    photo: "/assets/p4.png",
+    photo: "/equipo/actualizando.jpg",
   },
   {
     name: "Cinthia Paulino",
@@ -69,25 +63,18 @@ const PHOTOS = [
   "/equipo/DSC_9911 5.jpg",
 ];
 
-const STATS = [
-  { num: "5+", label: "Años de experiencia" },
-  { num: "80+", label: "Proyectos completados" },
-  { num: "40+", label: "Clientes activos" },
-  { num: "98%", label: "Satisfacción" },
-];
-
 const VALUES = [
   {
-    title: "Promesas vacías y falta de resultados",
-    body: "Entendemos la frustración de invertir en agencias que prometen el cielo y entregan reportes sin valor real. Aquí no vendemos humo; construimos estrategias basadas en datos que generan retorno de inversión tangible.",
+    title: "Diagnóstico antes que servicios",
+    body: "No vendemos un plan hasta entender exactamente dónde está el dinero perdido en tu negocio. El diagnóstico define qué se hace, en qué orden y por qué.",
   },
   {
-    title: "Informalidad y mala comunicación",
-    body: "Sabemos lo que es el silencio de una agencia cuando más la necesitas. Nos diferenciamos por una comunicación proactiva y el cumplimiento obsesivo de los plazos, respetando tu tiempo y tu negocio.",
+    title: "Sistema, no piezas sueltas",
+    body: "Un logo sin estrategia, o publicidad sin proceso de venta, no genera ROI. Todo lo que hacemos está conectado: marca, captación y conversión trabajan como uno solo.",
   },
   {
-    title: "Irresponsabilidad en la ejecución",
-    body: "Muchos empresarios han sufrido proyectos a medias o costos ocultos de último momento. En C Digital Studio, la honestidad es nuestra base: lo que acordamos es exactamente lo que recibes.",
+    title: "Métricas que importan",
+    body: 'No te reportamos "likes" ni "alcance". Te reportamos leads generados, costo por contacto y cuánto movió la aguja en ventas — cada mes, sin excepciones.',
   },
 ];
 
@@ -178,31 +165,28 @@ export default function Nosotros() {
               marginBottom: "20px",
             }}
           >
-            Creamos historias de experiencia impactantes. Nos apasiona nuestro
-            trabajo y cómo impacta positivamente en nuestros clientes.
+            No somos la típica agencia. Somos el equipo que convierte el caos
+            digital de tu negocio en resultados que puedes medir.
           </p>
         </div>
       </section>
 
-      {/* Photo strip */}
-      <section
-        style={{ padding: "100px 0", overflow: "hidden", background: "#fff" }}
-      >
-        <div style={{ display: "flex", gap: "20px", padding: "0 40px" }}>
-          {PHOTOS.map((src, i) => (
-            <div
-              key={i}
-              style={{ flex: "0 0 600px", height: "400px", overflow: "hidden" }}
-            >
-              <Image
-                src={src}
-                alt="Equipo C Digital"
-                width={600}
-                height={400}
-                style={{ width: "100%", height: "100%", objectFit: "cover" }}
-              />
-            </div>
-          ))}
+      {/* Photo carousel */}
+      <section style={{ padding: "80px 0", overflow: "hidden" }}>
+        <div className="nosotros-carousel">
+          <div className="nosotros-track">
+            {[...PHOTOS, ...PHOTOS].map((src, i) => (
+              <div key={i} className="nosotros-slide">
+                <Image
+                  src={src}
+                  alt="Equipo C Digital"
+                  width={600}
+                  height={400}
+                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                />
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
@@ -223,8 +207,9 @@ export default function Nosotros() {
             fontWeight: 700,
           }}
         >
-          Somos la <span className="cursive">solución completa</span> para las
-          PYMES.
+          Cada peso que <span className="cursive">inviertes</span>
+          <br />
+          tiene que <span className="cursive">regresar</span>
         </h2>
         <div style={{ display: "flex", flexDirection: "column", gap: "60px" }}>
           {VALUES.map((v) => (
@@ -243,54 +228,6 @@ export default function Nosotros() {
               <p style={{ fontSize: "15px", lineHeight: "1.6", color: "#333" }}>
                 {v.body}
               </p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Stats */}
-      <section
-        className="container reveal-up"
-        style={{
-          border: "1px solid rgba(0,0,0,0.1)",
-          borderRadius: "20px",
-          margin: "100px auto",
-          padding: "100px 40px",
-        }}
-      >
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(4,1fr)",
-            gap: "40px",
-            padding: "80px 40px",
-          }}
-        >
-          {STATS.map((s) => (
-            <div key={s.label} style={{ textAlign: "center" }}>
-              <span
-                style={{
-                  fontSize: "60px",
-                  fontWeight: 800,
-                  display: "block",
-                  background: "var(--main-gradient)",
-                  WebkitBackgroundClip: "text",
-                  backgroundClip: "text",
-                  WebkitTextFillColor: "transparent",
-                }}
-              >
-                {s.num}
-              </span>
-              <span
-                style={{
-                  fontSize: "11px",
-                  textTransform: "uppercase",
-                  letterSpacing: "2px",
-                  color: "#666",
-                }}
-              >
-                {s.label}
-              </span>
             </div>
           ))}
         </div>
@@ -470,18 +407,11 @@ export default function Nosotros() {
       </section>
 
       {/* Reviews */}
-      <section className="container reveal-up">
-        <p className="pricing-tag">Reseñas</p>
-        <h2
-          style={{
-            fontSize: "clamp(2.4rem,4vw,4rem)",
-            letterSpacing: "-2px",
-            marginBottom: "60px",
-          }}
-        >
-          ¿Qué dicen <br />
-          nuestros clientes?
-        </h2>
+      <section className="testimonials container">
+        <div className="testimonials-header reveal-up">
+          <p className="pricing-tag">Reseñas</p>
+          <h2>¿Qué dicen nuestros clientes?</h2>
+        </div>
         <ReactGoogleReviews
           carouselBtnStyle={{ display: "none" }}
           layout="carousel"
