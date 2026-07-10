@@ -513,7 +513,6 @@ const LinksPage = () => {
           style={{ animation: "fadeIn 1s ease-out 0.8s both" }}
         >
           <p>© 2026 C Digital. Todos los derechos reservados.</p>
-       
         </footer>
       </div>
 

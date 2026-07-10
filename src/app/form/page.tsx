@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { useForm, SubmitHandler } from "react-hook-form";
 import Image from "next/image";
+import posthog from "posthog-js";
 
 interface BriefBrandFormData {
   // Información Personal y de Contacto
@@ -263,6 +264,19 @@ export default function BriefBrandForm() {
       const result = await response.json();
 
       if (response.ok) {
+        posthog.identify(data.email, {
+          email: data.email,
+          name: data.nombreCompleto,
+          pais: data.pais,
+          whatsapp: data.whatsapp,
+        });
+        posthog.capture("brief_submitted", {
+          tipo_proyecto: data.tipoProyecto,
+          tipo_logo: data.tipoLogo,
+          presupuesto: data.presupuesto,
+          pais: data.pais,
+          personalidad_marca: data.personalidadMarca,
+        });
         setShowSuccess(true);
         window.scrollTo({ top: 0, behavior: "smooth" });
         reset();

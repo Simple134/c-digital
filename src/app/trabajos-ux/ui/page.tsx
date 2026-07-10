@@ -1,6 +1,5 @@
 "use client";
 import { useState } from "react";
-import { Container, Grid, Column } from "@bitnation-dev/components";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import Background from "@/components/background";
@@ -79,13 +78,14 @@ const Trabajos = () => {
     <div className="relative h-[80vh] no-scrollbar">
       <Background />
       <div className="relative z-10">
-        <Container id="cont-1">
+        <div
+          className="max-w-[1400px] mx-auto px-6 md:px-10 lg:px-16"
+          id="cont-1"
+        >
           <AnimatePresence>
-            <Grid
+            <div
               key={showNewProjects ? "new-projects" : "initial-projects"}
-              columns={{ xl: 3, lg: 3, md: 1, sm: 1 }}
-              className="!m-0 !p-0"
-              behavior="media"
+              className="grid grid-cols-1 lg:grid-cols-3 m-0 p-0"
               id="projects"
             >
               {(showNewProjects ? newProjects : initialProjects).map(
@@ -121,14 +121,14 @@ const Trabajos = () => {
                   </motion.div>
                 ),
               )}
-            </Grid>
+            </div>
             <motion.div
               className="mt-6 w-full "
               initial={{ opacity: 0, y: 0 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8 }}
             >
-              <Grid columns={{ xl: 2, lg: 2, md: 1, sm: 1 }}>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 <div>
                   <span className="bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] text-transparent bg-clip-text font-bold text-2xl">
                     {" "}
@@ -174,14 +174,17 @@ const Trabajos = () => {
                     </button>
                   </div>
                 </div>
-              </Grid>
+              </div>
             </motion.div>
           </AnimatePresence>
-        </Container>
+        </div>
         <div className="h-48"></div>
-        <Container id="cont-2">
-          <Grid columns={{ xl: 4, lg: 4, md: 1, sm: 1 }} id="marcas">
-            <Column columns={{ xl: { width: 2 }, md: { width: 1 } }}>
+        <div
+          className="max-w-[1400px] mx-auto px-6 md:px-10 lg:px-16"
+          id="cont-2"
+        >
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-8" id="marcas">
+            <div className="col-span-1 lg:col-span-2">
               <div className="flex h-full">
                 <Image
                   src="/trabajos/7.png"
@@ -191,8 +194,8 @@ const Trabajos = () => {
                   className="w-full h-full"
                 />
               </div>
-            </Column>
-            <Column columns={{ xl: { width: 2 }, md: { width: 1 } }}>
+            </div>
+            <div className="col-span-1 lg:col-span-2">
               <div className="flex">
                 <Image
                   src="/trabajos/8.png"
@@ -202,8 +205,8 @@ const Trabajos = () => {
                   className="w-full h-full"
                 />
               </div>
-            </Column>
-            <Column columns={{ xl: { width: 2 }, md: { width: 1 } }}>
+            </div>
+            <div className="col-span-1 lg:col-span-2">
               <div className="flex flex-col gap-4">
                 <Image
                   src="/trabajos/9.png"
@@ -230,8 +233,8 @@ const Trabajos = () => {
                   </div>
                 </div>
               </div>
-            </Column>
-            <Column columns={{ xl: { width: 2 }, md: { width: 1 } }}>
+            </div>
+            <div className="col-span-1 lg:col-span-2">
               <div className="lg:ml-4 w-full">
                 <span className="bg-gradient-to-r from-[#00C5FF] to-[#00FF7C] text-transparent bg-clip-text font-bold text-2xl">
                   {" "}
@@ -276,9 +279,9 @@ const Trabajos = () => {
                   </div>
                 </div>
               </div>
-            </Column>
-          </Grid>
-        </Container>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

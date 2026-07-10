@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { GestionoAPI } from "@/lib/gestiono";
+import { getPostHogClient } from "@/lib/posthog-server";
 
 export async function POST(
   request: NextRequest,
@@ -56,6 +57,16 @@ export async function POST(
       .catch((error) => {
         console.error("Error al enviar a Gestiono (background):", error);
       });
+
+    const posthog = getPostHogClient();
+    posthog.capture({
+      distinctId: (data.Correo as string) ?? "anonymous",
+      event: "form_submission_received",
+      properties: {
+        form_id: Number(formId),
+        source: "server",
+      },
+    });
 
     return NextResponse.json(
       {
