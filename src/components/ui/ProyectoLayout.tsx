@@ -449,7 +449,9 @@ export default function ProyectoLayout({
                     height={600}
                     style={{
                       width: "100%",
-                      height: "auto",
+                      height: "500px",
+                      objectFit: "cover",
+                      objectPosition: "top",
                       borderRadius: "4px",
                     }}
                   />

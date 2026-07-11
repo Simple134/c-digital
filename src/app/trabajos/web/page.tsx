@@ -26,7 +26,7 @@ export default function ProyectoWeb() {
       challengeText="Consolidar las necesidades operativas de las pymes en una experiencia web diseñada para la conversión. El reto principal fue crear una herramienta híbrida: lo suficientemente potente para respaldar una presentación de ventas presencial y lo suficientemente intuitiva para convertir de forma autónoma. Todo esto bajo una estética disruptiva que se aleja de lo convencional para captar la atención del empresario moderno."
       galleryImg2="/proyectos/web/Ecosistema Digital.png"
       galleryWord2="INTERFACE"
-      resultText="Es una landing page de alto rendimiento, vinculada orgánicamente a los sistemas de gestión y diseñada bajo una arquitectura de persuasión que responde a los puntos de dolor del empresario actual. Más que una web, es una herramienta de conversión autónoma que forma parte de una iniciativa mayor: concienciar al sector sobre la urgencia de la transformación digital para optimizar el ciclo de ventas."
+      resultText="El resultado es una plataforma web de alto rendimiento que dio estructura, diseño y vida a una idea de negocio compleja. Logramos tangibilizar un ecosistema digital abstracto en una propuesta de valor visualmente clara e intuitiva, permitiendo que el proyecto saliera al mercado con una identidad sólida y una herramienta de conversión lista para validar y lanzar la idea con éxito."
       carouselImages={[
         "/proyectos/web/Portada.jpg",
         "/proyectos/web/Digitalizar el negocio.png",

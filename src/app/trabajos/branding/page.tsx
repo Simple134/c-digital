@@ -30,7 +30,7 @@ export default function ProyectoBranding() {
       challengeText="Proyectar la robustez de un líder en movimiento de tierra sin limitar su potencial en el sector de la construcción general. En un mercado local que suele ser visualmente genérico, el reto consistió en elevar el nivel técnico de la marca para alinearla con la ambición del cliente: ser el referente número uno. Decidimos dejar atrás los íconos literales de maquinaria para encontrar una identidad moderna y versátil; un punto medio estratégico que comunica que, aunque OSY Excavator domina la base de todo proyecto, su capacidad constructiva no tiene límites."
       galleryImg2="/proyectos/branding/Slide 16_9 - 130.jpg"
       galleryWord2="DETAILS"
-      resultText="Fue el nacimiento de una identidad imponente que redefine el estándar visual del sector. Estratégicamente, transformamos OSY Excavator en una marca con jerarquía: OSY como nombre protagonista y Excavator como su tagline especializado, logrando una síntesis memorable y funcional. Más allá de un logo, creamos un sistema visual basado en el dominio del territorio; un concepto donde cada obra se convierte en terreno conquistado, simbolizado por la «bandera» de OSY establecida en cada zona de intervención."
+      resultText="El resultado es una identidad de marca con jerarquía y presencia premium que proyecta la solidez y el alto nivel técnico de la empresa. Al dejar atrás el diseño genérico del sector, logramos que su experiencia real se vea reflejada a primera vista en cada obra e intervención, posicionando a OSY como el referente indiscutible y de máxima autoridad en su mercado."
       carouselImages={carouselImages}
       nextProject={{
         href: "/trabajos/web",
