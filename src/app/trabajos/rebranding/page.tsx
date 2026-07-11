@@ -27,7 +27,7 @@ export default function ProyectoRebranding() {
       challengeText="El proceso de venta era un laberinto: la clienta enviaba precios dispersos por WhatsApp, mandaba fotos una por una, validaba disponibilidad en el momento. Cada venta dependía completamente de ella. El desafío era convertir ese caos en un sistema autónomo sin perder el trato personalizado que sus clientes valoraban."
       galleryImg2="/proyectos/rebranding/Cuenta antes.jpg"
       galleryWord2="COMMERCE"
-      resultText="Construimos un e-commerce vinculado a su sistema de facturación e integrado a un CRM. Ahora sus clientes navegan el catálogo en tiempo real, hacen su compra directamente en la web, y el único mensaje que recibe la dueña en WhatsApp es para revisar el pago y coordinar el envío. La joyería proyecta lujo, vende sola."
+      resultText="El resultado es un sistema de e-commerce automatizado que optimiza el tiempo de la propietaria y multiplica sus ventas. Solucionamos el caos del proceso manual y la baja percepción de valor: ahora el catálogo se actualiza en tiempo real y los clientes compran de forma autónoma. Al delegar la facturación y el inventario a la plataforma, la joyería proyecta lujo verdadero, vende de manera constante y le devuelve a la dueña horas de tiempo libre cada día."
       carouselImages={[
         "/proyectos/rebranding/photoshop file.jpg",
         "/proyectos/rebranding/DSC00314.jpg",

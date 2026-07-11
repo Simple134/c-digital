@@ -244,19 +244,15 @@ function ContactoContent() {
                 <span className="opt-arrow">→</span>
               </span>
             </Link>
-            <a
-              href="https://api.whatsapp.com/send/?phone=7867557025&text&type=phone_number&app_absent=0"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="option-item"
-              onClick={() => posthog.capture("whatsapp_clicked")}
-            >
-              <span className="option-label">¿Tienes dudas rápidas?</span>
+            <Link href="/form" className="option-item">
+              <span className="option-label">
+                ¿Prefieres un autodiagnóstico?
+              </span>
               <span className="option-value">
-                Contactar al chat bot
+                Auto Diagnóstico
                 <span className="opt-arrow">→</span>
               </span>
-            </a>
+            </Link>
           </div>
         </div>
       </section>
@@ -673,13 +669,15 @@ function ContactoContent() {
         }
 
         .submit-btn {
+          background: #000;
+          color: #fff;
           border: none;
           cursor: pointer;
           font-family: inherit;
-          color: #000;
         }
 
         .submit-btn:hover {
+          background: var(--main-gradient);
           color: #fff;
         }
 

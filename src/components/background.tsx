@@ -100,7 +100,7 @@ const Background = ({ id = "tsparticles" }: { id?: string }) => {
         number: {
           density: {
             enable: true,
-            value_area: isMobile ? 200 : 800,
+            value_area: isMobile ? 400 : 800,
           },
           value: isMobile ? 30 : 70,
         },
@@ -124,8 +124,10 @@ const Background = ({ id = "tsparticles" }: { id?: string }) => {
       <div
         style={{
           position: "absolute",
-          inset: 0,
-          overflow: "hidden",
+          top: 0,
+          left: 0,
+          width: "100%",
+          height: "100%",
           zIndex: 0,
           pointerEvents: "none",
         }}
@@ -134,6 +136,7 @@ const Background = ({ id = "tsparticles" }: { id?: string }) => {
           id={id}
           particlesLoaded={particlesLoaded}
           options={options}
+          style={{ width: "100%", height: "100%" }}
         />
       </div>
     );

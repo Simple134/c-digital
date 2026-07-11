@@ -89,18 +89,90 @@ export default function Servicios() {
 
   useGSAP(
     () => {
-      gsap.utils.toArray<HTMLElement>(".reveal-up").forEach((el) => {
-        gsap.to(el, {
-          y: 0,
-          opacity: 1,
-          duration: 1,
-          ease: "power4.out",
+      // General simple reveal-up animations (excluding service sections)
+      gsap.utils
+        .toArray<HTMLElement>(".reveal-up:not(.service-section)")
+        .forEach((el) => {
+          gsap.to(el, {
+            y: 0,
+            opacity: 1,
+            duration: 1,
+            ease: "power4.out",
+            scrollTrigger: {
+              trigger: el,
+              start: "top 85%",
+              toggleActions: "play none none none",
+            },
+          });
+        });
+
+      // Staggered elegant entry animation for each service section
+      gsap.utils.toArray<HTMLElement>(".service-section").forEach((section) => {
+        const title = section.querySelector(".service-title");
+        const num = section.querySelector(".service-number");
+        const desc = section.querySelector(".service-desc");
+        const listItems = section.querySelectorAll(".service-list-item");
+        const img = section.querySelector(".service-img-container");
+
+        const tl = gsap.timeline({
           scrollTrigger: {
-            trigger: el,
-            start: "top 85%",
+            trigger: section,
+            start: "top 80%",
             toggleActions: "play none none none",
           },
         });
+
+        // 1. Header (Title and Number)
+        tl.fromTo(
+          title,
+          { y: 50, opacity: 0 },
+          { y: 0, opacity: 1, duration: 1, ease: "power4.out" },
+        );
+        tl.fromTo(
+          num,
+          { y: 50, opacity: 0 },
+          { y: 0, opacity: 0.1, duration: 1, ease: "power4.out" },
+          "<0.15",
+        );
+
+        // 2. Columns (staggered entry of description, list items, and image)
+        tl.fromTo(
+          desc,
+          { y: 40, opacity: 0 },
+          {
+            y: 0,
+            opacity: 1,
+            duration: 1,
+            ease: "power3.out",
+          },
+          "-=0.7",
+        );
+
+        tl.fromTo(
+          listItems,
+          { y: 30, opacity: 0 },
+          {
+            y: 0,
+            opacity: 1,
+            stagger: 0.08,
+            duration: 0.8,
+            ease: "power3.out",
+          },
+          "-=0.7",
+        );
+
+        tl.fromTo(
+          img,
+          { scale: 0.96, y: 40, opacity: 0 },
+          {
+            scale: 1,
+            y: 0,
+            opacity: 1,
+            duration: 1.2,
+            ease: "power4.out",
+          },
+          "-=0.7",
+        );
       });
 
       gsap.to(".parallax-img", {
@@ -179,8 +251,12 @@ export default function Servicios() {
       {SERVICES.map((svc) => (
         <section
           key={svc.num}
-          className="container reveal-up"
-          style={{ borderTop: "1px solid var(--border-color)" }}
+          className="container service-section"
+          style={{
+            borderTop: "1px solid var(--border-color)",
+            paddingTop: "120px",
+            paddingBottom: "120px",
+          }}
         >
           <div
             style={{
@@ -191,6 +267,7 @@ export default function Servicios() {
             }}
           >
             <h2
+              className="service-title"
               style={{
                 fontSize: "11px",
                 textTransform: "uppercase",
@@ -201,6 +278,7 @@ export default function Servicios() {
               {svc.title}
             </h2>
             <span
+              className="service-number"
               style={{
                 fontSize: "60px",
                 fontWeight: 800,
@@ -219,6 +297,7 @@ export default function Servicios() {
             }}
           >
             <p
+              className="service-desc"
               style={{
                 fontSize: "16px",
                 lineHeight: "1.8",
@@ -232,6 +311,7 @@ export default function Servicios() {
               {svc.items.map((item, i) => (
                 <li
                   key={item}
+                  className="service-list-item"
                   style={{
                     padding: "20px 0",
                     paddingTop: i === 0 ? 0 : "20px",
@@ -245,6 +325,7 @@ export default function Servicios() {
               ))}
             </ul>
             <div
+              className="service-img-container"
               style={{
                 width: "100%",
                 height: "400px",

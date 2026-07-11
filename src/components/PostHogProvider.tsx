@@ -16,7 +16,7 @@ function PostHogPageview() {
     if (!pathname) return;
 
     const isAuthRoute = AUTH_PREFIXES.some((prefix) =>
-      pathname.startsWith(prefix)
+      pathname.startsWith(prefix),
     );
 
     if (isAuthRoute) {
@@ -26,10 +26,9 @@ function PostHogPageview() {
 
     ph.opt_in_capturing();
 
-    const url =
-      searchParams.toString()
-        ? `${pathname}?${searchParams.toString()}`
-        : pathname;
+    const url = searchParams.toString()
+      ? `${pathname}?${searchParams.toString()}`
+      : pathname;
 
     ph.capture("$pageview", { $current_url: url });
   }, [pathname, searchParams, ph]);

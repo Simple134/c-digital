@@ -32,7 +32,7 @@ export default function ProyectoSeo() {
       challengeText="El perfil de Google My Business tenía errores técnicos — caracteres en otro idioma — que impedían que el algoritmo indexara el negocio con precisión. Esto, sumado a la falta de coherencia visual y a la ausencia de una estrategia de posicionamiento local, hacía que Vitalia fuera prácticamente invisible para las mujeres que la buscaban en La Vega. Creamos el GMB desde cero, corregimos los errores técnicos y construimos la presencia que el espacio merecía."
       galleryImg2="/proyectos/seo/Slide 16_9 - 97.jpg"
       galleryWord2="EMBUDO"
-      resultText="Una marca visualmente coherente que proyecta bienestar desde el primer scroll. Vitalia ahora aparece donde sus clientas la buscan — posicionada como el centro de bienestar en La Vega. El embudo de ventas conectado al CRM convierte cada mensaje en una oportunidad gestionada, y las campañas con influencers aceleraron el reconocimiento de marca en la comunidad femenina de la región."
+      resultText="El resultado es una presencia en buscadores completamente optimizada y libre de errores técnicos. Solucionamos el problema de invisibilidad local: ahora Vitalia se posiciona en los primeros lugares de Google y Google Maps en La Vega cuando las clientas buscan bienestar integral. Logramos que su transición de gimnasio a centro exclusivo sea clara y que quienes necesitan sus servicios la encuentren de forma inmediata en su región."
       carouselImages={[
         "/proyectos/seo/Vitalia_Wellnesspace-FachadaB.jpg",
         "/proyectos/seo/Slide 16_9 - 75.jpg",
