@@ -109,7 +109,10 @@ export default function BlogArticle() {
     return (
       <div ref={containerRef}>
         <Header />
-        <section className="article-hero container" style={{ minHeight: "50vh" }}>
+        <section
+          className="article-hero container"
+          style={{ minHeight: "50vh" }}
+        >
           <h1>Artículo no encontrado</h1>
           <Link href="/blog" className="cta-btn" style={{ color: "#000" }}>
             ← Volver al blog
@@ -127,7 +130,9 @@ export default function BlogArticle() {
       <section className="article-hero container">
         <div className="article-hero-meta">
           {post.category && <span className="blog-cat">{post.category}</span>}
-          {post.post_date && <span className="blog-date">{post.post_date}</span>}
+          {post.post_date && (
+            <span className="blog-date">{post.post_date}</span>
+          )}
           {post.read_time && (
             <span className="blog-date">· {post.read_time}</span>
           )}

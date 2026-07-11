@@ -1,13 +1,7 @@
 import type { TableName } from "@/lib/supabase/types";
 
 export type FieldType =
-  | "text"
-  | "textarea"
-  | "richtext"
-  | "number"
-  | "boolean"
-  | "image"
-  | "list";
+  "text" | "textarea" | "richtext" | "number" | "boolean" | "image" | "list";
 
 export interface Field {
   key: string;
@@ -38,7 +32,12 @@ export const RESOURCES: Resource[] = [
       { key: "name", label: "Nombre", type: "text" },
       { key: "slug", label: "Slug (único, sin espacios)", type: "text" },
       { key: "usd", label: "Precio USD", type: "text", optional: true },
-      { key: "period", label: "Período (ej. /mes)", type: "text", optional: true },
+      {
+        key: "period",
+        label: "Período (ej. /mes)",
+        type: "text",
+        optional: true,
+      },
       { key: "dop", label: "Precio DOP", type: "text", optional: true },
       { key: "featured", label: "Destacado", type: "boolean" },
       {
@@ -47,7 +46,12 @@ export const RESOURCES: Resource[] = [
         type: "list",
       },
       { key: "team", label: "Equipo asignado", type: "text", optional: true },
-      { key: "plan_limit", label: "Nota / límite", type: "text", optional: true },
+      {
+        key: "plan_limit",
+        label: "Nota / límite",
+        type: "text",
+        optional: true,
+      },
       { key: "sort_order", label: "Orden", type: "number" },
     ],
   },
@@ -61,7 +65,12 @@ export const RESOURCES: Resource[] = [
     fields: [
       { key: "title", label: "Título", type: "text" },
       { key: "category", label: "Categoría", type: "text", optional: true },
-      { key: "href", label: "Enlace (ej. /trabajos/web)", type: "text", optional: true },
+      {
+        key: "href",
+        label: "Enlace (ej. /trabajos/web)",
+        type: "text",
+        optional: true,
+      },
       { key: "img", label: "Imagen de portada", type: "image", optional: true },
       {
         key: "cls",
@@ -93,8 +102,18 @@ export const RESOURCES: Resource[] = [
         help: "Acepta etiquetas HTML: <h2>, <p>, <ul><li>, <strong>, etc.",
       },
       { key: "img", label: "Imagen de portada", type: "image", optional: true },
-      { key: "post_date", label: "Fecha (texto)", type: "text", optional: true },
-      { key: "read_time", label: "Tiempo de lectura", type: "text", optional: true },
+      {
+        key: "post_date",
+        label: "Fecha (texto)",
+        type: "text",
+        optional: true,
+      },
+      {
+        key: "read_time",
+        label: "Tiempo de lectura",
+        type: "text",
+        optional: true,
+      },
       { key: "published", label: "Publicado", type: "boolean" },
       { key: "sort_order", label: "Orden", type: "number" },
     ],

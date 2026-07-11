@@ -3,12 +3,11 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import {
-  RESOURCES,
-  emptyRecord,
-  type Field,
-  type Resource,
-} from "./resources";
+import KanbanBoard from "./KanbanBoard";
+import FormUsers from "./FormUsers";
+import { RESOURCES, emptyRecord, type Field, type Resource } from "./resources";
+
+type View = "resource" | "kanban" | "formUsers";
 
 type Row = Record<string, unknown> & { id?: string };
 
@@ -16,6 +15,7 @@ export default function Dashboard({ userEmail }: { userEmail: string }) {
   const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
 
+  const [view, setView] = useState<View>("resource");
   const [active, setActive] = useState<Resource>(RESOURCES[0]);
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
@@ -73,7 +73,10 @@ export default function Dashboard({ userEmail }: { userEmail: string }) {
     let res;
     if (record.id) {
       const { id, ...rest } = payload;
-      res = await supabase.from(active.table).update(rest).eq("id", id as string);
+      res = await supabase
+        .from(active.table)
+        .update(rest)
+        .eq("id", id as string);
     } else {
       const rest = { ...payload };
       delete rest.id;
@@ -99,23 +102,54 @@ export default function Dashboard({ userEmail }: { userEmail: string }) {
         </div>
 
         <nav style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-          {RESOURCES.map((r) => (
-            <button
-              key={r.table}
-              onClick={() => {
-                setActive(r);
-                setEditing(null);
-              }}
-              style={{
-                ...styles.navItem,
-                background:
-                  r.table === active.table ? "#1e1e1e" : "transparent",
-                color: r.table === active.table ? "#fff" : "#999",
-              }}
-            >
-              {r.label}
-            </button>
-          ))}
+          {RESOURCES.map((r) => {
+            const selected = view === "resource" && r.table === active.table;
+            return (
+              <button
+                key={r.table}
+                onClick={() => {
+                  setView("resource");
+                  setActive(r);
+                  setEditing(null);
+                }}
+                style={{
+                  ...styles.navItem,
+                  background: selected ? "#1e1e1e" : "transparent",
+                  color: selected ? "#fff" : "#999",
+                }}
+              >
+                {r.label}
+              </button>
+            );
+          })}
+
+          <button
+            onClick={() => {
+              setView("kanban");
+              setEditing(null);
+            }}
+            style={{
+              ...styles.navItem,
+              background: view === "kanban" ? "#1e1e1e" : "transparent",
+              color: view === "kanban" ? "#fff" : "#999",
+            }}
+          >
+            Kanban
+          </button>
+
+          <button
+            onClick={() => {
+              setView("formUsers");
+              setEditing(null);
+            }}
+            style={{
+              ...styles.navItem,
+              background: view === "formUsers" ? "#1e1e1e" : "transparent",
+              color: view === "formUsers" ? "#fff" : "#999",
+            }}
+          >
+            Form Users
+          </button>
         </nav>
 
         <div style={{ marginTop: "auto", paddingTop: 24 }}>
@@ -129,41 +163,69 @@ export default function Dashboard({ userEmail }: { userEmail: string }) {
       </aside>
 
       {/* Content */}
-      <section style={styles.content}>
-        <div style={styles.header}>
-          <div>
-            <h1 style={{ fontSize: 28, margin: 0 }}>{active.label}</h1>
-            <p style={{ color: "#888", fontSize: 13, marginTop: 6 }}>
-              {rows.length} registro{rows.length === 1 ? "" : "s"}
-            </p>
-          </div>
-          <button
-            onClick={() => setEditing({ ...emptyRecord(active) })}
-            style={styles.primaryBtn}
-          >
-            + Nuevo {active.singular}
-          </button>
-        </div>
-
-        {error && <p style={styles.errorBox}>{error}</p>}
-
-        {loading ? (
-          <p style={{ color: "#888" }}>Cargando…</p>
+      <section
+        style={{
+          ...styles.content,
+          maxWidth: view === "kanban" ? "none" : 1000,
+        }}
+      >
+        {view === "kanban" ? (
+          <>
+            <div style={styles.header}>
+              <h1 style={{ fontSize: 28, margin: 0 }}>Kanban</h1>
+            </div>
+            <KanbanBoard supabase={supabase} />
+          </>
+        ) : view === "formUsers" ? (
+          <>
+            <div style={styles.header}>
+              <div>
+                <h1 style={{ fontSize: 28, margin: 0 }}>Form Users</h1>
+                <p style={{ color: "#888", fontSize: 13, marginTop: 6 }}>
+                  Personas que completaron la Auditoría Digital
+                </p>
+              </div>
+            </div>
+            <FormUsers supabase={supabase} />
+          </>
         ) : (
-          <div style={styles.list}>
-            {rows.map((row) => (
-              <RowCard
-                key={String(row.id)}
-                row={row}
-                resource={active}
-                onEdit={() => setEditing(row)}
-                onDelete={() => handleDelete(row)}
-              />
-            ))}
-            {rows.length === 0 && (
-              <p style={{ color: "#666" }}>Aún no hay registros.</p>
+          <>
+            <div style={styles.header}>
+              <div>
+                <h1 style={{ fontSize: 28, margin: 0 }}>{active.label}</h1>
+                <p style={{ color: "#888", fontSize: 13, marginTop: 6 }}>
+                  {rows.length} registro{rows.length === 1 ? "" : "s"}
+                </p>
+              </div>
+              <button
+                onClick={() => setEditing({ ...emptyRecord(active) })}
+                style={styles.primaryBtn}
+              >
+                + Nuevo {active.singular}
+              </button>
+            </div>
+
+            {error && <p style={styles.errorBox}>{error}</p>}
+
+            {loading ? (
+              <p style={{ color: "#888" }}>Cargando…</p>
+            ) : (
+              <div style={styles.list}>
+                {rows.map((row) => (
+                  <RowCard
+                    key={String(row.id)}
+                    row={row}
+                    resource={active}
+                    onEdit={() => setEditing(row)}
+                    onDelete={() => handleDelete(row)}
+                  />
+                ))}
+                {rows.length === 0 && (
+                  <p style={{ color: "#666" }}>Aún no hay registros.</p>
+                )}
+              </div>
             )}
-          </div>
+          </>
         )}
       </section>
 
@@ -419,7 +481,9 @@ function ImageInput({
 
     // Validación: solo imágenes rasterizadas (svg puede contener scripts).
     const allowed = ["png", "jpg", "jpeg", "webp", "gif"];
-    const ext = (file.name.match(/\.([a-z0-9]{1,5})$/i)?.[1] ?? "").toLowerCase();
+    const ext = (
+      file.name.match(/\.([a-z0-9]{1,5})$/i)?.[1] ?? ""
+    ).toLowerCase();
     if (!file.type.startsWith("image/") || !allowed.includes(ext)) {
       alert("Formato no permitido. Usa PNG, JPG, WEBP o GIF.");
       return;
@@ -478,7 +542,11 @@ function ImageInput({
           />
         </label>
         {value && (
-          <button type="button" onClick={() => onChange("")} style={styles.ghostBtn}>
+          <button
+            type="button"
+            onClick={() => onChange("")}
+            style={styles.ghostBtn}
+          >
             Quitar
           </button>
         )}

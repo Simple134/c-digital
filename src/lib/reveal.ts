@@ -6,9 +6,7 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 // animó el useGSAP de montaje se ignoran (ya están visibles).
 export function revealPending(root?: HTMLElement | null) {
   const scope: ParentNode = root ?? document;
-  const els = Array.from(
-    scope.querySelectorAll<HTMLElement>(".reveal-up"),
-  );
+  const els = Array.from(scope.querySelectorAll<HTMLElement>(".reveal-up"));
   els.forEach((el) => {
     if (parseFloat(getComputedStyle(el).opacity) > 0.5) return; // ya visible
     const animate = () =>

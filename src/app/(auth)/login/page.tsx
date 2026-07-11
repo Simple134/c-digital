@@ -73,7 +73,9 @@ export default function LoginPage() {
           onSubmit={handleSubmit}
           style={{ display: "flex", flexDirection: "column", gap: "18px" }}
         >
-          <label style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+          <label
+            style={{ display: "flex", flexDirection: "column", gap: "8px" }}
+          >
             <span style={fieldLabel}>Correo</span>
             <input
               type="email"
@@ -86,7 +88,9 @@ export default function LoginPage() {
             />
           </label>
 
-          <label style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+          <label
+            style={{ display: "flex", flexDirection: "column", gap: "8px" }}
+          >
             <span style={fieldLabel}>Contraseña</span>
             <input
               type="password"

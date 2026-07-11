@@ -14,7 +14,8 @@ export function EditorialShell({ children }: { children: React.ReactNode }) {
     pathname.startsWith("/sales") ||
     pathname.startsWith("/linktree") ||
     pathname.startsWith("/login") ||
-    pathname.startsWith("/dashboard")
+    pathname.startsWith("/dashboard") ||
+    pathname.startsWith("/form")
   ) {
     return <>{children}</>;
   }

@@ -54,9 +54,57 @@ export interface Brand {
   sort_order: number;
 }
 
+export interface KanbanColumn {
+  id: string;
+  title: string;
+  sort_order: number;
+}
+
+export interface KanbanCard {
+  id: string;
+  column_id: string;
+  title: string;
+  description: string | null;
+  priority: string | null;
+  assignee_id: string | null;
+  sort_order: number;
+}
+
+export type AuditLevel = "green" | "yellow" | "red";
+
+export interface FormSubmissionAnswer {
+  level: AuditLevel;
+  text: string;
+}
+
+export type FormSubmissionStatus =
+  "nuevo" | "contactado" | "en_seguimiento" | "cerrado" | "descartado";
+
+// Registro de una persona que completó la Auditoría Digital (/form).
+export interface FormSubmission {
+  id: string;
+  name: string;
+  business: string;
+  phone: string | null;
+  email: string;
+  sector: string | null;
+  selected_areas: string[];
+  answers: Record<string, Record<string, FormSubmissionAnswer>>;
+  notes: Record<string, string>;
+  priorities: string[];
+  scores: Record<string, AuditLevel>;
+  status: FormSubmissionStatus;
+  admin_notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export type TableName =
   | "plans"
   | "portfolio"
   | "posts"
   | "team_members"
-  | "brands";
+  | "brands"
+  | "kanban_columns"
+  | "kanban_cards"
+  | "form_submissions";

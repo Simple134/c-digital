@@ -1983,3 +1983,34 @@ header {
     min-height: auto;
   }
 }
+
+/* ---------------- Kanban (react-kanban-kit) — tema oscuro ----------------
+   El CSS de la librería se inyecta en runtime (después de este archivo) con un
+   tema claro. Prefijamos con `.cdg-kanban` para ganar por especificidad sin
+   depender del orden de la cascada ni usar !important. */
+.cdg-kanban .rkk-column-outer .rkk-column {
+  background-color: #121212;
+  border: 1px solid #1e1e1e;
+}
+.cdg-kanban .rkk-column-header {
+  background-color: transparent;
+}
+.cdg-kanban .rkk-column-header-left {
+  color: #fff;
+}
+.cdg-kanban .rkk-column-header-right {
+  background-color: #1e1e1e;
+  color: #888;
+}
+/* Placeholder que aparece al arrastrar columnas/tarjetas */
+.cdg-kanban .rkk-column-shadow {
+  background-color: #1a1a1a;
+  border-color: #2a2a2a;
+}
+/* Scrollbar de la lista de tarjetas en tonos oscuros */
+.cdg-kanban .rkk-column-content-list {
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+}
+.cdg-kanban .rkk-column-content-list:hover {
+  scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+}
