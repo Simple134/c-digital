@@ -1,15 +1,17 @@
 "use client";
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import Image from "next/image";
 import Link from "next/link";
 import Header from "@/components/layout/Header";
+import { getPosts } from "@/lib/content";
+import { revealPending } from "@/lib/reveal";
 
 gsap.registerPlugin(ScrollTrigger);
 
-const POSTS = [
+const POSTS_DEFAULT = [
   {
     id: "guia-contratar-agencia",
     category: "Estrategia",
@@ -23,6 +25,20 @@ const POSTS = [
 
 export default function Blog() {
   const containerRef = useRef<HTMLDivElement>(null);
+  const [posts, setPosts] = useState(POSTS_DEFAULT);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const data = await getPosts();
+      if (cancelled || !data) return;
+      setPosts(data);
+      requestAnimationFrame(() => revealPending(containerRef.current));
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useGSAP(
     () => {
@@ -69,7 +85,7 @@ export default function Blog() {
 
       {/* Posts */}
       <section className="container" style={{ paddingTop: 0 }}>
-        {POSTS.map((post) => (
+        {posts.map((post) => (
           <Link
             key={post.id}
             href={`/blog/${post.id}`}

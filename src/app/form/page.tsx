@@ -1,1173 +1,982 @@
 "use client";
 
-import React, { useState } from "react";
-import { useForm, SubmitHandler } from "react-hook-form";
-import Image from "next/image";
-import posthog from "posthog-js";
+import React, { useEffect, useRef, useState } from "react";
+import { Bebas_Neue, Inter, JetBrains_Mono } from "next/font/google";
+import {
+  AREAS,
+  ICONS,
+  SECTORS,
+  WHATSAPP_NUMBER,
+  calcScore,
+  formatPhone,
+  levelLabels,
+  levelPct,
+  levelOrder,
+  type Level,
+} from "./audit-data";
+import { AUDIT_CSS } from "./audit-styles";
 
-interface BriefBrandFormData {
-  // Información Personal y de Contacto
-  nombreCompleto: string;
-  whatsapp: string;
-  email: string;
-  pais: string;
-  enSociedad: string;
+// Fuentes del diseño cargadas con next/font (evita CLS y bloqueo de red del CDN).
+const bebas = Bebas_Neue({
+  weight: "400",
+  subsets: ["latin"],
+  variable: "--font-bebas",
+  display: "swap",
+});
+const inter = Inter({
+  weight: ["300", "400", "500", "600"],
+  subsets: ["latin"],
+  variable: "--font-inter",
+  display: "swap",
+});
+const jetmono = JetBrains_Mono({
+  weight: ["300", "400"],
+  subsets: ["latin"],
+  variable: "--font-jet",
+  display: "swap",
+});
 
-  // Tipo de Proyecto
-  tipoProyecto: string; // 'nuevo' | 'rebranding'
+type Answer = { level: Level; text: string };
+type Answers = Record<string, Record<number, Answer>>;
 
-  // Redes actuales (array de strings)
-  redes: string[];
-  problemaActual: string;
+const STEP_LABELS = [
+  "01 · Áreas",
+  "02 · Preguntas",
+  "03 · Tus datos",
+  "04 · Diagnóstico",
+];
+const PROGRESS = [0, 33, 66, 100];
 
-  // Información Básica
-  nombreMarca: string;
-  personalidadMarca: string[];
-
-  // Elementos de Marca
-  tipoLogo: string;
-  abiertoSugerencias: boolean;
-
-  // Información Adicional
-  presupuesto: string;
-  adicional: string;
-  servicios: string;
-  diaReunion: string;
+// Escapa valores del usuario antes de interpolarlos en el HTML del PDF.
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 
-// Lista de países de América y Europa
-const PAISES = [
-  // América del Norte
-  "Canadá",
-  "Estados Unidos",
-  "México",
+// Renderiza un icono SVG (string estático de nuestros datos, sin entrada de usuario).
+function renderIcon(id: string, inlineStyle?: string) {
+  const svg = inlineStyle
+    ? ICONS[id].replace("<svg", `<svg style="${inlineStyle}"`)
+    : ICONS[id];
+  return (
+    <span
+      style={{ display: "inline-flex" }}
+      dangerouslySetInnerHTML={{ __html: svg }}
+    />
+  );
+}
 
-  // América Central
-  "Belice",
-  "Costa Rica",
-  "El Salvador",
-  "Guatemala",
-  "Honduras",
-  "Nicaragua",
-  "Panamá",
-
-  // Caribe
-  "Antigua y Barbuda",
-  "Bahamas",
-  "Barbados",
-  "Cuba",
-  "Dominica",
-  "Granada",
-  "Haití",
-  "Jamaica",
-  "Puerto Rico",
-  "República Dominicana",
-  "San Cristóbal y Nieves",
-  "Santa Lucía",
-  "San Vicente y las Granadinas",
-  "Trinidad y Tobago",
-
-  // América del Sur
-  "Argentina",
-  "Bolivia",
-  "Brasil",
-  "Chile",
-  "Colombia",
-  "Ecuador",
-  "Guyana",
-  "Paraguay",
-  "Perú",
-  "Surinam",
-  "Uruguay",
-  "Venezuela",
-
-  // Europa
-  "Alemania",
-  "Austria",
-  "Bélgica",
-  "España",
-  "Francia",
-  "Italia",
-  "Países Bajos",
-  "Portugal",
-  "Reino Unido",
-  "Suiza",
-].sort();
-
-export default function BriefBrandForm() {
-  const [currentStep, setCurrentStep] = useState(1);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showSuccess, setShowSuccess] = useState(false);
-  const [searchPais, setSearchPais] = useState("");
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-
-  const {
-    register,
-    handleSubmit,
-    watch,
-    setValue,
-    getValues,
-    trigger,
-    setError,
-    clearErrors,
-    reset,
-    formState: { errors },
-  } = useForm<BriefBrandFormData>({
-    shouldUnregister: false, // Keep data even when fields are hidden
-    defaultValues: {
-      personalidadMarca: [],
-      redes: [],
-      tipoProyecto: "",
-      abiertoSugerencias: false,
-    },
+export default function AuditForm() {
+  const [step, setStep] = useState(0);
+  const [selectedAreas, setSelectedAreas] = useState<string[]>([]);
+  const [answers, setAnswers] = useState<Answers>({});
+  const [notes, setNotes] = useState<Record<string, string>>({});
+  const [lead, setLead] = useState({
+    name: "",
+    biz: "",
+    phone: "",
+    email: "",
+    sector: "",
   });
+  const [priorities, setPriorities] = useState<string[]>([]);
+  const [warn, setWarn] = useState({
+    select: false,
+    questions: false,
+    lead: false,
+  });
+  const [modalArea, setModalArea] = useState<string | null>(null);
+  const [barsReady, setBarsReady] = useState(false);
+  // Evita registrar el lead más de una vez por sesión (navegación atrás/adelante).
+  const submittedRef = useRef(false);
 
-  const formData = watch(); // Watch all fields to update UI reactively
+  const levelOf = (id: string): Level => calcScore(answers[id] || {});
 
-  // Helper to determine total steps based on project type
-  const getMaxSteps = () => {
-    if (formData.tipoProyecto === "nuevo") return 5;
-    return 7;
-  };
+  // Cerrar modal con Escape + bloquear scroll del fondo mientras está abierto.
+  useEffect(() => {
+    if (!modalArea) return;
+    document.body.style.overflow = "hidden";
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setModalArea(null);
+    };
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = "";
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [modalArea]);
 
-  const totalSteps = getMaxSteps();
+  // Animación de las barras de score al entrar al diagnóstico.
+  useEffect(() => {
+    if (step !== 3) return;
+    setBarsReady(false);
+    const t = setTimeout(() => setBarsReady(true), 100);
+    return () => clearTimeout(t);
+  }, [step]);
 
-  const handleCheckboxChange = (
-    fieldName: keyof BriefBrandFormData,
-    value: string,
-  ) => {
-    // We know these specific fields are arrays of strings based on our interface
-    const currentArray = (getValues(fieldName) as string[]) || [];
-
-    if (currentArray.includes(value)) {
-      setValue(
-        fieldName,
-        currentArray.filter((item) => item !== value),
-      );
-    } else {
-      setValue(fieldName, [...currentArray, value]);
-      clearErrors(fieldName);
-    }
-  };
-
-  const goToStep = (step: number) => {
-    setCurrentStep(step);
+  const goTo = (s: number) => {
+    setStep(s);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const getFieldsForStep = (step: number): (keyof BriefBrandFormData)[] => {
-    const type = formData.tipoProyecto;
-
-    if (step === 1) {
-      return ["nombreCompleto", "whatsapp", "email", "pais", "enSociedad"];
-    }
-
-    if (step === 2) {
-      return ["tipoProyecto"];
-    }
-
-    if (type === "rebranding") {
-      if (step === 3) return []; // Redes actuales - opcional
-      if (step === 4) return ["problemaActual"];
-      if (step === 5) return ["nombreMarca", "personalidadMarca", "tipoLogo"];
-      if (step === 6) return ["presupuesto", "diaReunion"];
-      if (step === 7) return []; // adicional y servicios son opcionales
-    } else {
-      // Nuevo proyecto
-      if (step === 3) return ["nombreMarca", "personalidadMarca", "tipoLogo"];
-      if (step === 4) return ["presupuesto", "diaReunion"];
-      if (step === 5) return []; // adicional y servicios son opcionales
-    }
-
-    return [];
+  const toggleArea = (id: string) => {
+    setSelectedAreas((prev) =>
+      prev.includes(id) ? prev.filter((a) => a !== id) : [...prev, id],
+    );
   };
 
-  const handleNext = async () => {
-    const fields = getFieldsForStep(currentStep);
-    const isStepValid = await trigger(fields);
-    let isCustomValid = true;
+  const goToQuestions = () => {
+    if (!selectedAreas.length) {
+      setWarn((w) => ({ ...w, select: true }));
+      return;
+    }
+    setWarn((w) => ({ ...w, select: false }));
+    goTo(1);
+  };
 
-    // Manual validation for checkbox groups
+  const selectOpt = (areaId: string, qi: number, opt: Answer) => {
+    setAnswers((prev) => ({
+      ...prev,
+      [areaId]: { ...(prev[areaId] || {}), [qi]: opt },
+    }));
+  };
+
+  const allAnswered = () =>
+    selectedAreas.every((id) => {
+      const area = AREAS.find((a) => a.id === id)!;
+      return area.qs.every((_, i) => answers[id]?.[i]);
+    });
+
+  const goToLead = () => {
+    if (!allAnswered()) {
+      setWarn((w) => ({ ...w, questions: true }));
+      return;
+    }
+    setWarn((w) => ({ ...w, questions: false }));
+    goTo(2);
+  };
+
+  const generateDiag = () => {
+    const { name, biz, phone, email, sector } = lead;
     if (
-      (currentStep === 3 && formData.tipoProyecto === "nuevo") ||
-      (currentStep === 5 && formData.tipoProyecto === "rebranding")
+      !name.trim() ||
+      !biz.trim() ||
+      !phone.trim() ||
+      !email.trim() ||
+      !sector
     ) {
-      if (
-        !formData.personalidadMarca ||
-        formData.personalidadMarca.length === 0
-      ) {
-        setError("personalidadMarca", {
-          type: "manual",
-          message: "Debes seleccionar al menos una opción",
-        });
-        isCustomValid = false;
-      }
+      setWarn((w) => ({ ...w, lead: true }));
+      return;
     }
+    setWarn((w) => ({ ...w, lead: false }));
+    setPriorities([]);
+    goTo(3);
 
-    if (!isStepValid || !isCustomValid) return;
-
-    if (currentStep < totalSteps) {
-      goToStep(currentStep + 1);
-    }
+    // Registrar el lead en Supabase + notificar por correo (una sola vez).
+    // Las prioridades se eligen en este paso, después de generar, por lo que
+    // no forman parte del registro inicial.
+    if (submittedRef.current) return;
+    submittedRef.current = true;
+    const scores: Record<string, Level> = {};
+    selectedAreas.forEach((id) => {
+      scores[id] = levelOf(id);
+    });
+    fetch("/api/audit-submit", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: lead.name,
+        business: lead.biz,
+        phone: lead.phone,
+        email: lead.email,
+        sector: lead.sector,
+        selected_areas: selectedAreas,
+        answers,
+        notes,
+        priorities: [],
+        scores,
+      }),
+    }).catch((err) => console.error("Error al registrar la auditoría:", err));
   };
 
-  const handleBack = () => {
-    if (currentStep > 1) {
-      goToStep(currentStep - 1);
-    }
+  const togglePriority = (id: string) => {
+    setPriorities((prev) =>
+      prev.includes(id) ? prev.filter((p) => p !== id) : [...prev, id],
+    );
   };
 
-  const handleSubmitForm = async () => {
-    // Validar todos los campos antes de enviar
-    const isValid = await trigger();
-    if (isValid) {
-      handleSubmit(onSubmit)();
-    }
-  };
+  const sortedAreas = [...selectedAreas].sort(
+    (a, b) => levelOrder[levelOf(a)] - levelOrder[levelOf(b)],
+  );
 
-  const onSubmit: SubmitHandler<BriefBrandFormData> = async (data) => {
-    setIsSubmitting(true);
+  const priorityNames = priorities.map(
+    (id) => AREAS.find((a) => a.id === id)!.title,
+  );
 
-    const submitData = {
-      Nombre: data.nombreCompleto || "nothing",
-      "Correo Principal": data.email || "nothing",
-      Pais: data.pais || "nothing",
-      Sociedad: data.enSociedad || "nothing",
-      "Tipo de Proyecto": data.tipoProyecto || "nothing",
-      Whatsapp: data.whatsapp || "nothing",
-      "Redes actuales":
-        data.redes?.length > 0 ? data.redes.join(", ") : "nothing",
-      "Por que el cambio": data.problemaActual || "nothing",
-      "Nombre del Negocio": data.nombreMarca || "nothing",
-      "Personalidad de la Marca":
-        data.personalidadMarca?.length > 0
-          ? data.personalidadMarca.join(", ")
-          : "nothing",
-      "Tipo de Logo": data.tipoLogo || "nothing",
-      "Abierto a Sugerencias": data.abiertoSugerencias ? "Si" : "No",
-      Presupuesto: data.presupuesto || "nothing",
-      "Informacion extra": data.adicional || "nothing",
-      Servicios: data.servicios || "nothing",
-      "dia de reunion": data.diaReunion || "nothing",
+  const waMessage = `Saludos, soy ${lead.name} y busco una propuesta basado en mi diagnóstico digital.`;
+  const waHref = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(waMessage)}`;
+
+  // ── PDF imprimible (misma estructura del prototipo, leyendo del estado) ──
+  const printDiag = () => {
+    const name = escapeHtml(lead.name);
+    const biz = escapeHtml(lead.biz);
+    const phone = escapeHtml(lead.phone);
+    const email = escapeHtml(lead.email);
+    const sector = escapeHtml(lead.sector);
+    const date = new Date().toLocaleDateString("es-DO", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+
+    const levelLabelsL = {
+      green: "Sólido",
+      yellow: "En desarrollo",
+      red: "Crítico",
+    };
+    const levelColors = { green: "#00b37a", yellow: "#d49800", red: "#cc2222" };
+    const levelBg = { green: "#e6f9f3", yellow: "#fff8e1", red: "#fff0f0" };
+    const levelBorder = {
+      green: "#00b37a40",
+      yellow: "#d4980040",
+      red: "#cc222240",
     };
 
-    try {
-      const formId = 26;
-      const response = await fetch(`/api/contact-gestiono/${formId}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ data: submitData }),
+    let areasHtml = "";
+    sortedAreas.forEach((id) => {
+      const area = AREAS.find((a) => a.id === id)!;
+      const level = levelOf(id);
+      const rec = area.recs[level];
+      const col = levelColors[level];
+      const bg = levelBg[level];
+
+      let qHtml = "";
+      area.qs.forEach((q, qi) => {
+        const ans = answers[id]?.[qi];
+        const ansLevel = ans ? ans.level : "red";
+        const ansText = ans ? ans.text : "Sin respuesta";
+        qHtml += `
+          <div style="margin-bottom:10px;">
+            <div style="font-size:10px;color:#888;margin-bottom:3px;font-family:monospace;letter-spacing:.04em;">P${qi + 1}</div>
+            <div style="font-size:12px;color:#444;margin-bottom:6px;line-height:1.5;">${q.text}</div>
+            <div style="background:${levelBg[ansLevel]};border:1px solid ${levelBorder[ansLevel]};border-radius:6px;padding:8px 10px;font-size:12px;color:#222;display:flex;gap:8px;align-items:flex-start;line-height:1.4;">
+              <span style="width:8px;height:8px;border-radius:50%;background:${levelColors[ansLevel]};flex-shrink:0;margin-top:3px;display:inline-block;"></span>
+              <span>${ansText}</span>
+            </div>
+          </div>`;
       });
 
-      const result = await response.json();
+      const notesVal = escapeHtml((notes[id] || "").trim());
+      const notesBlock = notesVal
+        ? `
+        <div style="margin-top:14px;padding-top:14px;border-top:1px dashed #e0e0e0;">
+          <div style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.06em;font-family:monospace;margin-bottom:6px;">Apuntes adicionales</div>
+          <div style="font-size:12px;color:#444;line-height:1.7;background:#fafafa;border:1px solid #eee;border-radius:6px;padding:10px 12px;white-space:pre-wrap;">${notesVal}</div>
+        </div>`
+        : "";
 
-      if (response.ok) {
-        posthog.identify(data.email, {
-          email: data.email,
-          name: data.nombreCompleto,
-          pais: data.pais,
-          whatsapp: data.whatsapp,
-        });
-        posthog.capture("brief_submitted", {
-          tipo_proyecto: data.tipoProyecto,
-          tipo_logo: data.tipoLogo,
-          presupuesto: data.presupuesto,
-          pais: data.pais,
-          personalidad_marca: data.personalidadMarca,
-        });
-        setShowSuccess(true);
-        window.scrollTo({ top: 0, behavior: "smooth" });
-        reset();
-      } else {
-        console.error("Error al enviar el formulario:", result);
-        alert(
-          "Hubo un error al enviar el formulario. Por favor, inténtalo de nuevo.",
-        );
-      }
-    } catch (error) {
-      console.error("Error de red:", error);
-      alert(
-        "Hubo un error de conexión. Por favor, verifica tu internet e inténtalo de nuevo.",
-      );
-    } finally {
-      setIsSubmitting(false);
+      const tagsHtml = rec.tags
+        .map(
+          (t) =>
+            `<span style="font-size:10px;padding:3px 8px;border-radius:99px;background:#f0f0f0;border:1px solid #ddd;color:#555;margin:2px;display:inline-block;">${t}</span>`,
+        )
+        .join("");
+
+      areasHtml += `
+        <div style="border:1px solid #e0e0e0;border-radius:10px;overflow:hidden;margin-bottom:20px;page-break-inside:avoid;">
+          <div style="background:${bg};border-bottom:2px solid ${col};padding:14px 18px;display:flex;align-items:center;justify-content:space-between;">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <span style="width:28px;height:28px;background:#f0f0f0;border-radius:4px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">${ICONS[id].replace("<svg", `<svg style="width:16px;height:16px;stroke:${col};stroke-width:1.5;fill:none"`)}</span>
+              <div>
+                <div style="font-size:16px;font-weight:700;color:#111;font-family:'Helvetica Neue',sans-serif;">${area.title}</div>
+                <div style="font-size:11px;color:#666;">${area.short}</div>
+              </div>
+            </div>
+            <div style="background:${col};color:#fff;font-size:10px;font-weight:600;padding:4px 12px;border-radius:99px;letter-spacing:.05em;font-family:monospace;">
+              ${levelLabelsL[level].toUpperCase()}
+            </div>
+          </div>
+          <div style="padding:16px 18px;">
+            <div style="margin-bottom:14px;">
+              <div style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.06em;font-family:monospace;margin-bottom:6px;">Diagnóstico</div>
+              <div style="font-size:13px;font-weight:600;color:#111;margin-bottom:4px;">${rec.title}</div>
+              <div style="font-size:12px;color:#555;line-height:1.6;">${rec.text}</div>
+              <div style="margin-top:8px;">${tagsHtml}</div>
+            </div>
+            <div style="border-top:1px solid #eee;margin:14px 0;"></div>
+            <div style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.06em;font-family:monospace;margin-bottom:10px;">Respuestas</div>
+            ${qHtml}
+            ${notesBlock}
+          </div>
+        </div>`;
+    });
+
+    let prioHtml = "";
+    if (priorityNames.length) {
+      const steps = priorityNames
+        .map(
+          (n, i) => `
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+          <div style="width:24px;height:24px;border-radius:50%;background:#0a0a0a;color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;">${i + 1}</div>
+          <div style="font-size:13px;color:#222;">${n}</div>
+        </div>`,
+        )
+        .join("");
+      prioHtml = `
+        <div style="border:1px solid #e0e0e0;border-radius:10px;padding:16px 18px;margin-bottom:20px;page-break-inside:avoid;">
+          <div style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.06em;font-family:monospace;margin-bottom:12px;">Prioridades elegidas por el cliente</div>
+          ${steps}
+        </div>`;
     }
+
+    const summaryRows = sortedAreas
+      .map((id) => {
+        const area = AREAS.find((a) => a.id === id)!;
+        const level = levelOf(id);
+        return `<tr>
+        <td style="padding:8px 12px;font-size:13px;color:#222;border-bottom:1px solid #f0f0f0;display:flex;align-items:center;gap:6px;">${ICONS[id].replace("<svg", `<svg style="width:14px;height:14px;stroke:#333;stroke-width:1.5;fill:none;flex-shrink:0"`)} ${area.title}</td>
+        <td style="padding:8px 12px;border-bottom:1px solid #f0f0f0;">
+          <span style="background:${levelBg[level]};color:${levelColors[level]};border:1px solid ${levelBorder[level]};font-size:10px;padding:3px 9px;border-radius:99px;font-family:monospace;letter-spacing:.05em;">${levelLabelsL[level].toUpperCase()}</span>
+        </td>
+        <td style="padding:8px 12px;font-size:12px;color:#555;border-bottom:1px solid #f0f0f0;">${area.recs[level].title}</td>
+      </tr>`;
+      })
+      .join("");
+
+    const html = `<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Diagnóstico Digital — ${name} · C Digital</title>
+<style>
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:13px; color:#111; background:#fff; }
+  @page { size:A4; margin:18mm 16mm; }
+  @media print { body { -webkit-print-color-adjust:exact; print-color-adjust:exact; } }
+</style>
+</head>
+<body>
+<div style="border-bottom:3px solid #0a0a0a;padding-bottom:20px;margin-bottom:24px;">
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+    <div>
+      <div style="font-size:28px;font-weight:900;letter-spacing:-.5px;color:#0a0a0a;line-height:1;">C Digital<span style="color:#00b37a;">.</span></div>
+      <div style="font-size:10px;color:#888;margin-top:4px;font-family:monospace;letter-spacing:.08em;text-transform:uppercase;">Auditoría Digital — Diagnóstico de Resultados</div>
+    </div>
+    <div style="text-align:right;">
+      <div style="font-size:10px;color:#888;font-family:monospace;">${date}</div>
+      <div style="font-size:10px;color:#888;font-family:monospace;margin-top:2px;">estudiocdigital.com</div>
+    </div>
+  </div>
+</div>
+<div style="background:#f8f8f8;border-radius:10px;padding:16px 18px;margin-bottom:24px;display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+  <div>
+    <div style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.06em;font-family:monospace;margin-bottom:3px;">Nombre</div>
+    <div style="font-size:15px;font-weight:700;color:#0a0a0a;">${name}</div>
+  </div>
+  <div>
+    <div style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.06em;font-family:monospace;margin-bottom:3px;">Empresa</div>
+    <div style="font-size:15px;font-weight:700;color:#0a0a0a;">${biz}</div>
+  </div>
+  <div>
+    <div style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.06em;font-family:monospace;margin-bottom:3px;">Sector</div>
+    <div style="font-size:13px;color:#333;">${sector}</div>
+  </div>
+  <div>
+    <div style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.06em;font-family:monospace;margin-bottom:3px;">Contacto</div>
+    <div style="font-size:13px;color:#333;">${phone} · ${email}</div>
+  </div>
+</div>
+<div style="margin-bottom:24px;page-break-inside:avoid;">
+  <div style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.06em;font-family:monospace;margin-bottom:10px;">Resumen de áreas evaluadas</div>
+  <table style="width:100%;border-collapse:collapse;border:1px solid #e0e0e0;border-radius:8px;overflow:hidden;">
+    <thead>
+      <tr style="background:#0a0a0a;">
+        <th style="padding:10px 12px;text-align:left;font-size:10px;color:#fff;letter-spacing:.06em;font-family:monospace;font-weight:600;">ÁREA</th>
+        <th style="padding:10px 12px;text-align:left;font-size:10px;color:#fff;letter-spacing:.06em;font-family:monospace;font-weight:600;">ESTADO</th>
+        <th style="padding:10px 12px;text-align:left;font-size:10px;color:#fff;letter-spacing:.06em;font-family:monospace;font-weight:600;">DIAGNÓSTICO</th>
+      </tr>
+    </thead>
+    <tbody>${summaryRows}</tbody>
+  </table>
+</div>
+${prioHtml}
+<div style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.06em;font-family:monospace;margin-bottom:14px;">Detalle por área — respuestas y acciones recomendadas</div>
+${areasHtml}
+<div style="border-top:1px solid #e0e0e0;margin-top:30px;padding-top:14px;display:flex;justify-content:space-between;align-items:center;">
+  <div style="font-size:10px;color:#aaa;font-family:monospace;">C Digital · estudiocdigital.com · Auditoría Digital Gratuita</div>
+  <div style="font-size:10px;color:#aaa;font-family:monospace;">Este diagnóstico es confidencial y de uso exclusivo del cliente.</div>
+</div>
+</body>
+</html>`;
+
+    // Imprimir desde un iframe oculto: el cliente solo ve el diálogo nativo
+    // del navegador, nunca una pestaña intermedia con el HTML.
+    const iframe = document.createElement("iframe");
+    iframe.setAttribute("aria-hidden", "true");
+    iframe.style.position = "fixed";
+    iframe.style.right = "0";
+    iframe.style.bottom = "0";
+    iframe.style.width = "0";
+    iframe.style.height = "0";
+    iframe.style.border = "0";
+    iframe.srcdoc = html;
+
+    iframe.onload = () => {
+      const win = iframe.contentWindow;
+      if (!win) {
+        iframe.remove();
+        return;
+      }
+      // Retirar el iframe una vez que se cierra el diálogo de impresión.
+      win.addEventListener("afterprint", () => iframe.remove());
+      win.focus();
+      win.print();
+      // Respaldo por si el navegador no dispara "afterprint".
+      setTimeout(() => {
+        if (document.body.contains(iframe)) iframe.remove();
+      }, 60000);
+    };
+
+    document.body.appendChild(iframe);
   };
 
-  const getProgressPercentage = () => {
-    return (currentStep / totalSteps) * 100;
-  };
+  const modalAreaData = modalArea
+    ? AREAS.find((a) => a.id === modalArea)!
+    : null;
 
   return (
-    <div className=" text-white min-h-screen font-sans relative">
-      <div className="relative max-w-3xl mx-auto px-5 py-10 lg:py-16 z-10">
-        {!showSuccess ? (
-          <>
-            {/* Header */}
-            <header className="text-center mb-12 animate-fadeInDown">
-              <h1 className="text-3xl lg:text-4xl font-extrabold mb-3 tracking-tight">
-                Brief de Marca
-              </h1>
-              <p className="text-gray-400 max-w-2xl mx-auto leading-relaxed">
-                Cuéntanos sobre tu visión de marca
-              </p>
-            </header>
+    <div
+      className={`audit ${bebas.variable} ${inter.variable} ${jetmono.variable}`}
+    >
+      <style dangerouslySetInnerHTML={{ __html: AUDIT_CSS }} />
 
-            {/* Progress Bar */}
-            <div className="mb-8">
-              <div className="flex justify-between items-center mb-2 text-sm text-gray-400">
-                <span>
-                  Paso {currentStep} de {totalSteps}
-                </span>
-                <span>{Math.round(getProgressPercentage())}%</span>
+      {/* MODAL RESPUESTAS */}
+      {modalAreaData && (
+        <div
+          className="modal-overlay"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setModalArea(null);
+          }}
+        >
+          <div className="modal">
+            <div className="modal-header">
+              <div className="modal-title">
+                {modalAreaData.title} — Mis respuestas
               </div>
-              <div className="h-2 bg-[#1a1a1a] rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-gradient-to-r from-[#00d9ff] to-[#00b8d4] transition-all duration-500 ease-out"
-                  style={{ width: `${getProgressPercentage()}%` }}
-                />
-              </div>
-            </div>
-
-            {/* Form Steps */}
-            <form
-              onSubmit={(e) => e.preventDefault()}
-              onKeyDown={(e) => {
-                // Prevenir submit al presionar Enter
-                if (e.key === "Enter" && e.target instanceof HTMLInputElement) {
-                  e.preventDefault();
-                }
-              }}
-            >
-              {/* Step 1: Información Personal */}
-              {currentStep === 1 && (
-                <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-2xl p-8 lg:p-10 animate-fadeIn">
-                  <h2 className="text-2xl font-bold mb-2">
-                    Información Personal
-                  </h2>
-                  <p className="text-gray-400 text-sm mb-8">
-                    Necesitamos conocerte mejor
-                  </p>
-
-                  <div className="space-y-7">
-                    <div>
-                      <label
-                        htmlFor="nombreCompleto"
-                        className="block text-sm font-medium mb-2.5"
-                      >
-                        ¿Cuál es tu nombre completo?{" "}
-                        <span className="text-[#00d9ff]">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        id="nombreCompleto"
-                        placeholder="Tu nombre completo"
-                        {...register("nombreCompleto", { required: true })}
-                        className="w-full px-4 py-3.5 bg-transparent border border-[#1a1a1a] rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-[#00d9ff] focus:shadow-[0_0_0_3px_rgba(0,217,255,0.1)]"
-                      />
-                      {errors.nombreCompleto && (
-                        <p className="text-red-500 text-xs mt-1">
-                          Este campo es requerido
-                        </p>
-                      )}
-                    </div>
-
-                    <div>
-                      <label
-                        htmlFor="whatsapp"
-                        className="block text-sm font-medium mb-2.5"
-                      >
-                        Número de WhatsApp{" "}
-                        <span className="text-[#00d9ff]">*</span>
-                      </label>
-                      <input
-                        type="tel"
-                        id="whatsapp"
-                        placeholder="+1 (809) 000-0000"
-                        {...register("whatsapp", {
-                          required: true,
-                        })}
-                        className="w-full px-4 py-3.5 bg-transparent border border-[#1a1a1a] rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-[#00d9ff] focus:shadow-[0_0_0_3px_rgba(0,217,255,0.1)]"
-                      />
-                      <p className="text-xs text-gray-500 mt-2">
-                        Incluye código de país (ej: +1, +34, +52)
-                      </p>
-                      {errors.whatsapp && (
-                        <p className="text-red-500 text-xs mt-1">
-                          Este campo es requerido
-                        </p>
-                      )}
-                    </div>
-
-                    <div>
-                      <label
-                        htmlFor="email"
-                        className="block text-sm font-medium mb-2.5"
-                      >
-                        Correo electrónico{" "}
-                        <span className="text-[#00d9ff]">*</span>
-                      </label>
-                      <input
-                        type="email"
-                        id="email"
-                        placeholder="tu@email.com"
-                        {...register("email", { required: true })}
-                        className="w-full px-4 py-3.5 bg-transparent border border-[#1a1a1a] rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-[#00d9ff] focus:shadow-[0_0_0_3px_rgba(0,217,255,0.1)]"
-                      />
-                      {errors.email && (
-                        <p className="text-red-500 text-xs mt-1">
-                          Este campo es requerido
-                        </p>
-                      )}
-                    </div>
-
-                    <div className="relative">
-                      <label
-                        htmlFor="pais"
-                        className="block text-sm font-medium mb-2.5"
-                      >
-                        ¿En qué país se desarrollará el negocio?{" "}
-                        <span className="text-[#00d9ff]">*</span>
-                      </label>
-
-                      {/* Select con búsqueda */}
-                      <div className="relative">
-                        <input
-                          type="text"
-                          id="pais"
-                          placeholder="Buscar país..."
-                          value={searchPais || formData.pais || ""}
-                          onChange={(e) => {
-                            setSearchPais(e.target.value);
-                            setIsDropdownOpen(true);
-                            // Si el usuario escribe, limpiamos la selección actual
-                            if (
-                              formData.pais &&
-                              e.target.value !== formData.pais
-                            ) {
-                              setValue("pais", "");
-                            }
-                          }}
-                          onFocus={() => setIsDropdownOpen(true)}
-                          className="w-full px-4 py-3.5 bg-transparent border border-[#1a1a1a] rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-[#00d9ff] focus:shadow-[0_0_0_3px_rgba(0,217,255,0.1)]"
-                        />
-
-                        {/* Hidden input for form validation */}
-                        <input
-                          type="hidden"
-                          {...register("pais", { required: true })}
-                        />
-
-                        {/* Dropdown de países */}
-                        {isDropdownOpen && (
-                          <>
-                            {/* Backdrop para cerrar */}
-                            <div
-                              className="fixed inset-0 z-10"
-                              onClick={() => {
-                                setIsDropdownOpen(false);
-                                setSearchPais("");
-                              }}
-                            />
-
-                            <div className="absolute z-20 w-full mt-2 bg-[#0a0a0a] border border-[#1a1a1a] rounded-xl shadow-2xl max-h-60 overflow-y-auto">
-                              {PAISES.filter((pais) =>
-                                pais
-                                  .toLowerCase()
-                                  .includes((searchPais || "").toLowerCase()),
-                              ).length > 0 ? (
-                                PAISES.filter((pais) =>
-                                  pais
-                                    .toLowerCase()
-                                    .includes((searchPais || "").toLowerCase()),
-                                ).map((pais) => (
-                                  <button
-                                    key={pais}
-                                    type="button"
-                                    onClick={() => {
-                                      setValue("pais", pais);
-                                      clearErrors("pais");
-                                      setSearchPais("");
-                                      setIsDropdownOpen(false);
-                                    }}
-                                    className={`w-full text-left px-4 py-3 hover:bg-[#00d9ff]/10 hover:text-[#00d9ff] transition-colors ${
-                                      formData.pais === pais
-                                        ? "bg-[#00d9ff]/5 text-[#00d9ff]"
-                                        : "text-white"
-                                    }`}
-                                  >
-                                    {pais}
-                                  </button>
-                                ))
-                              ) : (
-                                <div className="px-4 py-3 text-gray-500 text-sm">
-                                  No se encontraron países
-                                </div>
-                              )}
-                            </div>
-                          </>
-                        )}
-                      </div>
-
-                      {/* Mostrar el país seleccionado */}
-                      {formData.pais && !isDropdownOpen && (
-                        <div className="mt-2 px-3 py-2 bg-[#00d9ff]/10 border border-[#00d9ff]/30 rounded-lg text-sm text-[#00d9ff] flex items-center justify-between">
-                          <span>Seleccionado: {formData.pais}</span>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setValue("pais", "");
-                              setSearchPais("");
-                            }}
-                            className="ml-2 text-[#00d9ff] hover:text-white transition-colors"
-                          >
-                            ✕
-                          </button>
-                        </div>
-                      )}
-
-                      {errors.pais && (
-                        <p className="text-red-500 text-xs mt-1">
-                          Este campo es requerido
-                        </p>
-                      )}
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium mb-2.5">
-                        ¿El negocio es en sociedad?{" "}
-                        <span className="text-[#00d9ff]">*</span>
-                      </label>
-                      <div className="space-y-3">
-                        <label className="flex items-center px-4 py-3.5 border border-[#1a1a1a] rounded-xl cursor-pointer hover:border-[#00d9ff] hover:bg-[#00d9ff]/5 transition-all">
-                          <input
-                            type="radio"
-                            value="si"
-                            {...register("enSociedad", { required: true })}
-                            className="appearance-none w-5 h-5 min-w-[20px] border-2 border-[#1a1a1a] rounded-full mr-3 cursor-pointer transition-all checked:border-[#00d9ff] relative after:content-[''] after:absolute after:w-3 after:h-3 after:bg-[#00d9ff] after:rounded-full after:top-1/2 after:left-1/2 after:-translate-x-1/2 after:-translate-y-1/2 after:scale-0 checked:after:scale-100 after:transition-transform"
-                          />
-                          <span className="text-sm">Sí, es una sociedad</span>
-                        </label>
-                        <label className="flex items-center px-4 py-3.5 border border-[#1a1a1a] rounded-xl cursor-pointer hover:border-[#00d9ff] hover:bg-[#00d9ff]/5 transition-all">
-                          <input
-                            type="radio"
-                            value="no"
-                            {...register("enSociedad", { required: true })}
-                            className="appearance-none w-5 h-5 min-w-[20px] border-2 border-[#1a1a1a] rounded-full mr-3 cursor-pointer transition-all checked:border-[#00d9ff] relative after:content-[''] after:absolute after:w-3 after:h-3 after:bg-[#00d9ff] after:rounded-full after:top-1/2 after:left-1/2 after:-translate-x-1/2 after:-translate-y-1/2 after:scale-0 checked:after:scale-100 after:transition-transform"
-                          />
-                          <span className="text-sm">No, es individual</span>
-                        </label>
-                      </div>
-                      {errors.enSociedad && (
-                        <p className="text-red-500 text-xs mt-1">
-                          Este campo es requerido
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Step 2: Tipo de Proyecto */}
-              {currentStep === 2 && (
-                <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-2xl p-8 lg:p-10 animate-fadeIn">
-                  <h2 className="text-2xl font-bold mb-2">Tipo de Proyecto</h2>
-                  <p className="text-gray-400 text-sm mb-8">
-                    Ayúdanos a entender tu necesidad
-                  </p>
-
-                  <div className="space-y-7">
-                    <div>
-                      <label className="block text-sm font-medium mb-4">
-                        ¿Es un nuevo logo o ya tenías una marca anteriormente?{" "}
-                        <span className="text-[#00d9ff]">*</span>
-                      </label>
-                      <div className="space-y-3">
-                        <label className="flex items-start px-4 py-4 border border-[#1a1a1a] rounded-xl cursor-pointer hover:border-[#00d9ff] hover:bg-[#00d9ff]/5 transition-all group">
-                          <input
-                            type="radio"
-                            value="nuevo"
-                            {...register("tipoProyecto", { required: true })}
-                            className="appearance-none w-5 h-5 min-w-[20px] border-2 border-[#1a1a1a] rounded-full mr-3 cursor-pointer transition-all checked:border-[#00d9ff] relative after:content-[''] after:absolute after:w-3 after:h-3 after:bg-[#00d9ff] after:rounded-full after:top-1/2 after:left-1/2 after:-translate-x-1/2 after:-translate-y-1/2 after:scale-0 checked:after:scale-100 after:transition-transform mt-0.5"
-                          />
-                          <div>
-                            <span className="text-sm font-semibold block mb-1">
-                              Es un nuevo logo
-                            </span>
-                            <span className="text-xs text-gray-400">
-                              Estoy creando una marca desde cero
-                            </span>
-                          </div>
-                        </label>
-                        <label className="flex items-start px-4 py-4 border border-[#1a1a1a] rounded-xl cursor-pointer hover:border-[#00d9ff] hover:bg-[#00d9ff]/5 transition-all group">
-                          <input
-                            type="radio"
-                            value="rebranding"
-                            {...register("tipoProyecto", { required: true })}
-                            className="appearance-none w-5 h-5 min-w-[20px] border-2 border-[#1a1a1a] rounded-full mr-3 cursor-pointer transition-all checked:border-[#00d9ff] relative after:content-[''] after:absolute after:w-3 after:h-3 after:bg-[#00d9ff] after:rounded-full after:top-1/2 after:left-1/2 after:-translate-x-1/2 after:-translate-y-1/2 after:scale-0 checked:after:scale-100 after:transition-transform mt-0.5"
-                          />
-                          <div>
-                            <span className="text-sm font-semibold block mb-1">
-                              Es un rebranding
-                            </span>
-                            <span className="text-xs text-gray-400">
-                              Ya tengo una marca y necesito renovarla
-                            </span>
-                          </div>
-                        </label>
-                      </div>
-                      {errors.tipoProyecto && (
-                        <p className="text-red-500 text-xs mt-1">
-                          Este campo es requerido
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Step 3: Redes Actuales (Solo si es Rebranding) */}
-              {currentStep === 3 && formData.tipoProyecto === "rebranding" && (
-                <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-2xl p-8 lg:p-10 animate-fadeIn">
-                  <h2 className="text-2xl font-bold mb-2">
-                    Redes Sociales Actuales
-                  </h2>
-                  <p className="text-gray-400 text-sm mb-8">
-                    Selecciona las redes sociales donde tienes presencia
-                  </p>
-
-                  <div className="space-y-3">
-                    {[
-                      { value: "instagram", label: "Instagram" },
-                      { value: "facebook", label: "Facebook" },
-                      { value: "tiktok", label: "TikTok" },
-                      { value: "linkedin", label: "LinkedIn" },
-                      { value: "youtube", label: "YouTube" },
-                      { value: "twitter", label: "Twitter/X" },
-                      { value: "website", label: "Sitio Web" },
-                    ].map((option) => (
-                      <label
-                        key={option.value}
-                        className="flex items-center px-4 py-3.5 border border-[#1a1a1a] rounded-xl cursor-pointer hover:border-[#00d9ff] hover:bg-[#00d9ff]/5 transition-all"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={watch("redes").includes(option.value)}
-                          onChange={() =>
-                            handleCheckboxChange("redes", option.value)
-                          }
-                          className="appearance-none w-5 h-5 min-w-[20px] border-2 border-[#1a1a1a] rounded-md mr-3 cursor-pointer transition-all checked:bg-[#00d9ff] checked:border-[#00d9ff] relative after:content-['✓'] after:absolute after:text-black after:text-sm after:font-bold after:top-1/2 after:left-1/2 after:-translate-x-1/2 after:-translate-y-1/2 after:scale-0 checked:after:scale-100 after:transition-transform"
-                        />
-                        <span className="text-sm">{option.label}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Step 4: Problema Actual (Solo si es Rebranding) */}
-              {currentStep === 4 && formData.tipoProyecto === "rebranding" && (
-                <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-2xl p-8 lg:p-10 animate-fadeIn">
-                  <h2 className="text-2xl font-bold mb-2">
-                    ¿Por qué el cambio?
-                  </h2>
-                  <p className="text-gray-400 text-sm mb-8">
-                    Cuéntanos qué problemas presenta tu marca actual
-                  </p>
-
-                  <div className="space-y-7">
-                    <div>
-                      <label
-                        htmlFor="problemaActual"
-                        className="block text-sm font-medium mb-2.5"
-                      >
-                        ¿Qué problema presentó que se debe cambiar el logo?{" "}
-                        <span className="text-[#00d9ff]">*</span>
-                      </label>
-                      <textarea
-                        id="problemaActual"
-                        placeholder="Ej: El logo se ve anticuado, no representa nuestros valores actuales..."
-                        rows={5}
-                        {...register("problemaActual", {
-                          required: formData.tipoProyecto === "rebranding",
-                        })}
-                        className="w-full px-4 py-3.5 bg-transparent border border-[#1a1a1a] rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-[#00d9ff] focus:shadow-[0_0_0_3px_rgba(0,217,255,0.1)] resize-y min-h-[150px]"
-                      />
-                      <p className="text-xs text-gray-500 mt-2">
-                        Sé específico sobre lo que no funciona con tu identidad
-                        actual
-                      </p>
-                      {errors.problemaActual && (
-                        <p className="text-red-500 text-xs mt-1">
-                          Este campo es requerido
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Step 5 (rebranding) or Step 3 (nuevo): Información de Marca */}
-              {((currentStep === 3 && formData.tipoProyecto === "nuevo") ||
-                (currentStep === 5 &&
-                  formData.tipoProyecto === "rebranding")) && (
-                <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-2xl p-8 lg:p-10 animate-fadeIn">
-                  <h2 className="text-2xl font-bold mb-2">
-                    Información de Marca
-                  </h2>
-                  <p className="text-gray-400 text-sm mb-8">
-                    Comencemos con lo esencial
-                  </p>
-
-                  <div className="space-y-7">
-                    <div>
-                      <label
-                        htmlFor="nombreMarca"
-                        className="block text-sm font-medium mb-2.5"
-                      >
-                        ¿Cuál es el nombre de tu marca?{" "}
-                        <span className="text-[#00d9ff]">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        id="nombreMarca"
-                        placeholder="Nombre de la marca"
-                        {...register("nombreMarca", { required: true })}
-                        className="w-full px-4 py-3.5 bg-transparent border border-[#1a1a1a] rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-[#00d9ff] focus:shadow-[0_0_0_3px_rgba(0,217,255,0.1)]"
-                      />
-                      {errors.nombreMarca && (
-                        <p className="text-red-500 text-xs mt-1">
-                          Este campo es requerido
-                        </p>
-                      )}
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium mb-2.5">
-                        ¿Cómo describirías la personalidad de tu marca?{" "}
-                        <span className="text-[#00d9ff]">*</span>
-                      </label>
-                      <div className="space-y-3">
-                        {[
-                          {
-                            value: "profesional",
-                            label: "Profesional y seria",
-                          },
-                          { value: "amigable", label: "Amigable y accesible" },
-                          {
-                            value: "innovadora",
-                            label: "Innovadora y moderna",
-                          },
-                          {
-                            value: "elegante",
-                            label: "Elegante y sofisticada",
-                          },
-                          { value: "divertida", label: "Divertida y juvenil" },
-                          {
-                            value: "tradicional",
-                            label: "Tradicional y confiable",
-                          },
-                          { value: "aventurera", label: "Aventurera y audaz" },
-                          {
-                            value: "minimalista",
-                            label: "Minimalista y limpia",
-                          },
-                        ].map((option) => (
-                          <label
-                            key={option.value}
-                            className="flex items-center px-4 py-3.5 border border-[#1a1a1a] rounded-xl cursor-pointer hover:border-[#00d9ff] hover:bg-[#00d9ff]/5 transition-all"
-                          >
-                            <input
-                              type="checkbox"
-                              checked={watch("personalidadMarca").includes(
-                                option.value,
-                              )}
-                              onChange={() =>
-                                handleCheckboxChange(
-                                  "personalidadMarca",
-                                  option.value,
-                                )
-                              }
-                              className="appearance-none w-5 h-5 min-w-[20px] border-2 border-[#1a1a1a] rounded-md mr-3 cursor-pointer transition-all checked:bg-[#00d9ff] checked:border-[#00d9ff] relative after:content-['✓'] after:absolute after:text-black after:text-sm after:font-bold after:top-1/2 after:left-1/2 after:-translate-x-1/2 after:-translate-y-1/2 after:scale-0 checked:after:scale-100 after:transition-transform"
-                            />
-                            <span className="text-sm">{option.label}</span>
-                          </label>
-                        ))}
-                      </div>
-                      {errors.personalidadMarca && (
-                        <div className="text-red-500 text-xs mt-1 text-center w-full">
-                          Debes seleccionar al menos una personalidad
-                        </div>
-                      )}
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium mb-4">
-                        ¿Qué tipo de logo prefieres?{" "}
-                        <span className="text-[#00d9ff]">*</span>
-                      </label>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {[
-                          {
-                            value: "logotipo",
-                            label: "Logotipo",
-                            sub: "Solo texto",
-                            letter: "A",
-                            image: "/logos/Murcia.png",
-                          },
-                          {
-                            value: "logotipo-accesorio",
-                            label: "Logotipo con accesorio",
-                            sub: "Texto + Ícono Integrado",
-                            letter: "B",
-                            image: "/logos/Nutriopcion.png",
-                          },
-                          {
-                            value: "simbolo",
-                            label: "Solo símbolo",
-                            sub: "Ícono independiente",
-                            letter: "C",
-                            image: "/logos/Cafelogo.png",
-                          },
-                          {
-                            value: "logo-simbolo",
-                            label: "Logo-Símbolo",
-                            sub: "Combinado",
-                            letter: "D",
-                            image: "/logos/Punto de Sabor.png",
-                          },
-                          {
-                            value: "personaje",
-                            label: "Mascota / Personaje",
-                            sub: "Ilustración",
-                            letter: "E",
-                            image: "/logos/Captus.png",
-                          },
-                          {
-                            value: "fondo",
-                            label: "Logo con fondo",
-                            sub: "Logo con fondo",
-                            letter: "F",
-                            image: "/logos/PlanBLogo.png",
-                          },
-                        ].map((type) => (
-                          <label
-                            key={type.value}
-                            className={`relative group cursor-pointer overflow-hidden rounded-xl border-2 transition-all ${
-                              watch("tipoLogo") === type.value
-                                ? "border-[#00d9ff] bg-[#00d9ff]/5"
-                                : "border-[#1a1a1a] bg-transparent hover:border-[#00d9ff]/30"
-                            }`}
-                          >
-                            <input
-                              type="radio"
-                              value={type.value}
-                              {...register("tipoLogo", { required: true })}
-                              className="sr-only"
-                            />
-                            <div className="aspect-[4/3] bg-gradient-to-br from-[#1a1a1a] to-[#0a0a0a] flex items-center justify-center p-6">
-                              {type.image ? (
-                                <div
-                                  className={`relative w-full h-full flex items-center justify-center bg-white rounded-lg p-4`}
-                                >
-                                  <Image
-                                    src={type.image}
-                                    alt={type.label}
-                                    width={200}
-                                    height={150}
-                                    className="object-contain max-w-full max-h-full"
-                                    style={{ filter: "brightness(1.1)" }}
-                                  />
-                                </div>
-                              ) : (
-                                // Placeholder para "Abierto a sugerencias"
-                                <div className="text-center text-white/50 text-sm">
-                                  {type.label}
-                                </div>
-                              )}
-                            </div>
-                            <div
-                              className={`px-4 py-3 bg-black/50 backdrop-blur-sm flex items-center gap-2 ${
-                                watch("tipoLogo") === type.value
-                                  ? "text-[#00d9ff]"
-                                  : "text-white"
-                              }`}
-                            >
-                              <span className="w-6 h-6 rounded bg-white/10 flex items-center justify-center text-xs font-bold">
-                                {type.letter}
-                              </span>
-                              <span className="text-sm font-medium">
-                                {type.label}
-                              </span>
-                            </div>
-                          </label>
-                        ))}
-                      </div>
-                      {errors.tipoLogo && (
-                        <p className="text-red-500 text-xs mt-1">
-                          Este campo es requerido
-                        </p>
-                      )}
-                    </div>
-                    <div>
-                      <label className="flex items-center px-4 py-4 border border-[#1a1a1a] rounded-xl cursor-pointer hover:border-[#00d9ff] hover:bg-[#00d9ff]/5 transition-all">
-                        <input
-                          type="checkbox"
-                          checked={watch("abiertoSugerencias") || false}
-                          onChange={(e) =>
-                            setValue("abiertoSugerencias", e.target.checked)
-                          }
-                          className="appearance-none w-5 h-5 min-w-[20px] border-2 border-[#1a1a1a] rounded-md mr-3 cursor-pointer transition-all checked:bg-[#00d9ff] checked:border-[#00d9ff] relative after:content-['✓'] after:absolute after:text-black after:text-sm after:font-bold after:top-1/2 after:left-1/2 after:-translate-x-1/2 after:-translate-y-1/2 after:scale-0 checked:after:scale-100 after:transition-transform"
-                        />
-                        <div>
-                          <span className="text-sm font-semibold block mb-1">
-                            Abierto a sugerencias del diseñador
-                          </span>
-                          <span className="text-xs text-gray-400">
-                            Confío en la experiencia del equipo creativo para
-                            explorar opciones
-                          </span>
-                        </div>
-                      </label>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Step 6 (rebranding) or Step 4 (nuevo): Presupuesto y Reunión */}
-              {((currentStep === 4 && formData.tipoProyecto === "nuevo") ||
-                (currentStep === 6 &&
-                  formData.tipoProyecto === "rebranding")) && (
-                <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-2xl p-8 lg:p-10 animate-fadeIn">
-                  <h2 className="text-2xl font-bold mb-2">
-                    Presupuesto y Reunión
-                  </h2>
-                  <p className="text-gray-400 text-sm mb-8">
-                    Ayúdanos a prepararnos para nuestra reunión
-                  </p>
-
-                  <div className="space-y-7">
-                    <div>
-                      <label
-                        htmlFor="presupuesto"
-                        className="block text-sm font-medium mb-2.5"
-                      >
-                        ¿Cuál es tu presupuesto aproximado?{" "}
-                        <span className="text-[#00d9ff]">*</span>
-                      </label>
-                      <select
-                        id="presupuesto"
-                        {...register("presupuesto", { required: true })}
-                        className="w-full px-4 py-3.5 bg-transparent border border-[#1a1a1a] rounded-xl text-white focus:outline-none focus:border-[#00d9ff] focus:shadow-[0_0_0_3px_rgba(0,217,255,0.1)]"
-                      >
-                        <option value="" className="bg-[#0a0a0a]">
-                          Selecciona un rango
-                        </option>
-                        <option value="500-1000" className="bg-[#0a0a0a]">
-                          $500 - $1,000
-                        </option>
-                        <option value="1000-2500" className="bg-[#0a0a0a]">
-                          $1,000 - $2,500
-                        </option>
-                        <option value="2500-5000" className="bg-[#0a0a0a]">
-                          $2,500 - $5,000
-                        </option>
-                        <option value="5000+" className="bg-[#0a0a0a]">
-                          $5,000+
-                        </option>
-                      </select>
-                      {errors.presupuesto && (
-                        <p className="text-red-500 text-xs mt-1">
-                          Este campo es requerido
-                        </p>
-                      )}
-                    </div>
-
-                    <div>
-                      <label
-                        htmlFor="diaReunion"
-                        className="block text-sm font-medium mb-2.5"
-                      >
-                        ¿Qué día prefieres para la reunión?{" "}
-                        <span className="text-[#00d9ff]">*</span>
-                      </label>
-                      <input
-                        type="date"
-                        id="diaReunion"
-                        placeholder="Ej: Lunes, Martes, cualquier día..."
-                        {...register("diaReunion", { required: true })}
-                        className="w-full px-4 py-3.5 bg-transparent border border-[#1a1a1a] rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-[#00d9ff] focus:shadow-[0_0_0_3px_rgba(0,217,255,0.1)]"
-                      />
-                      {errors.diaReunion && (
-                        <p className="text-red-500 text-xs mt-1">
-                          Este campo es requerido
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Step 7 (rebranding) or Step 5 (nuevo): Información Adicional */}
-              {((currentStep === 5 && formData.tipoProyecto === "nuevo") ||
-                (currentStep === 7 &&
-                  formData.tipoProyecto === "rebranding")) && (
-                <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-2xl p-8 lg:p-10 animate-fadeIn">
-                  <h2 className="text-2xl font-bold mb-2">
-                    Información Adicional
-                  </h2>
-                  <p className="text-gray-400 text-sm mb-8">
-                    ¿Algo más que debamos saber?
-                  </p>
-
-                  <div className="space-y-7">
-                    <div>
-                      <label
-                        htmlFor="servicios"
-                        className="block text-sm font-medium mb-2.5"
-                      >
-                        Servicios adicionales (opcional)
-                      </label>
-                      <textarea
-                        id="servicios"
-                        placeholder="Ej: Diseño de tarjetas, redes sociales, sitio web..."
-                        rows={3}
-                        {...register("servicios")}
-                        className="w-full px-4 py-3.5 bg-transparent border border-[#1a1a1a] rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-[#00d9ff] focus:shadow-[0_0_0_3px_rgba(0,217,255,0.1)] resize-y"
-                      />
-                    </div>
-
-                    <div>
-                      <label
-                        htmlFor="adicional"
-                        className="block text-sm font-medium mb-2.5"
-                      >
-                        Información adicional (opcional)
-                      </label>
-                      <textarea
-                        id="adicional"
-                        placeholder="Cualquier información adicional que quieras compartir..."
-                        rows={4}
-                        {...register("adicional")}
-                        className="w-full px-4 py-3.5 bg-transparent border border-[#1a1a1a] rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-[#00d9ff] focus:shadow-[0_0_0_3px_rgba(0,217,255,0.1)] resize-y min-h-[120px]"
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Navigation Buttons */}
-              <div className="flex gap-4 mt-8">
-                {currentStep > 1 && (
-                  <button
-                    type="button"
-                    onClick={handleBack}
-                    className="flex-1 bg-white/10 hover:bg-white/15 text-white font-bold py-4 rounded-xl border border-white/20 transition-all"
-                  >
-                    ← Anterior
-                  </button>
-                )}
-
-                {/* Mostrar botón Siguiente o Enviar según el paso actual */}
-                {currentStep < totalSteps ? (
-                  <button
-                    type="button"
-                    onClick={handleNext}
-                    className="flex-1 bg-[#00d9ff] text-black font-bold py-4 rounded-xl hover:shadow-lg hover:shadow-[#00d9ff]/40 transition-all hover:-translate-y-1 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
-                  >
-                    Siguiente →
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={handleSubmitForm}
-                    disabled={isSubmitting}
-                    className="flex-1 bg-[#00d9ff] text-black font-bold py-4 rounded-xl hover:shadow-lg hover:shadow-[#00d9ff]/40 transition-all hover:-translate-y-1 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {isSubmitting ? "Enviando..." : "Enviar Brief"}
-                  </button>
-                )}
-              </div>
-            </form>
-          </>
-        ) : (
-          /* Success Message */
-          <div className="text-center bg-[#0a0a0a] border border-[#1a1a1a] rounded-2xl p-12 lg:p-16 animate-fadeIn">
-            <div className="w-20 h-20 mx-auto mb-6 bg-[#00d9ff]/10 rounded-full flex items-center justify-center">
-              <svg
-                className="w-12 h-12 text-[#00d9ff]"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M5 13l4 4L19 7"
-                />
-              </svg>
-            </div>
-            <h2 className="text-3xl lg:text-4xl font-bold mb-4">¡Excelente!</h2>
-            <p className="text-gray-300 text-lg mb-3 max-w-xl mx-auto">
-              Analizaremos en breve tu brief y te daremos seguimiento por
-              WhatsApp.
-            </p>
-            <p className="text-gray-400 mb-8 max-w-xl mx-auto">
-              Si gustas puedes seguir explorando las soluciones que ofrecemos en
-              nuestra web.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <a
-                href="http://estudiocdigital.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-block bg-[#00d9ff] text-black font-bold px-8 py-4 rounded-xl hover:shadow-lg hover:shadow-[#00d9ff]/40 transition-all hover:-translate-y-1"
-              >
-                Visitar nuestra web
-              </a>
               <button
-                onClick={() => window.location.reload()}
-                className="inline-block bg-white/10 hover:bg-white/20 text-white font-bold px-8 py-4 rounded-xl border border-white/20 transition-all"
+                className="modal-close"
+                onClick={() => setModalArea(null)}
               >
-                Enviar otro brief
+                ✕
+              </button>
+            </div>
+            <div className="modal-body">
+              {modalAreaData.qs.map((q, qi) => {
+                const ans = answers[modalAreaData.id]?.[qi];
+                const ansLevel = ans ? ans.level : "red";
+                const ansText = ans ? ans.text : "Sin respuesta";
+                return (
+                  <div className="modal-q" key={qi}>
+                    <div className="modal-q-num">Pregunta {qi + 1}</div>
+                    <div className="modal-q-text">{q.text}</div>
+                    <div className={`modal-answer level-${ansLevel}`}>
+                      <div className="modal-dot" />
+                      <span>{ansText}</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="wrap">
+        <div className="logo">
+          C Digital<span>.</span>
+        </div>
+
+        <div className="progress-bar">
+          <div
+            className="progress-fill"
+            style={{ width: `${PROGRESS[step]}%` }}
+          />
+        </div>
+        <div className="steps-nav">
+          {STEP_LABELS.map((label, i) => (
+            <div
+              key={label}
+              className={`step-pill${i === step ? " active" : i < step ? " done" : ""}`}
+            >
+              {label}
+            </div>
+          ))}
+        </div>
+
+        {/* STEP 0 — ÁREAS */}
+        {step === 0 && (
+          <div className="step-section">
+            <div className="header">
+              <div className="tag">Auditoría Digital Gratuita</div>
+              <h1>
+                ¿Dónde está
+                <br />
+                <em>el punto</em>
+                <br />
+                de quiebre?
+              </h1>
+              <p>
+                Selecciona una o varias áreas que mejor describan lo que está
+                pasando en tu negocio ahora mismo. Seremos honestos sobre qué
+                necesitas.
+              </p>
+            </div>
+            <div className="selector-grid">
+              {AREAS.map((area) => (
+                <div
+                  key={area.id}
+                  className={`obj-card${selectedAreas.includes(area.id) ? " selected" : ""}`}
+                  onClick={() => toggleArea(area.id)}
+                >
+                  <div className="obj-icon">{renderIcon(area.id)}</div>
+                  <div className="obj-info">
+                    <div className="obj-title">
+                      {area.title}
+                      {area.featured && (
+                        <span
+                          style={{
+                            fontSize: "9px",
+                            background: "#00e5a015",
+                            color: "#00e5a0",
+                            border: "1px solid #00e5a030",
+                            padding: "2px 6px",
+                            borderRadius: "2px",
+                            fontFamily: "var(--font-jet), monospace",
+                            letterSpacing: ".06em",
+                            verticalAlign: "middle",
+                            marginLeft: "6px",
+                          }}
+                        >
+                          SISTEMA
+                        </span>
+                      )}
+                    </div>
+                    <div className="obj-short">{area.short}</div>
+                  </div>
+                  <div className="obj-check" />
+                </div>
+              ))}
+            </div>
+            {warn.select && (
+              <p className="warn">
+                Selecciona al menos un área para continuar.
+              </p>
+            )}
+            <div className="btn-row">
+              <span style={{ fontSize: "12px", color: "var(--text-muted)" }}>
+                Selecciona una o más áreas
+              </span>
+              <button className="btn btn-primary" onClick={goToQuestions}>
+                Continuar →
               </button>
             </div>
           </div>
         )}
+
+        {/* STEP 1 — PREGUNTAS */}
+        {step === 1 && (
+          <div className="step-section">
+            <div className="header">
+              <div className="tag">Evaluación por área</div>
+              <h1>
+                Sé <em>honesto</em>
+                <br />
+                contigo mismo
+              </h1>
+              <p>
+                No hay respuestas correctas. Este diagnóstico solo es útil si
+                refleja la realidad de tu negocio.
+              </p>
+            </div>
+            <div>
+              {selectedAreas.map((id) => {
+                const area = AREAS.find((a) => a.id === id)!;
+                return (
+                  <div className="area-block" key={id}>
+                    <div className="area-header">
+                      <div className="area-icon">{renderIcon(id)}</div>
+                      <div>
+                        <div className="area-name">{area.title}</div>
+                        <div className="area-desc">{area.short}</div>
+                      </div>
+                    </div>
+                    {area.qs.map((q, qi) => (
+                      <div className="question" key={qi}>
+                        <div className="question-num">
+                          Pregunta {qi + 1} de {area.qs.length}
+                        </div>
+                        <div className="question-text">{q.text}</div>
+                        <div className="options">
+                          {q.opts.map((o, oi) => {
+                            const isSel = answers[id]?.[qi]?.text === o.text;
+                            return (
+                              <div
+                                key={oi}
+                                className={`option${isSel ? " selected-opt" : ""}`}
+                                onClick={() =>
+                                  selectOpt(id, qi, {
+                                    level: o.level,
+                                    text: o.text,
+                                  })
+                                }
+                              >
+                                <div className="option-radio" />
+                                {o.text}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ))}
+                    <div className="notes-block">
+                      <div className="notes-label">
+                        {renderIcon(
+                          "pencil",
+                          "width:13px;height:13px;stroke:var(--text-3);stroke-width:1.5;fill:none",
+                        )}
+                        Apuntes adicionales sobre {area.title}
+                      </div>
+                      <textarea
+                        className="notes-input"
+                        value={notes[id] || ""}
+                        onChange={(e) =>
+                          setNotes((prev) => ({
+                            ...prev,
+                            [id]: e.target.value,
+                          }))
+                        }
+                        placeholder="Agrega cualquier contexto extra que consideres importante sobre esta área. Por ejemplo: situaciones específicas, intentos anteriores, o detalles que no cubre ninguna pregunta…"
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            {warn.questions && (
+              <p className="warn">
+                Responde todas las preguntas para continuar.
+              </p>
+            )}
+            <div className="btn-row">
+              <button className="btn btn-ghost" onClick={() => goTo(0)}>
+                ← Atrás
+              </button>
+              <button className="btn btn-primary" onClick={goToLead}>
+                Ver mi diagnóstico →
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* STEP 2 — DATOS DEL LEAD */}
+        {step === 2 && (
+          <div className="step-section">
+            <div className="header">
+              <div className="tag">Casi listo</div>
+              <h1>
+                ¿A quién le
+                <br />
+                enviamos el
+                <br />
+                <em>resultado?</em>
+              </h1>
+              <p>
+                Tu diagnóstico es gratuito. Un estratega de C Digital lo
+                revisará y te contactará para profundizar en las áreas críticas.
+              </p>
+            </div>
+            <div className="lead-form">
+              <div className="form-row">
+                <div className="field">
+                  <label>Tu nombre</label>
+                  <input
+                    name="Name"
+                    type="text"
+                    placeholder="Nombre completo"
+                    value={lead.name}
+                    onChange={(e) =>
+                      setLead((l) => ({ ...l, name: e.target.value }))
+                    }
+                  />
+                </div>
+                <div className="field">
+                  <label>Negocio / Empresa</label>
+                  <input
+                    type="text"
+                    placeholder="¿Cómo se llama?"
+                    value={lead.biz}
+                    onChange={(e) =>
+                      setLead((l) => ({ ...l, biz: e.target.value }))
+                    }
+                  />
+                </div>
+              </div>
+              <div className="form-row">
+                <div className="field">
+                  <label>WhatsApp</label>
+                  <input
+                    type="tel"
+                    inputMode="numeric"
+                    placeholder="829-000-0000"
+                    value={lead.phone}
+                    onChange={(e) =>
+                      setLead((l) => ({
+                        ...l,
+                        phone: formatPhone(e.target.value),
+                      }))
+                    }
+                  />
+                </div>
+                <div className="field">
+                  <label>Correo electrónico</label>
+                  <input
+                    type="email"
+                    placeholder="tu@correo.com"
+                    value={lead.email}
+                    onChange={(e) =>
+                      setLead((l) => ({ ...l, email: e.target.value }))
+                    }
+                  />
+                </div>
+              </div>
+              <div className="field">
+                <label>¿En qué sector opera tu negocio?</label>
+                <select
+                  value={lead.sector}
+                  onChange={(e) =>
+                    setLead((l) => ({ ...l, sector: e.target.value }))
+                  }
+                >
+                  <option value="">Selecciona uno</option>
+                  {SECTORS.map((s) => (
+                    <option key={s}>{s}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            {warn.lead && (
+              <p className="warn">Completa todos los campos para continuar.</p>
+            )}
+            <div className="btn-row">
+              <button className="btn btn-ghost" onClick={() => goTo(1)}>
+                ← Atrás
+              </button>
+              <button className="btn btn-primary" onClick={generateDiag}>
+                Generar diagnóstico →
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* STEP 3 — DIAGNÓSTICO */}
+        {step === 3 && (
+          <div className="step-section">
+            <div className="diag-header">
+              <div className="tag">Diagnóstico completado</div>
+              <h2>
+                Tu diagnóstico,
+                <br />
+                <em className="diag-name">{lead.name}</em>
+              </h2>
+              <p
+                style={{
+                  marginTop: "6px",
+                  fontSize: "13px",
+                  color: "var(--text-muted)",
+                }}
+              >
+                {lead.biz}
+                {lead.sector ? ` · ${lead.sector}` : ""}
+              </p>
+            </div>
+
+            <div className="score-grid">
+              {sortedAreas.map((id) => {
+                const area = AREAS.find((a) => a.id === id)!;
+                const level = levelOf(id);
+                return (
+                  <div
+                    className={`score-card level-${level}`}
+                    key={id}
+                    title="Ver mis respuestas"
+                  >
+                    <div className="score-top">
+                      <div
+                        className="score-area-name"
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "8px",
+                        }}
+                      >
+                        {renderIcon(
+                          id,
+                          "width:16px;height:16px;stroke:var(--text-2);stroke-width:1.5;fill:none",
+                        )}
+                        {area.title}
+                      </div>
+                      <div className="score-badge">{levelLabels[level]}</div>
+                    </div>
+                    <div className="score-bar-wrap">
+                      <div
+                        className="score-bar-fill"
+                        style={{
+                          width: barsReady ? `${levelPct[level]}%` : "0%",
+                        }}
+                      />
+                    </div>
+                    <div className="score-desc">{area.recs[level].title}</div>
+                    <button
+                      className="view-answers-btn"
+                      onClick={() => setModalArea(id)}
+                    >
+                      ▸ Ver mis respuestas
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="rec-section">
+              <div className="rec-section-title">Qué hacer en cada área</div>
+              <div>
+                {sortedAreas.map((id) => {
+                  const area = AREAS.find((a) => a.id === id)!;
+                  const level = levelOf(id);
+                  const rec = area.recs[level];
+                  return (
+                    <div className={`rec-card level-${level}`} key={id}>
+                      <div className="rec-icon-wrap">{renderIcon(id)}</div>
+                      <div className="rec-body">
+                        <div className="rec-area">
+                          {area.title} · {levelLabels[level]}
+                        </div>
+                        <div className="rec-title">{rec.title}</div>
+                        <div className="rec-text">{rec.text}</div>
+                        <div className="rec-actions">
+                          {rec.tags.map((t) => (
+                            <span className="rec-tag" key={t}>
+                              {t}
+                            </span>
+                          ))}
+                        </div>
+                        <button
+                          className="view-answers-btn"
+                          style={{ marginTop: "12px" }}
+                          onClick={() => setModalArea(id)}
+                        >
+                          ▸ Ver mis respuestas en {area.title}
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* PRIORIDAD */}
+            <div className="priority-section">
+              <div className="priority-title">
+                ¿Por dónde quieres{" "}
+                <em
+                  style={{
+                    fontStyle: "normal",
+                    background:
+                      "linear-gradient(90deg,var(--accent),var(--accent2))",
+                    WebkitBackgroundClip: "text",
+                    WebkitTextFillColor: "transparent",
+                    backgroundClip: "text",
+                  }}
+                >
+                  empezar?
+                </em>
+              </div>
+              <div className="priority-subtitle">
+                Elige el área o las áreas que quieres atacar primero. Esto le
+                ayudará a nuestro equipo a preparar una propuesta personalizada
+                para tu primera reunión.
+              </div>
+              <div className="priority-grid">
+                {sortedAreas.map((id) => {
+                  const area = AREAS.find((a) => a.id === id)!;
+                  const level = levelOf(id);
+                  const prioIdx = priorities.indexOf(id);
+                  return (
+                    <div
+                      key={id}
+                      className={`priority-card${prioIdx !== -1 ? " prio-selected" : ""}`}
+                      onClick={() => togglePriority(id)}
+                    >
+                      <div className="prio-num">
+                        {prioIdx !== -1 ? prioIdx + 1 : "—"}
+                      </div>
+                      <div className="prio-icon">
+                        {renderIcon(
+                          id,
+                          "width:16px;height:16px;stroke:var(--text-2);stroke-width:1.5;fill:none",
+                        )}
+                      </div>
+                      <div className="prio-info">
+                        <div className="prio-name">{area.title}</div>
+                        <div className="prio-short">{area.short}</div>
+                      </div>
+                      <div className={`prio-level prio-${level}`}>
+                        {levelLabels[level]}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="prio-hint">Puedes seleccionar más de una</div>
+            </div>
+
+            <div className="cta-final">
+              <h3>El siguiente paso es tuyo</h3>
+              <p>
+                Tu diagnóstico ya está en manos de nuestro equipo. En menos de
+                24 horas un estratega de C Digital te contactará para construir
+                juntos el plan de acción.
+              </p>
+              {priorityNames.length > 0 && (
+                <div className="cta-priority-summary">
+                  <strong>Prioridades seleccionadas:</strong>{" "}
+                  {priorityNames.join(" → ")}. Le haremos saber a nuestro equipo
+                  para preparar la propuesta enfocada en estas áreas.
+                </div>
+              )}
+              <div className="cta-buttons">
+                <a
+                  className="wa-btn"
+                  href={waHref}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="black">
+                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+                  </svg>
+                  Solicitar propuesta
+                </a>
+                <button className="btn btn-ghost" onClick={printDiag}>
+                  ⬇ Descargar PDF
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
-
-      <style jsx>{`
-        @keyframes fadeInDown {
-          from {
-            opacity: 0;
-            transform: translateY(-30px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-
-        @keyframes fadeIn {
-          from {
-            opacity: 0;
-          }
-          to {
-            opacity: 1;
-          }
-        }
-
-        .animate-fadeInDown {
-          animation: fadeInDown 0.8s ease-out;
-        }
-
-        .animate-fadeIn {
-          animation: fadeIn 0.5s ease-out;
-        }
-      `}</style>
     </div>
   );
 }

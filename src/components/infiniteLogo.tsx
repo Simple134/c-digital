@@ -1,6 +1,10 @@
+"use client";
+import { useEffect, useState } from "react";
 import { InfiniteMovingCards } from "./ui/infinite-moving-card";
+import { getBrands } from "@/lib/content";
+
 const InfiniteLogo = () => {
-  const logoImages = [
+  const logoImagesDefault = [
     {
       image: "/logos/Cafelogo.png",
       name: "Cafe Logo Design",
@@ -172,6 +176,21 @@ const InfiniteLogo = () => {
       title: "Logo 1",
     },
   ];
+
+  const [logoImages, setLogoImages] = useState(logoImagesDefault);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const data = await getBrands();
+      if (cancelled || !data) return;
+      setLogoImages(data);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   return (
     <div>
       <InfiniteMovingCards
