@@ -2,6 +2,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import posthog from "posthog-js";
+import { formatPhone } from "@/app/form/audit-data";
 
 const MONTHS_ES = [
   "enero",
@@ -45,6 +46,22 @@ const TIME_SLOTS = [
   "5:00 PM",
   "5:30 PM",
 ];
+
+// Convierte una fecha + una etiqueta de horario ("10:00 AM", "2:30 PM") en un
+// instante ISO usando la hora LOCAL del visitante. Se hace en el cliente para
+// que la zona horaria del usuario se respete (el servidor corre en UTC).
+function buildMeetingStartISO(date: Date, time: string): string | null {
+  const m = time.trim().match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+  if (!m) return null;
+  let hours = parseInt(m[1], 10);
+  const minutes = parseInt(m[2], 10);
+  const period = m[3].toUpperCase();
+  if (period === "PM" && hours !== 12) hours += 12;
+  if (period === "AM" && hours === 12) hours = 0;
+  const d = new Date(date);
+  d.setHours(hours, minutes, 0, 0);
+  return d.toISOString();
+}
 
 const ArrowRight = () => (
   <svg
@@ -189,6 +206,39 @@ export default function AgendarPage() {
       return;
     }
     setIsSubmitting(true);
+
+    // Guardar en nuestra base de datos + crear el evento de Google Meet +
+    // notificar por correo. Best-effort: si falla, no bloquea la confirmación
+    // que depende del CRM (Gestiono) más abajo.
+    const meetingStart =
+      selectedDate && selectedTime
+        ? buildMeetingStartISO(selectedDate, selectedTime)
+        : null;
+    fetch("/api/agendar-submit", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name,
+        role,
+        email,
+        phone,
+        business,
+        sector,
+        stage,
+        digital,
+        challenge,
+        services,
+        budget,
+        note,
+        meeting_date: selectedDate
+          ? selectedDate.toLocaleDateString("en-CA")
+          : null,
+        meeting_time: selectedTime,
+        meeting_start: meetingStart,
+      }),
+    }).catch((err) => {
+      console.error("Error al registrar la reunión:", err);
+    });
 
     const submitData = {
       Nombre: name || "nothing",
@@ -504,107 +554,6 @@ export default function AgendarPage() {
         }
       `}</style>
 
-      {/* Header */}
-      <header className="book-header">
-        <Link href="/" style={{ display: "flex", alignItems: "center" }}>
-          <svg
-            style={{ height: 22, color: "#fff" }}
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 521.55 115.12"
-          >
-            <defs>
-              <linearGradient
-                id="agendar-lg"
-                x1="509.39"
-                y1="91.65"
-                x2="519.93"
-                y2="78.66"
-                gradientUnits="userSpaceOnUse"
-              >
-                <stop offset="0" stopColor="#00b3e8" />
-                <stop offset="1" stopColor="#00c25f" />
-              </linearGradient>
-            </defs>
-            <g>
-              <rect
-                fill="currentColor"
-                x="324.73"
-                y="14.95"
-                width="12.79"
-                height="12.78"
-              />
-              <rect
-                fill="currentColor"
-                x="324.73"
-                y="40.56"
-                width="12.79"
-                height="50.41"
-              />
-              <rect
-                fill="currentColor"
-                x="218.23"
-                y="40.56"
-                width="12.79"
-                height="50.41"
-              />
-              <rect
-                fill="currentColor"
-                x="218.23"
-                y="14.95"
-                width="12.79"
-                height="12.78"
-              />
-              <path
-                fill="currentColor"
-                d="M43.07,92.54c-8.96,0-16.66-1.8-23.1-5.42-6.44-3.61-11.38-8.81-14.81-15.6-3.44-6.79-5.16-14.92-5.16-24.41s1.72-17.62,5.16-24.41c3.44-6.79,8.37-11.99,14.81-15.6,6.44-3.61,14.14-5.42,23.1-5.42,17.23,0,29.84,6.79,37.85,20.36l-11.88,5.87c-2.7-4.44-6.09-7.9-10.18-10.38-4.09-2.48-9.22-3.72-15.4-3.72s-11.49,1.33-15.92,3.98c-4.44,2.66-7.81,6.46-10.11,11.42-2.31,4.96-3.46,10.92-3.46,17.88,0,10.44,2.61,18.58,7.83,24.41,5.22,5.83,12.44,8.74,21.67,8.74,6.18,0,11.31-1.22,15.4-3.65,4.09-2.43,7.48-5.87,10.18-10.31l11.88,5.87c-8.01,13.57-20.62,20.36-37.85,20.36Z"
-              />
-              <path
-                fill="currentColor"
-                d="M126.73,90.97V3.26h33.41c14.18,0,25.14,3.81,32.89,11.42,7.74,7.62,11.62,18.43,11.62,32.43,0,9.4-1.74,17.36-5.22,23.88-3.48,6.53-8.55,11.49-15.21,14.88-6.66,3.39-14.68,5.09-24.08,5.09h-33.41ZM140.3,79.22h19.06c6.7,0,12.4-1.26,17.1-3.79,4.7-2.52,8.27-6.18,10.7-10.96,2.44-4.78,3.65-10.57,3.65-17.36,0-10.18-2.72-18.08-8.16-23.69-5.44-5.61-13.2-8.42-23.3-8.42h-19.06v64.21Z"
-              />
-              <path
-                fill="currentColor"
-                d="M275.78,89.4c-9.31,0-16.58-2.76-21.8-8.29-5.22-5.52-7.83-13.16-7.83-22.91,0-6.53,1.17-12.12,3.52-16.77,2.35-4.65,5.74-8.24,10.18-10.77,4.44-2.52,9.74-3.78,15.92-3.78,10.79,0,18.53,4.61,23.23,13.83l-3.91,6c-4.26-6-9.88-9.01-16.84-9.01-4,0-7.42.81-10.25,2.41-2.83,1.61-4.98,3.96-6.46,7.05-1.48,3.09-2.22,6.77-2.22,11.03,0,6.35,1.67,11.33,5.02,14.94,3.35,3.61,7.98,5.42,13.9,5.42,3.48,0,6.61-.76,9.4-2.28,2.78-1.52,5.26-3.76,7.44-6.72l3.91,6.13c-2.35,4.53-5.46,7.94-9.33,10.25-3.87,2.31-8.51,3.46-13.9,3.46ZM276.04,115.12c-5.22,0-10.09-.72-14.62-2.15-4.53-1.44-8.57-3.59-12.14-6.46l6.13-8.48c2.87,2,5.92,3.63,9.14,4.89,3.22,1.26,6.83,1.89,10.83,1.89,6.27,0,11.05-1.52,14.36-4.57,3.31-3.05,4.96-7.4,4.96-13.05v-46.2l2.74-12.53h10.05v55.86c0,9.83-2.74,17.42-8.22,22.78-5.48,5.35-13.23,8.03-23.23,8.03Z"
-              />
-              <path
-                fill="currentColor"
-                d="M350.56,39.68v-11.22h44.9v11.22h-44.9ZM383.97,92.54c-6.79,0-12.05-1.87-15.79-5.61-3.74-3.74-5.61-9.01-5.61-15.79V14.49l12.79-6.4v62.39c0,3.39.91,6,2.74,7.83s4.48,2.74,7.96,2.74c1.57,0,3.11-.2,4.63-.59,1.52-.39,3.02-.89,4.5-1.5l3.39,10.44c-4.35,2.09-9.22,3.13-14.62,3.13Z"
-              />
-              <path
-                fill="currentColor"
-                d="M429.52,92.54c-6.96,0-12.53-1.78-16.71-5.35-4.18-3.57-6.26-8.4-6.26-14.49s2.3-11.24,6.92-14.68c4.61-3.44,11.01-5.16,19.19-5.16,7.05,0,13.27,1.57,18.66,4.7l-2.61,7.7c-4.18-2.52-8.83-3.79-13.97-3.79-4.79,0-8.55.96-11.29,2.87-2.74,1.91-4.11,4.57-4.11,7.96s1.22,6.05,3.65,7.96c2.43,1.92,5.65,2.87,9.66,2.87,3.31,0,6.31-.74,9.01-2.22,2.7-1.48,5.05-3.65,7.05-6.53l3.26,5.74c-2.35,4.18-5.42,7.29-9.2,9.33-3.79,2.04-8.2,3.07-13.25,3.07ZM450.66,90.97l-2.35-11.88v-27.41c0-4.52-1.26-7.98-3.79-10.38-2.52-2.39-6.18-3.59-10.96-3.59-3.31,0-6.37.48-9.2,1.44-2.83.96-5.55,2.22-8.16,3.79l-6.53-9.01c7.13-4.7,15.36-7.05,24.67-7.05,8.61,0,15.16,2.15,19.64,6.46,4.48,4.31,6.72,10.64,6.72,18.99v38.63h-10.05Z"
-              />
-              <path
-                fill="currentColor"
-                d="M477.94,90.97V6.4l12.79-6.4v90.97h-12.79Z"
-              />
-            </g>
-            <rect
-              fill="url(#agendar-lg)"
-              x="508.72"
-              y="78.15"
-              width="12.84"
-              height="12.84"
-            />
-          </svg>
-        </Link>
-        <Link href="/contacto" className="book-back">
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <polyline points="15 18 9 12 15 6" />
-          </svg>
-          Volver
-        </Link>
-      </header>
-
       <div
         className="book-layout"
         style={{ background: "#0d0d0d", color: "#fff" }}
@@ -723,9 +672,11 @@ export default function AgendarPage() {
                         <input
                           className="field-input"
                           type="tel"
-                          placeholder="(809) 000-0000"
+                          placeholder="809-000-0000"
                           value={phone}
-                          onChange={(e) => setPhone(e.target.value)}
+                          onChange={(e) =>
+                            setPhone(formatPhone(e.target.value))
+                          }
                           required
                         />
                       </div>

@@ -99,6 +99,36 @@ export interface FormSubmission {
   updated_at: string;
 }
 
+// Estados de seguimiento de una solicitud de reunión (comparte el mismo
+// vocabulario que las auditorías para mantener consistencia en el panel).
+export type MeetingRequestStatus = FormSubmissionStatus;
+
+// Registro de una persona que agendó una consulta (/contacto/agendar).
+export interface MeetingRequest {
+  id: string;
+  name: string;
+  role: string | null;
+  email: string;
+  phone: string | null;
+  business: string | null;
+  sector: string | null;
+  stage: string | null;
+  digital: string[];
+  challenge: string | null;
+  services: string[];
+  budget: string | null;
+  note: string | null;
+  meeting_date: string | null;
+  meeting_time: string | null;
+  meeting_start: string | null;
+  meet_link: string | null;
+  calendar_event_id: string | null;
+  status: MeetingRequestStatus;
+  admin_notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export type TableName =
   | "plans"
   | "portfolio"
@@ -107,4 +137,5 @@ export type TableName =
   | "brands"
   | "kanban_columns"
   | "kanban_cards"
-  | "form_submissions";
+  | "form_submissions"
+  | "meeting_requests";

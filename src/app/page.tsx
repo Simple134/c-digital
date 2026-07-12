@@ -279,7 +279,7 @@ export default function Home() {
                   <path d="M3 10h18" />
                 </svg>
               </Link>
-              <Link href="/contacto" className="cta-btn cta-btn--ghost">
+              <Link href="/form" className="cta-btn cta-btn--ghost">
                 Auto Diagnóstico
                 <svg
                   width="18"
@@ -520,7 +520,7 @@ export default function Home() {
                   <path d="M3 10h18" />
                 </svg>
               </Link>
-              <Link href="/contacto" className="cta-btn cta-btn--ghost">
+              <Link href="/form" className="cta-btn cta-btn--ghost">
                 Auto Diagnóstico
                 <svg
                   width="18"

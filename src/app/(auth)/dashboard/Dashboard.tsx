@@ -5,9 +5,10 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import KanbanBoard from "./KanbanBoard";
 import FormUsers from "./FormUsers";
+import MeetingRequests from "./MeetingRequests";
 import { RESOURCES, emptyRecord, type Field, type Resource } from "./resources";
 
-type View = "resource" | "kanban" | "formUsers";
+type View = "resource" | "kanban" | "formUsers" | "meetings";
 
 type Row = Record<string, unknown> & { id?: string };
 
@@ -150,6 +151,20 @@ export default function Dashboard({ userEmail }: { userEmail: string }) {
           >
             Form Users
           </button>
+
+          <button
+            onClick={() => {
+              setView("meetings");
+              setEditing(null);
+            }}
+            style={{
+              ...styles.navItem,
+              background: view === "meetings" ? "#1e1e1e" : "transparent",
+              color: view === "meetings" ? "#fff" : "#999",
+            }}
+          >
+            Reuniones
+          </button>
         </nav>
 
         <div style={{ marginTop: "auto", paddingTop: 24 }}>
@@ -187,6 +202,18 @@ export default function Dashboard({ userEmail }: { userEmail: string }) {
               </div>
             </div>
             <FormUsers supabase={supabase} />
+          </>
+        ) : view === "meetings" ? (
+          <>
+            <div style={styles.header}>
+              <div>
+                <h1 style={{ fontSize: 28, margin: 0 }}>Reuniones</h1>
+                <p style={{ color: "#888", fontSize: 13, marginTop: 6 }}>
+                  Consultas agendadas desde el formulario de contacto
+                </p>
+              </div>
+            </div>
+            <MeetingRequests supabase={supabase} />
           </>
         ) : (
           <>
