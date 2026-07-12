@@ -103,45 +103,12 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // 1) Guardar la solicitud en Supabase (crítico). Cliente SSR sin sesión →
-  // rol anon; la política RLS permite INSERT público.
-  const supabase = await createClient();
-
-  const { data: inserted, error: dbError } = await supabase
-    .from("meeting_requests")
-    .insert({
-      name: payload.name.trim(),
-      role: payload.role ?? null,
-      email: payload.email.trim(),
-      phone: payload.phone ?? null,
-      business: payload.business ?? null,
-      sector: payload.sector ?? null,
-      stage: payload.stage ?? null,
-      digital: payload.digital ?? [],
-      challenge: payload.challenge ?? null,
-      services: payload.services ?? [],
-      budget: payload.budget ?? null,
-      note: payload.note ?? null,
-      meeting_date: payload.meeting_date ?? null,
-      meeting_time: payload.meeting_time ?? null,
-      meeting_start: payload.meeting_start ?? null,
-    })
-    .select("id")
-    .single();
-
-  if (dbError) {
-    console.error("Error al guardar la reunión en Supabase:", dbError);
-    return NextResponse.json(
-      { error: "No se pudo guardar el registro" },
-      { status: 500 },
-    );
-  }
-
-  const recordId = inserted?.id as string | undefined;
-
-  // 2) Crear el evento de Google Meet (best-effort). Si falla o no está
-  // configurado, la solicitud ya quedó guardada.
+  // 1) Crear el evento de Google Meet (best-effort) ANTES de guardar. Así el
+  // link y el id del evento se persisten en el mismo INSERT. La política RLS
+  // de meeting_requests solo permite INSERT al rol anon (no UPDATE ni SELECT),
+  // por lo que un update posterior fallaría en producción.
   let meetLink: string | null = null;
+  let calendarEventId: string | null = null;
   const teamEmail =
     process.env.RESEND_TO?.split(",")[0]?.trim() ?? "diazc6001@gmail.com";
 
@@ -167,21 +134,44 @@ export async function POST(request: NextRequest) {
         attendees: [payload.email.trim(), teamEmail],
       });
       meetLink = event.meetLink;
-
-      // Persistir el link y el id del evento en el registro.
-      if (recordId) {
-        await supabase
-          .from("meeting_requests")
-          .update({
-            meet_link: event.meetLink,
-            calendar_event_id: event.eventId,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("id", recordId);
-      }
+      calendarEventId = event.eventId;
     } catch (calErr) {
       console.error("Error al crear el evento de Google Meet:", calErr);
     }
+  }
+
+  // 2) Guardar la solicitud en Supabase (crítico). Cliente SSR sin sesión →
+  // rol anon; la política RLS permite INSERT público. IMPORTANTE: no encadenar
+  // .select()/.single(), porque RETURNING exige política SELECT (solo
+  // authenticated) y provocaría un error 42501 de RLS bajo el rol anon.
+  const supabase = await createClient();
+
+  const { error: dbError } = await supabase.from("meeting_requests").insert({
+    name: payload.name.trim(),
+    role: payload.role ?? null,
+    email: payload.email.trim(),
+    phone: payload.phone ?? null,
+    business: payload.business ?? null,
+    sector: payload.sector ?? null,
+    stage: payload.stage ?? null,
+    digital: payload.digital ?? [],
+    challenge: payload.challenge ?? null,
+    services: payload.services ?? [],
+    budget: payload.budget ?? null,
+    note: payload.note ?? null,
+    meeting_date: payload.meeting_date ?? null,
+    meeting_time: payload.meeting_time ?? null,
+    meeting_start: payload.meeting_start ?? null,
+    meet_link: meetLink,
+    calendar_event_id: calendarEventId,
+  });
+
+  if (dbError) {
+    console.error("Error al guardar la reunión en Supabase:", dbError);
+    return NextResponse.json(
+      { error: "No se pudo guardar el registro" },
+      { status: 500 },
+    );
   }
 
   // 3) Notificar por correo (best-effort).
