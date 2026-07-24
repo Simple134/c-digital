@@ -1,10 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Kanban, dropHandler } from "react-kanban-kit";
 import type { BoardData, BoardItem } from "react-kanban-kit";
 import type { createClient } from "@/lib/supabase/client";
 import type {
+  Client,
   KanbanCard,
   KanbanColumn,
   TeamMember,
@@ -68,6 +69,7 @@ function buildBoardData(
           description: card.description,
           priority: card.priority,
           assignee_id: card.assignee_id,
+          client_id: card.client_id,
         },
       };
     }
@@ -79,19 +81,23 @@ function buildBoardData(
 export default function KanbanBoard({ supabase }: { supabase: Supabase }) {
   const [data, setData] = useState<BoardData | null>(null);
   const [members, setMembers] = useState<TeamMember[]>([]);
+  const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedClientId, setSelectedClientId] = useState("");
+  const [linkCopied, setLinkCopied] = useState(false);
 
   // Modales: qué columna recibe una tarjeta nueva / si se crea una columna.
   const [cardModalColumn, setCardModalColumn] = useState<BoardItem | null>(
     null,
   );
   const [columnModalOpen, setColumnModalOpen] = useState(false);
+  const [clientModalOpen, setClientModalOpen] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
-    const [cols, cards, team] = await Promise.all([
+    const [cols, cards, team, clientRows] = await Promise.all([
       supabase
         .from("kanban_columns")
         .select("*")
@@ -104,15 +110,21 @@ export default function KanbanBoard({ supabase }: { supabase: Supabase }) {
         .from("team_members")
         .select("*")
         .order("sort_order", { ascending: true }),
+      supabase
+        .from("clients")
+        .select("*")
+        .order("sort_order", { ascending: true }),
     ]);
-    if (cols.error || cards.error || team.error) {
+    if (cols.error || cards.error || team.error || clientRows.error) {
       setError(
-        (cols.error ?? cards.error ?? team.error)?.message ?? "Error al cargar",
+        (cols.error ?? cards.error ?? team.error ?? clientRows.error)
+          ?.message ?? "Error al cargar",
       );
       setLoading(false);
       return;
     }
     setMembers((team.data as TeamMember[]) ?? []);
+    setClients((clientRows.data as Client[]) ?? []);
     setData(
       buildBoardData(
         (cols.data as KanbanColumn[]) ?? [],
@@ -125,6 +137,36 @@ export default function KanbanBoard({ supabase }: { supabase: Supabase }) {
   useEffect(() => {
     load();
   }, [load]);
+
+  const selectedClient = clients.find((c) => c.id === selectedClientId);
+
+  // Cuando se elige un cliente, el tablero solo muestra sus tarjetas por
+  // columna (las columnas siguen siendo las mismas para todos).
+  const visibleData = useMemo(() => {
+    if (!data || !selectedClientId) return data;
+    const next: BoardData = { root: data.root };
+    for (const colId of data.root.children) {
+      const col = data[colId];
+      const visibleChildren = col.children.filter(
+        (cardId) => data[cardId]?.content?.client_id === selectedClientId,
+      );
+      next[colId] = {
+        ...col,
+        children: visibleChildren,
+        totalChildrenCount: visibleChildren.length,
+      };
+      for (const cardId of visibleChildren) next[cardId] = data[cardId];
+    }
+    return next;
+  }, [data, selectedClientId]);
+
+  async function copyPublicLink() {
+    if (!selectedClient) return;
+    const url = `${window.location.origin}/proyecto/${selectedClient.public_token}`;
+    await navigator.clipboard.writeText(url);
+    setLinkCopied(true);
+    setTimeout(() => setLinkCopied(false), 2000);
+  }
 
   /**
    * Persiste el orden de una columna: reescribe `sort_order = índice` para cada
@@ -143,6 +185,7 @@ export default function KanbanBoard({ supabase }: { supabase: Supabase }) {
             description: item.content?.description ?? null,
             priority: item.content?.priority ?? null,
             assignee_id: item.content?.assignee_id ?? null,
+            client_id: item.content?.client_id ?? null,
             sort_order: index,
           };
         }),
@@ -195,6 +238,7 @@ export default function KanbanBoard({ supabase }: { supabase: Supabase }) {
     description: string;
     priority: string;
     assignee_id: string;
+    client_id: string;
   }) {
     if (!cardModalColumn) return;
     const { error } = await supabase.from("kanban_cards").insert({
@@ -203,6 +247,7 @@ export default function KanbanBoard({ supabase }: { supabase: Supabase }) {
       description: values.description || null,
       priority: values.priority || null,
       assignee_id: values.assignee_id || null,
+      client_id: selectedClientId || values.client_id || null,
       sort_order: cardModalColumn.children.length,
     });
     if (error) {
@@ -211,6 +256,43 @@ export default function KanbanBoard({ supabase }: { supabase: Supabase }) {
     }
     setCardModalColumn(null);
     load();
+  }
+
+  async function assignClient(cardId: string, clientId: string) {
+    const { error } = await supabase
+      .from("kanban_cards")
+      .update({ client_id: clientId || null })
+      .eq("id", cardId);
+    if (error) {
+      setError(error.message);
+      return;
+    }
+    setData((current) => {
+      if (!current || !current[cardId]) return current;
+      return {
+        ...current,
+        [cardId]: {
+          ...current[cardId],
+          content: { ...current[cardId].content, client_id: clientId || null },
+        },
+      };
+    });
+  }
+
+  async function createClientRecord(name: string) {
+    const count = clients.length;
+    const { data: created, error } = await supabase
+      .from("clients")
+      .insert({ name, sort_order: count })
+      .select()
+      .single();
+    if (error) {
+      setError(error.message);
+      return;
+    }
+    setClientModalOpen(false);
+    setClients((current) => [...current, created as Client]);
+    setSelectedClientId((created as Client).id);
   }
 
   async function createColumn(title: string) {
@@ -238,12 +320,42 @@ export default function KanbanBoard({ supabase }: { supabase: Supabase }) {
 
   if (loading) return <p style={{ color: "#888" }}>Cargando tablero…</p>;
   if (error) return <p style={styles.errorBox}>{error}</p>;
-  if (!data) return null;
+  if (!data || !visibleData) return null;
 
   return (
-    <div className="cdg-kanban" style={{ height: "calc(100vh - 160px)" }}>
+    <div
+      className="cdg-kanban"
+      style={{ display: "flex", flexDirection: "column", height: "100%" }}
+    >
+      <div style={styles.toolbar}>
+        <select
+          style={styles.clientPicker}
+          value={selectedClientId}
+          onChange={(e) => setSelectedClientId(e.target.value)}
+        >
+          <option value="">Todos (vista interna)</option>
+          {clients.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.name}
+            </option>
+          ))}
+        </select>
+        <button style={styles.ghostBtn} onClick={() => setClientModalOpen(true)}>
+          + Nuevo cliente
+        </button>
+        {selectedClient && (
+          <button style={styles.ghostBtn} onClick={copyPublicLink}>
+            {linkCopied ? "¡Link copiado!" : "Copiar link público"}
+          </button>
+        )}
+      </div>
+
+      <div
+        className="cdg-kanban-board"
+        style={{ flex: 1, minHeight: 0, height: "calc(100vh - 220px)" }}
+      >
       <Kanban
-        dataSource={data}
+        dataSource={visibleData}
         configMap={{
           card: {
             isDraggable: true,
@@ -251,7 +363,10 @@ export default function KanbanBoard({ supabase }: { supabase: Supabase }) {
               <Card
                 card={card}
                 members={members}
+                clients={clients}
+                showClientSelector={!selectedClientId}
                 onDelete={() => deleteCard(card.id)}
+                onAssignClient={(clientId) => assignClient(card.id, clientId)}
               />
             ),
           },
@@ -283,11 +398,14 @@ export default function KanbanBoard({ supabase }: { supabase: Supabase }) {
         )}
         rootStyle={{ background: "transparent", height: "100%" }}
       />
+      </div>
 
       {cardModalColumn && (
         <CardModal
           columnTitle={cardModalColumn.title}
           members={members}
+          clients={clients}
+          lockedClientId={selectedClientId || undefined}
           onClose={() => setCardModalColumn(null)}
           onCreate={createCard}
         />
@@ -299,6 +417,13 @@ export default function KanbanBoard({ supabase }: { supabase: Supabase }) {
           onCreate={createColumn}
         />
       )}
+
+      {clientModalOpen && (
+        <ClientModal
+          onClose={() => setClientModalOpen(false)}
+          onCreate={createClientRecord}
+        />
+      )}
     </div>
   );
 }
@@ -308,11 +433,17 @@ export default function KanbanBoard({ supabase }: { supabase: Supabase }) {
 function Card({
   card,
   members,
+  clients,
+  showClientSelector,
   onDelete,
+  onAssignClient,
 }: {
   card: BoardItem;
   members: TeamMember[];
+  clients: Client[];
+  showClientSelector: boolean;
   onDelete: () => void;
+  onAssignClient: (clientId: string) => void;
 }) {
   const priority = card.content?.priority as string | undefined;
   const accent = priority ? (PRIORITY_COLOR[priority] ?? "#555") : "#555";
@@ -345,6 +476,21 @@ function Card({
         )}
         {assignee && <Avatar member={assignee} />}
       </div>
+      {showClientSelector && (
+        <select
+          style={styles.clientSelect}
+          value={(card.content?.client_id as string) ?? ""}
+          onClick={(e) => e.stopPropagation()}
+          onChange={(e) => onAssignClient(e.target.value)}
+        >
+          <option value="">Sin cliente</option>
+          {clients.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.name}
+            </option>
+          ))}
+        </select>
+      )}
     </div>
   );
 }
@@ -398,23 +544,29 @@ function Modal({
 function CardModal({
   columnTitle,
   members,
+  clients,
+  lockedClientId,
   onClose,
   onCreate,
 }: {
   columnTitle: string;
   members: TeamMember[];
+  clients: Client[];
+  lockedClientId?: string;
   onClose: () => void;
   onCreate: (v: {
     title: string;
     description: string;
     priority: string;
     assignee_id: string;
+    client_id: string;
   }) => Promise<void>;
 }) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [priority, setPriority] = useState("");
   const [assigneeId, setAssigneeId] = useState("");
+  const [clientId, setClientId] = useState("");
   const [saving, setSaving] = useState(false);
 
   async function submit() {
@@ -425,6 +577,7 @@ function CardModal({
       description: description.trim(),
       priority,
       assignee_id: assigneeId,
+      client_id: clientId,
     });
     setSaving(false);
   }
@@ -483,6 +636,24 @@ function CardModal({
             ))}
           </select>
         </label>
+
+        {!lockedClientId && (
+          <label style={styles.field}>
+            <span style={styles.label}>Cliente</span>
+            <select
+              style={styles.input}
+              value={clientId}
+              onChange={(e) => setClientId(e.target.value)}
+            >
+              <option value="">Sin cliente</option>
+              {clients.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
       </div>
 
       <div style={styles.modalFooter}>
@@ -554,9 +725,79 @@ function ColumnModal({
   );
 }
 
+function ClientModal({
+  onClose,
+  onCreate,
+}: {
+  onClose: () => void;
+  onCreate: (name: string) => Promise<void>;
+}) {
+  const [name, setName] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  async function submit() {
+    if (!name.trim()) return;
+    setSaving(true);
+    await onCreate(name.trim());
+    setSaving(false);
+  }
+
+  return (
+    <Modal title="Nuevo cliente" onClose={onClose}>
+      <div style={styles.modalBody}>
+        <label style={styles.field}>
+          <span style={styles.label}>Nombre del cliente</span>
+          <input
+            style={styles.input}
+            value={name}
+            autoFocus
+            onChange={(e) => setName(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && submit()}
+          />
+          <span style={styles.help}>
+            Se genera automáticamente su link público (/proyecto/&lt;token&gt;)
+            y quedará seleccionado en el tablero al crearlo.
+          </span>
+        </label>
+      </div>
+      <div style={styles.modalFooter}>
+        <button onClick={onClose} style={styles.ghostBtn}>
+          Cancelar
+        </button>
+        <button
+          onClick={submit}
+          disabled={saving || !name.trim()}
+          style={{
+            ...styles.primaryBtn,
+            opacity: saving || !name.trim() ? 0.5 : 1,
+          }}
+        >
+          {saving ? "Creando…" : "Crear cliente"}
+        </button>
+      </div>
+    </Modal>
+  );
+}
+
 /* ---------------- Styles ---------------- */
 
 const styles: Record<string, React.CSSProperties> = {
+  toolbar: {
+    display: "flex",
+    alignItems: "center",
+    gap: 10,
+    marginBottom: 14,
+  },
+  clientPicker: {
+    padding: "9px 12px",
+    background: "#161616",
+    border: "1px solid #2a2a2a",
+    borderRadius: 8,
+    color: "#fff",
+    fontSize: 13,
+    outline: "none",
+    minWidth: 220,
+  },
   errorBox: {
     background: "#2a1515",
     border: "1px solid #4a2020",
@@ -607,6 +848,16 @@ const styles: Record<string, React.CSSProperties> = {
     flexShrink: 0,
   },
   cardDesc: { color: "#999", fontSize: 12, margin: 0, lineHeight: 1.4 },
+  clientSelect: {
+    width: "100%",
+    padding: "5px 8px",
+    background: "#161616",
+    border: "1px solid #2a2a2a",
+    borderRadius: 6,
+    color: "#aaa",
+    fontSize: 11,
+    outline: "none",
+  },
   cardMeta: {
     display: "flex",
     alignItems: "center",
@@ -719,6 +970,7 @@ const styles: Record<string, React.CSSProperties> = {
     cursor: "pointer",
   },
   field: { display: "flex", flexDirection: "column", gap: 7 },
+  help: { fontSize: 12, color: "#666" },
   label: {
     fontSize: 11,
     textTransform: "uppercase",

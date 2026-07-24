@@ -12,7 +12,13 @@ const NAV = [
   { href: "/contacto", label: "Contacto" },
 ];
 
-export default function Header({ dark = false }: { dark?: boolean }) {
+export default function Header({
+  dark = false,
+  minimal = false,
+}: {
+  dark?: boolean;
+  minimal?: boolean;
+}) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
 
@@ -26,6 +32,16 @@ export default function Header({ dark = false }: { dark?: boolean }) {
 
   const isActive = (href: string) =>
     href === "/" ? pathname === "/" : pathname.startsWith(href);
+
+  if (minimal) {
+    return (
+      <header className={dark ? "header-dark on-dark" : ""}>
+        <Link href="/" className="logo">
+          <CDigitalLogo />
+        </Link>
+      </header>
+    );
+  }
 
   return (
     <>

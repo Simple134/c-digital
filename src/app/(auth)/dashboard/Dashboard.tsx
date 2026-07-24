@@ -81,6 +81,11 @@ export default function Dashboard({ userEmail }: { userEmail: string }) {
     } else {
       const rest = { ...payload };
       delete rest.id;
+      // Omite campos opcionales vacíos al crear para que la BD aplique su
+      // propio default (ej. public_token de clients) en vez de "".
+      for (const f of active.fields) {
+        if (f.optional && rest[f.key] === "") delete rest[f.key];
+      }
       res = await supabase.from(active.table).insert(rest);
     }
 

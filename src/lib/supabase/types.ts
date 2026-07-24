@@ -67,7 +67,15 @@ export interface KanbanCard {
   description: string | null;
   priority: string | null;
   assignee_id: string | null;
+  client_id: string | null;
   sort_order: number;
+}
+
+export interface Client {
+  id: string;
+  name: string;
+  public_token: string;
+  created_at: string;
 }
 
 export type AuditLevel = "green" | "yellow" | "red";
@@ -137,5 +145,6 @@ export type TableName =
   | "brands"
   | "kanban_columns"
   | "kanban_cards"
+  | "clients"
   | "form_submissions"
   | "meeting_requests";
