@@ -4,12 +4,24 @@ import { useCallback, useEffect, useState, type CSSProperties } from "react";
 import type { createClient } from "@/lib/supabase/client";
 import type {
   FormSubmission,
+  MeetingRequest,
   FormSubmissionStatus,
   AuditLevel,
 } from "@/lib/supabase/types";
 import { AREAS, levelLabels } from "@/app/form/audit-data";
 
 type Supabase = ReturnType<typeof createClient>;
+
+// Une los dos orígenes de solicitudes en un solo tipo etiquetado para
+// mostrarlos en una sola lista, distinguidos por la etiqueta `kind`.
+type Row =
+  | ({ kind: "audit" } & FormSubmission)
+  | ({ kind: "meeting" } & MeetingRequest);
+
+const KIND_META = {
+  audit: { label: "Auditoría", color: "#5a8cff" },
+  meeting: { label: "Reunión", color: "#00e5a0" },
+};
 
 const STATUSES: {
   value: FormSubmissionStatus;
@@ -54,22 +66,43 @@ function waLink(phone: string | null) {
   return `https://wa.me/${full}`;
 }
 
-export default function FormUsers({ supabase }: { supabase: Supabase }) {
-  const [rows, setRows] = useState<FormSubmission[]>([]);
+const tableFor = (kind: Row["kind"]) =>
+  kind === "audit" ? "form_submissions" : "meeting_requests";
+
+export default function Solicitudes({ supabase }: { supabase: Supabase }) {
+  const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<FormSubmissionStatus | "todos">("todos");
+  const [kindFilter, setKindFilter] = useState<Row["kind"] | "todos">("todos");
   const [expanded, setExpanded] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
-    const { data, error } = await supabase
-      .from("form_submissions")
-      .select("*")
-      .order("created_at", { ascending: false });
-    if (error) setError(error.message);
-    setRows((data as FormSubmission[]) ?? []);
+    const [audits, meetings] = await Promise.all([
+      supabase
+        .from("form_submissions")
+        .select("*")
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("meeting_requests")
+        .select("*")
+        .order("created_at", { ascending: false }),
+    ]);
+    if (audits.error) setError(audits.error.message);
+    else if (meetings.error) setError(meetings.error.message);
+
+    const merged: Row[] = [
+      ...((audits.data as FormSubmission[]) ?? []).map(
+        (r): Row => ({ kind: "audit", ...r }),
+      ),
+      ...((meetings.data as MeetingRequest[]) ?? []).map(
+        (r): Row => ({ kind: "meeting", ...r }),
+      ),
+    ].sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
+
+    setRows(merged);
     setLoading(false);
   }, [supabase]);
 
@@ -77,50 +110,52 @@ export default function FormUsers({ supabase }: { supabase: Supabase }) {
     load();
   }, [load]);
 
-  async function updateStatus(id: string, status: FormSubmissionStatus) {
-    // Actualización optimista.
-    setRows((prev) => prev.map((r) => (r.id === id ? { ...r, status } : r)));
+  async function updateStatus(row: Row, status: FormSubmissionStatus) {
+    setRows((prev) =>
+      prev.map((r) => (r.id === row.id ? { ...r, status } : r)),
+    );
     const { error } = await supabase
-      .from("form_submissions")
+      .from(tableFor(row.kind))
       .update({ status, updated_at: new Date().toISOString() })
-      .eq("id", id);
+      .eq("id", row.id);
     if (error) {
       alert("Error al actualizar el estado: " + error.message);
       load();
     }
   }
 
-  async function saveNotes(id: string, admin_notes: string) {
+  async function saveNotes(row: Row, admin_notes: string) {
     const { error } = await supabase
-      .from("form_submissions")
+      .from(tableFor(row.kind))
       .update({ admin_notes, updated_at: new Date().toISOString() })
-      .eq("id", id);
+      .eq("id", row.id);
     if (error) {
       alert("Error al guardar la nota: " + error.message);
       return false;
     }
     setRows((prev) =>
-      prev.map((r) => (r.id === id ? { ...r, admin_notes } : r)),
+      prev.map((r) => (r.id === row.id ? { ...r, admin_notes } : r)),
     );
     return true;
   }
 
-  async function remove(id: string) {
+  async function remove(row: Row) {
     if (!confirm("¿Eliminar este registro? Esta acción no se puede deshacer."))
       return;
     const { error } = await supabase
-      .from("form_submissions")
+      .from(tableFor(row.kind))
       .delete()
-      .eq("id", id);
+      .eq("id", row.id);
     if (error) {
       alert("Error al eliminar: " + error.message);
       return;
     }
-    setRows((prev) => prev.filter((r) => r.id !== id));
+    setRows((prev) => prev.filter((r) => r.id !== row.id));
   }
 
-  const visible =
-    filter === "todos" ? rows : rows.filter((r) => r.status === filter);
+  const visible = rows
+    .filter((r) => filter === "todos" || r.status === filter)
+    .filter((r) => kindFilter === "todos" || r.kind === kindFilter);
 
   const counts = STATUSES.map((s) => ({
     ...s,
@@ -129,6 +164,24 @@ export default function FormUsers({ supabase }: { supabase: Supabase }) {
 
   return (
     <div>
+      {/* Filtro por origen */}
+      <div style={styles.filters}>
+        {(["todos", "audit", "meeting"] as const).map((k) => (
+          <button
+            key={k}
+            onClick={() => setKindFilter(k)}
+            style={{
+              ...styles.filterChip,
+              ...(kindFilter === k ? styles.filterChipActive : {}),
+            }}
+          >
+            {k === "todos"
+              ? `Todos (${rows.length})`
+              : `${KIND_META[k].label} (${rows.filter((r) => r.kind === k).length})`}
+          </button>
+        ))}
+      </div>
+
       {/* Filtros por estado */}
       <div style={styles.filters}>
         <button
@@ -138,7 +191,7 @@ export default function FormUsers({ supabase }: { supabase: Supabase }) {
             ...(filter === "todos" ? styles.filterChipActive : {}),
           }}
         >
-          Todos ({rows.length})
+          Todos los estados ({rows.length})
         </button>
         {counts.map((s) => (
           <button
@@ -170,16 +223,16 @@ export default function FormUsers({ supabase }: { supabase: Supabase }) {
       ) : (
         <div style={styles.list}>
           {visible.map((row) => (
-            <SubmissionCard
-              key={row.id}
+            <RequestCard
+              key={`${row.kind}-${row.id}`}
               row={row}
               expanded={expanded === row.id}
               onToggle={() =>
                 setExpanded((e) => (e === row.id ? null : row.id))
               }
-              onStatus={(s) => updateStatus(row.id, s)}
-              onSaveNotes={(n) => saveNotes(row.id, n)}
-              onDelete={() => remove(row.id)}
+              onStatus={(s) => updateStatus(row, s)}
+              onSaveNotes={(n) => saveNotes(row, n)}
+              onDelete={() => remove(row)}
             />
           ))}
         </div>
@@ -188,9 +241,9 @@ export default function FormUsers({ supabase }: { supabase: Supabase }) {
   );
 }
 
-/* ---------------- Submission card ---------------- */
+/* ---------------- Request card ---------------- */
 
-function SubmissionCard({
+function RequestCard({
   row,
   expanded,
   onToggle,
@@ -198,7 +251,7 @@ function SubmissionCard({
   onSaveNotes,
   onDelete,
 }: {
-  row: FormSubmission;
+  row: Row;
   expanded: boolean;
   onToggle: () => void;
   onStatus: (s: FormSubmissionStatus) => void;
@@ -211,6 +264,7 @@ function SubmissionCard({
 
   const statusMeta =
     STATUSES.find((s) => s.value === row.status) ?? STATUSES[0];
+  const kindMeta = KIND_META[row.kind];
   const wa = waLink(row.phone);
 
   async function handleSaveNote() {
@@ -223,12 +277,49 @@ function SubmissionCard({
     }
   }
 
+  const meetingLabel =
+    row.kind === "meeting"
+      ? row.meeting_date && row.meeting_time
+        ? `${row.meeting_date} · ${row.meeting_time}`
+        : (row.meeting_date ?? "Sin fecha")
+      : null;
+
+  const meetingDetailPairs: [string, string | null][] =
+    row.kind === "meeting"
+      ? [
+          ["Cargo / posición", row.role],
+          ["Sector", row.sector],
+          ["Etapa del negocio", row.stage],
+          [
+            "Presencia digital",
+            row.digital?.length ? row.digital.join(", ") : null,
+          ],
+          ["Principal desafío", row.challenge],
+          [
+            "Servicios de interés",
+            row.services?.length ? row.services.join(", ") : null,
+          ],
+          ["Presupuesto", row.budget],
+          ["Información extra", row.note],
+        ]
+      : [];
+
   return (
     <div style={styles.card}>
       <div style={styles.cardTop}>
         <div style={{ minWidth: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <span style={{ fontWeight: 700, fontSize: 16 }}>{row.name}</span>
+            <span
+              style={{
+                ...styles.kindBadge,
+                color: kindMeta.color,
+                borderColor: kindMeta.color + "55",
+                background: kindMeta.color + "18",
+              }}
+            >
+              {kindMeta.label}
+            </span>
             <span
               style={{
                 ...styles.statusBadge,
@@ -241,7 +332,7 @@ function SubmissionCard({
             </span>
           </div>
           <div style={{ color: "#999", fontSize: 13, marginTop: 3 }}>
-            {row.business}
+            {row.business || "—"}
             {row.sector ? ` · ${row.sector}` : ""}
           </div>
         </div>
@@ -249,6 +340,27 @@ function SubmissionCard({
           {fmtDate(row.created_at)}
         </div>
       </div>
+
+      {/* Reunión + Meet (solo solicitudes de reunión) */}
+      {row.kind === "meeting" && (
+        <div style={styles.meetingRow}>
+          <span style={styles.meetingBadge}>📅 {meetingLabel}</span>
+          {row.meet_link ? (
+            <a
+              href={row.meet_link}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={styles.meetBtn}
+            >
+              🎥 Unirse a Meet
+            </a>
+          ) : (
+            <span style={{ color: "#8a6d00", fontSize: 12 }}>
+              Meet no generado
+            </span>
+          )}
+        </div>
+      )}
 
       {/* Contacto + acciones rápidas */}
       <div style={styles.contactRow}>
@@ -270,8 +382,8 @@ function SubmissionCard({
         )}
       </div>
 
-      {/* Áreas evaluadas */}
-      {row.selected_areas?.length > 0 && (
+      {/* Áreas evaluadas (solo auditorías) */}
+      {row.kind === "audit" && row.selected_areas?.length > 0 && (
         <div style={styles.chips}>
           {row.selected_areas.map((id) => {
             const lvl = row.scores?.[id] ?? "red";
@@ -291,7 +403,7 @@ function SubmissionCard({
         </div>
       )}
 
-      {row.priorities?.length > 0 && (
+      {row.kind === "audit" && row.priorities?.length > 0 && (
         <div style={{ fontSize: 12, color: "#888", marginTop: 8 }}>
           <strong style={{ color: "#00e5a0" }}>Prioridades:</strong>{" "}
           {row.priorities.map(areaTitle).join(" → ")}
@@ -354,7 +466,22 @@ function SubmissionCard({
       </div>
 
       {/* Detalle expandible */}
-      {expanded && (
+      {expanded && row.kind === "meeting" && (
+        <div style={styles.detail}>
+          {meetingDetailPairs
+            .filter(([, v]) => v)
+            .map(([label, value]) => (
+              <div key={label} style={{ marginBottom: 10 }}>
+                <div style={{ fontSize: 12, color: "#888" }}>{label}</div>
+                <div style={{ fontSize: 13, color: "#ddd", marginTop: 2 }}>
+                  {value}
+                </div>
+              </div>
+            ))}
+        </div>
+      )}
+
+      {expanded && row.kind === "audit" && (
         <div style={styles.detail}>
           {row.selected_areas.map((id) => {
             const area = AREAS.find((a) => a.id === id);
@@ -407,7 +534,7 @@ const styles: Record<string, CSSProperties> = {
     display: "flex",
     flexWrap: "wrap",
     gap: 8,
-    marginBottom: 20,
+    marginBottom: 12,
   },
   filterChip: {
     display: "inline-flex",
@@ -435,7 +562,7 @@ const styles: Record<string, CSSProperties> = {
     borderRadius: 8,
     fontSize: 13,
   },
-  list: { display: "flex", flexDirection: "column", gap: 14 },
+  list: { display: "flex", flexDirection: "column", gap: 14, marginTop: 8 },
   card: {
     background: "#121212",
     border: "1px solid #232323",
@@ -448,6 +575,14 @@ const styles: Record<string, CSSProperties> = {
     alignItems: "flex-start",
     gap: 12,
   },
+  kindBadge: {
+    fontSize: 11,
+    padding: "3px 10px",
+    borderRadius: 999,
+    border: "1px solid",
+    textTransform: "uppercase",
+    letterSpacing: "0.04em",
+  },
   statusBadge: {
     fontSize: 11,
     padding: "3px 10px",
@@ -455,6 +590,30 @@ const styles: Record<string, CSSProperties> = {
     border: "1px solid",
     textTransform: "uppercase",
     letterSpacing: "0.04em",
+  },
+  meetingRow: {
+    display: "flex",
+    flexWrap: "wrap",
+    alignItems: "center",
+    gap: 12,
+    marginTop: 12,
+  },
+  meetingBadge: {
+    fontSize: 13,
+    color: "#ddd",
+    background: "#1a1a1a",
+    border: "1px solid #2a2a2a",
+    borderRadius: 8,
+    padding: "5px 12px",
+  },
+  meetBtn: {
+    background: "#00e5a0",
+    color: "#000",
+    fontSize: 12,
+    fontWeight: 700,
+    padding: "5px 14px",
+    borderRadius: 8,
+    textDecoration: "none",
   },
   contactRow: {
     display: "flex",

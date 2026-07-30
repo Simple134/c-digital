@@ -4,11 +4,10 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import KanbanBoard from "./KanbanBoard";
-import FormUsers from "./FormUsers";
-import MeetingRequests from "./MeetingRequests";
+import Solicitudes from "./Solicitudes";
 import { RESOURCES, emptyRecord, type Field, type Resource } from "./resources";
 
-type View = "resource" | "kanban" | "formUsers" | "meetings";
+type View = "resource" | "kanban" | "solicitudes";
 
 type Row = Record<string, unknown> & { id?: string };
 
@@ -145,30 +144,16 @@ export default function Dashboard({ userEmail }: { userEmail: string }) {
 
           <button
             onClick={() => {
-              setView("formUsers");
+              setView("solicitudes");
               setEditing(null);
             }}
             style={{
               ...styles.navItem,
-              background: view === "formUsers" ? "#1e1e1e" : "transparent",
-              color: view === "formUsers" ? "#fff" : "#999",
+              background: view === "solicitudes" ? "#1e1e1e" : "transparent",
+              color: view === "solicitudes" ? "#fff" : "#999",
             }}
           >
-            Form Users
-          </button>
-
-          <button
-            onClick={() => {
-              setView("meetings");
-              setEditing(null);
-            }}
-            style={{
-              ...styles.navItem,
-              background: view === "meetings" ? "#1e1e1e" : "transparent",
-              color: view === "meetings" ? "#fff" : "#999",
-            }}
-          >
-            Reuniones
+            Solicitudes
           </button>
         </nav>
 
@@ -196,29 +181,17 @@ export default function Dashboard({ userEmail }: { userEmail: string }) {
             </div>
             <KanbanBoard supabase={supabase} />
           </>
-        ) : view === "formUsers" ? (
+        ) : view === "solicitudes" ? (
           <>
             <div style={styles.header}>
               <div>
-                <h1 style={{ fontSize: 28, margin: 0 }}>Form Users</h1>
+                <h1 style={{ fontSize: 28, margin: 0 }}>Solicitudes</h1>
                 <p style={{ color: "#888", fontSize: 13, marginTop: 6 }}>
-                  Personas que completaron la Auditoría Digital
+                  Auditorías digitales y reuniones agendadas por clientes
                 </p>
               </div>
             </div>
-            <FormUsers supabase={supabase} />
-          </>
-        ) : view === "meetings" ? (
-          <>
-            <div style={styles.header}>
-              <div>
-                <h1 style={{ fontSize: 28, margin: 0 }}>Reuniones</h1>
-                <p style={{ color: "#888", fontSize: 13, marginTop: 6 }}>
-                  Consultas agendadas desde el formulario de contacto
-                </p>
-              </div>
-            </div>
-            <MeetingRequests supabase={supabase} />
+            <Solicitudes supabase={supabase} />
           </>
         ) : (
           <>

@@ -85,6 +85,7 @@ export default function KanbanBoard({ supabase }: { supabase: Supabase }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedClientId, setSelectedClientId] = useState("");
+  const [selectedMemberId, setSelectedMemberId] = useState("");
   const [linkCopied, setLinkCopied] = useState(false);
 
   // Modales: qué columna recibe una tarjeta nueva / si se crea una columna.
@@ -93,6 +94,7 @@ export default function KanbanBoard({ supabase }: { supabase: Supabase }) {
   );
   const [columnModalOpen, setColumnModalOpen] = useState(false);
   const [clientModalOpen, setClientModalOpen] = useState(false);
+  const [editingCard, setEditingCard] = useState<BoardItem | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -140,16 +142,22 @@ export default function KanbanBoard({ supabase }: { supabase: Supabase }) {
 
   const selectedClient = clients.find((c) => c.id === selectedClientId);
 
-  // Cuando se elige un cliente, el tablero solo muestra sus tarjetas por
-  // columna (las columnas siguen siendo las mismas para todos).
+  // Cuando se elige un cliente y/o un miembro del equipo, el tablero solo
+  // muestra las tarjetas que cumplen ambos filtros (las columnas siguen
+  // siendo las mismas para todos).
   const visibleData = useMemo(() => {
-    if (!data || !selectedClientId) return data;
+    if (!data || (!selectedClientId && !selectedMemberId)) return data;
     const next: BoardData = { root: data.root };
     for (const colId of data.root.children) {
       const col = data[colId];
-      const visibleChildren = col.children.filter(
-        (cardId) => data[cardId]?.content?.client_id === selectedClientId,
-      );
+      const visibleChildren = col.children.filter((cardId) => {
+        const content = data[cardId]?.content;
+        if (selectedClientId && content?.client_id !== selectedClientId)
+          return false;
+        if (selectedMemberId && content?.assignee_id !== selectedMemberId)
+          return false;
+        return true;
+      });
       next[colId] = {
         ...col,
         children: visibleChildren,
@@ -158,7 +166,7 @@ export default function KanbanBoard({ supabase }: { supabase: Supabase }) {
       for (const cardId of visibleChildren) next[cardId] = data[cardId];
     }
     return next;
-  }, [data, selectedClientId]);
+  }, [data, selectedClientId, selectedMemberId]);
 
   async function copyPublicLink() {
     if (!selectedClient) return;
@@ -258,6 +266,49 @@ export default function KanbanBoard({ supabase }: { supabase: Supabase }) {
     load();
   }
 
+  async function updateCard(
+    cardId: string,
+    values: {
+      title: string;
+      description: string;
+      priority: string;
+      assignee_id: string;
+      client_id: string;
+    },
+  ) {
+    const { error } = await supabase
+      .from("kanban_cards")
+      .update({
+        title: values.title,
+        description: values.description || null,
+        priority: values.priority || null,
+        assignee_id: values.assignee_id || null,
+        client_id: values.client_id || null,
+      })
+      .eq("id", cardId);
+    if (error) {
+      setError(error.message);
+      return;
+    }
+    setEditingCard(null);
+    setData((current) => {
+      if (!current || !current[cardId]) return current;
+      return {
+        ...current,
+        [cardId]: {
+          ...current[cardId],
+          title: values.title,
+          content: {
+            description: values.description || null,
+            priority: values.priority || null,
+            assignee_id: values.assignee_id || null,
+            client_id: values.client_id || null,
+          },
+        },
+      };
+    });
+  }
+
   async function assignClient(cardId: string, clientId: string) {
     const { error } = await supabase
       .from("kanban_cards")
@@ -340,6 +391,18 @@ export default function KanbanBoard({ supabase }: { supabase: Supabase }) {
             </option>
           ))}
         </select>
+        <select
+          style={styles.clientPicker}
+          value={selectedMemberId}
+          onChange={(e) => setSelectedMemberId(e.target.value)}
+        >
+          <option value="">Todo el equipo</option>
+          {members.map((m) => (
+            <option key={m.id} value={m.id}>
+              {m.name}
+            </option>
+          ))}
+        </select>
         <button style={styles.ghostBtn} onClick={() => setClientModalOpen(true)}>
           + Nuevo cliente
         </button>
@@ -367,6 +430,7 @@ export default function KanbanBoard({ supabase }: { supabase: Supabase }) {
                 showClientSelector={!selectedClientId}
                 onDelete={() => deleteCard(card.id)}
                 onAssignClient={(clientId) => assignClient(card.id, clientId)}
+                onEdit={() => setEditingCard(card)}
               />
             ),
           },
@@ -411,6 +475,16 @@ export default function KanbanBoard({ supabase }: { supabase: Supabase }) {
         />
       )}
 
+      {editingCard && (
+        <EditCardModal
+          card={editingCard}
+          members={members}
+          clients={clients}
+          onClose={() => setEditingCard(null)}
+          onSave={(values) => updateCard(editingCard.id, values)}
+        />
+      )}
+
       {columnModalOpen && (
         <ColumnModal
           onClose={() => setColumnModalOpen(false)}
@@ -437,6 +511,7 @@ function Card({
   showClientSelector,
   onDelete,
   onAssignClient,
+  onEdit,
 }: {
   card: BoardItem;
   members: TeamMember[];
@@ -444,12 +519,13 @@ function Card({
   showClientSelector: boolean;
   onDelete: () => void;
   onAssignClient: (clientId: string) => void;
+  onEdit: () => void;
 }) {
   const priority = card.content?.priority as string | undefined;
   const accent = priority ? (PRIORITY_COLOR[priority] ?? "#555") : "#555";
   const assignee = members.find((m) => m.id === card.content?.assignee_id);
   return (
-    <div style={styles.card}>
+    <div style={styles.card} onClick={onEdit}>
       <div style={styles.cardTop}>
         <span style={{ fontWeight: 600, fontSize: 14 }}>{card.title}</span>
         <button
@@ -669,6 +745,144 @@ function CardModal({
           }}
         >
           {saving ? "Creando…" : "Crear tarjeta"}
+        </button>
+      </div>
+    </Modal>
+  );
+}
+
+function EditCardModal({
+  card,
+  members,
+  clients,
+  onClose,
+  onSave,
+}: {
+  card: BoardItem;
+  members: TeamMember[];
+  clients: Client[];
+  onClose: () => void;
+  onSave: (v: {
+    title: string;
+    description: string;
+    priority: string;
+    assignee_id: string;
+    client_id: string;
+  }) => Promise<void>;
+}) {
+  const [title, setTitle] = useState(card.title);
+  const [description, setDescription] = useState(
+    (card.content?.description as string) ?? "",
+  );
+  const [priority, setPriority] = useState(
+    (card.content?.priority as string) ?? "",
+  );
+  const [assigneeId, setAssigneeId] = useState(
+    (card.content?.assignee_id as string) ?? "",
+  );
+  const [clientId, setClientId] = useState(
+    (card.content?.client_id as string) ?? "",
+  );
+  const [saving, setSaving] = useState(false);
+
+  async function submit() {
+    if (!title.trim()) return;
+    setSaving(true);
+    await onSave({
+      title: title.trim(),
+      description: description.trim(),
+      priority,
+      assignee_id: assigneeId,
+      client_id: clientId,
+    });
+    setSaving(false);
+  }
+
+  return (
+    <Modal title="Editar tarjeta" onClose={onClose}>
+      <div style={styles.modalBody}>
+        <label style={styles.field}>
+          <span style={styles.label}>Título</span>
+          <input
+            style={styles.input}
+            value={title}
+            autoFocus
+            onChange={(e) => setTitle(e.target.value)}
+          />
+        </label>
+
+        <label style={styles.field}>
+          <span style={styles.label}>Descripción</span>
+          <textarea
+            style={{ ...styles.input, minHeight: 90, resize: "vertical" }}
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+          />
+        </label>
+
+        <label style={styles.field}>
+          <span style={styles.label}>Prioridad</span>
+          <select
+            style={styles.input}
+            value={priority}
+            onChange={(e) => setPriority(e.target.value)}
+          >
+            <option value="">Sin prioridad</option>
+            {PRIORITIES.map((p) => (
+              <option key={p.value} value={p.value}>
+                {p.label}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label style={styles.field}>
+          <span style={styles.label}>Asignar a</span>
+          <select
+            style={styles.input}
+            value={assigneeId}
+            onChange={(e) => setAssigneeId(e.target.value)}
+          >
+            <option value="">Sin asignar</option>
+            {members.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.name}
+                {m.role ? ` — ${m.role}` : ""}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label style={styles.field}>
+          <span style={styles.label}>Cliente</span>
+          <select
+            style={styles.input}
+            value={clientId}
+            onChange={(e) => setClientId(e.target.value)}
+          >
+            <option value="">Sin cliente</option>
+            {clients.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+
+      <div style={styles.modalFooter}>
+        <button onClick={onClose} style={styles.ghostBtn}>
+          Cancelar
+        </button>
+        <button
+          onClick={submit}
+          disabled={saving || !title.trim()}
+          style={{
+            ...styles.primaryBtn,
+            opacity: saving || !title.trim() ? 0.5 : 1,
+          }}
+        >
+          {saving ? "Guardando…" : "Guardar cambios"}
         </button>
       </div>
     </Modal>

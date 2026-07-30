@@ -44,6 +44,8 @@ export interface TeamMember {
   role: string | null;
   bio: string | null;
   photo: string | null;
+  email: string | null;
+  auth_user_id: string | null;
   sort_order: number;
 }
 

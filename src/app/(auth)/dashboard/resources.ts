@@ -130,6 +130,13 @@ export const RESOURCES: Resource[] = [
       { key: "role", label: "Cargo", type: "text", optional: true },
       { key: "bio", label: "Biografía", type: "textarea", optional: true },
       { key: "photo", label: "Foto", type: "image", optional: true },
+      {
+        key: "email",
+        label: "Correo (para acceso al panel)",
+        type: "text",
+        optional: true,
+        help: "Con este correo el miembro podrá registrarse en /registro y acceder al dashboard.",
+      },
       { key: "sort_order", label: "Orden", type: "number" },
     ],
   },

@@ -55,8 +55,8 @@ export async function updateSession(request: NextRequest) {
       return NextResponse.redirect(redirectUrl);
     }
 
-    // Ya logueado no debería ver el login
-    if (pathname.startsWith("/login") && user) {
+    // Ya logueado no debería ver el login ni el registro
+    if ((pathname.startsWith("/login") || pathname.startsWith("/registro")) && user) {
       const redirectUrl = request.nextUrl.clone();
       redirectUrl.pathname = "/dashboard";
       return NextResponse.redirect(redirectUrl);
