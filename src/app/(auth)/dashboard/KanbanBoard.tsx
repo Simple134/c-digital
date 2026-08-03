@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Kanban, dropHandler } from "react-kanban-kit";
+import { Kanban, dropColumnHandler, dropHandler } from "react-kanban-kit";
 import type { BoardData, BoardItem } from "react-kanban-kit";
 import { fmtDateTime } from "@/lib/format";
 import type { createClient } from "@/lib/supabase/client";
@@ -119,6 +119,7 @@ export default function KanbanBoard({ supabase }: { supabase: Supabase }) {
   const [columnModalOpen, setColumnModalOpen] = useState(false);
   const [clientModalOpen, setClientModalOpen] = useState(false);
   const [editingCard, setEditingCard] = useState<BoardItem | null>(null);
+  const [editingColumn, setEditingColumn] = useState<BoardItem | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -272,6 +273,32 @@ export default function KanbanBoard({ supabase }: { supabase: Supabase }) {
       });
     },
     [persistColumns],
+  );
+
+  const persistColumnOrder = useCallback(
+    async (next: BoardData) => {
+      const rows = next.root.children.map((columnId, index) => ({
+        id: columnId,
+        title: next[columnId].title,
+        sort_order: index,
+      }));
+      if (rows.length === 0) return;
+      const { error } = await supabase.from("kanban_columns").upsert(rows);
+      if (error) setError(error.message);
+    },
+    [supabase],
+  );
+
+  const handleColumnMove = useCallback(
+    (move: { columnId: string; fromIndex: number; toIndex: number }) => {
+      setData((current) => {
+        if (!current) return current;
+        const next = dropColumnHandler(move, current) as BoardData;
+        void persistColumnOrder(next);
+        return next;
+      });
+    },
+    [persistColumnOrder],
   );
 
   /**
@@ -464,6 +491,28 @@ export default function KanbanBoard({ supabase }: { supabase: Supabase }) {
     load();
   }
 
+  async function updateColumn(columnId: string, title: string) {
+    const { error } = await supabase
+      .from("kanban_columns")
+      .update({ title })
+      .eq("id", columnId);
+    if (error) {
+      setError(error.message);
+      return;
+    }
+    setEditingColumn(null);
+    setData((current) => {
+      if (!current || !current[columnId]) return current;
+      return {
+        ...current,
+        [columnId]: {
+          ...current[columnId],
+          title,
+        },
+      };
+    });
+  }
+
   async function deleteCard(cardId: string) {
     if (!window.confirm("¿Eliminar esta tarjeta?")) return;
     const imagePath = data?.[cardId]?.content?.image_path as
@@ -550,6 +599,8 @@ export default function KanbanBoard({ supabase }: { supabase: Supabase }) {
           },
         }}
         onCardMove={handleCardMove}
+        allowColumnDrag
+        onColumnMove={handleColumnMove}
         allowColumnAdder
         renderColumnAdder={() => (
           <button
@@ -561,8 +612,24 @@ export default function KanbanBoard({ supabase }: { supabase: Supabase }) {
         )}
         renderColumnHeader={(column) => (
           <div style={styles.columnHeader}>
-            <span>{column.title}</span>
-            <span style={styles.count}>{column.totalChildrenCount}</span>
+            <span style={styles.columnTitle} title="Arrastra para mover columna">
+              {column.title}
+            </span>
+            <span style={styles.columnActions}>
+              <button
+                type="button"
+                style={styles.columnEditBtn}
+                title="Editar columna"
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setEditingColumn(column);
+                }}
+              >
+                ✎
+              </button>
+              <span style={styles.count}>{column.totalChildrenCount}</span>
+            </span>
           </div>
         )}
         allowListFooter={() => true}
@@ -605,8 +672,22 @@ export default function KanbanBoard({ supabase }: { supabase: Supabase }) {
 
       {columnModalOpen && (
         <ColumnModal
+          title="Nueva columna"
+          submitLabel="Crear columna"
+          savingLabel="Creando…"
           onClose={() => setColumnModalOpen(false)}
           onCreate={createColumn}
+        />
+      )}
+
+      {editingColumn && (
+        <ColumnModal
+          title="Editar columna"
+          submitLabel="Guardar cambios"
+          savingLabel="Guardando…"
+          initialTitle={editingColumn.title}
+          onClose={() => setEditingColumn(null)}
+          onCreate={(title) => updateColumn(editingColumn.id, title)}
         />
       )}
 
@@ -1292,13 +1373,21 @@ function EditCardModal({
 }
 
 function ColumnModal({
+  title: modalTitle,
+  initialTitle = "",
+  submitLabel,
+  savingLabel,
   onClose,
   onCreate,
 }: {
+  title: string;
+  initialTitle?: string;
+  submitLabel: string;
+  savingLabel: string;
   onClose: () => void;
   onCreate: (title: string) => Promise<void>;
 }) {
-  const [title, setTitle] = useState("");
+  const [title, setTitle] = useState(initialTitle);
   const [saving, setSaving] = useState(false);
 
   async function submit() {
@@ -1309,7 +1398,7 @@ function ColumnModal({
   }
 
   return (
-    <Modal title="Nueva columna" onClose={onClose}>
+    <Modal title={modalTitle} onClose={onClose}>
       <div style={styles.modalBody}>
         <label style={styles.field}>
           <span style={styles.label}>Título</span>
@@ -1334,7 +1423,7 @@ function ColumnModal({
             opacity: saving || !title.trim() ? 0.5 : 1,
           }}
         >
-          {saving ? "Creando…" : "Crear columna"}
+          {saving ? savingLabel : submitLabel}
         </button>
       </div>
     </Modal>
@@ -1426,10 +1515,39 @@ const styles: Record<string, React.CSSProperties> = {
     display: "flex",
     alignItems: "center",
     justifyContent: "space-between",
+    gap: 10,
     padding: "12px 14px",
     fontSize: 14,
     fontWeight: 600,
     color: "#fff",
+    cursor: "grab",
+    userSelect: "none",
+  },
+  columnTitle: {
+    minWidth: 0,
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
+  },
+  columnActions: {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 8,
+    flexShrink: 0,
+  },
+  columnEditBtn: {
+    width: 24,
+    height: 24,
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    background: "#161616",
+    border: "1px solid #2a2a2a",
+    borderRadius: 6,
+    color: "#aaa",
+    fontSize: 13,
+    lineHeight: 1,
+    cursor: "pointer",
   },
   count: {
     fontSize: 12,
