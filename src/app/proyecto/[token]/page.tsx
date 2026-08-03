@@ -33,6 +33,23 @@ function sortCardsForClient(cards: KanbanCard[]): KanbanCard[] {
   return cards;
 }
 
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ token: string }>;
+}) {
+  const { token } = await params;
+  const supabase = createAdminClient();
+  const { data } = await supabase
+    .from("clients")
+    .select("name")
+    .eq("public_token", token)
+    .maybeSingle();
+
+  const name = (data as Pick<Client, "name"> | null)?.name;
+  return { title: name ? `Proyecto · ${name}` : "Proyecto" };
+}
+
 export default async function PublicKanbanPage({
   params,
 }: {
@@ -70,6 +87,10 @@ export default async function PublicKanbanPage({
   return (
     <div style={styles.page}>
       <Header dark minimal />
+      <header style={styles.intro}>
+        <span style={styles.introLabel}>Proyecto de</span>
+        <h1 style={styles.introTitle}>{(client as Client).name}</h1>
+      </header>
       <div style={styles.board}>
         {cols.map((col) => {
           const colCards = sortCardsForClient(
@@ -162,6 +183,23 @@ const styles: Record<string, React.CSSProperties> = {
     background: "#0a0a0a",
     color: "#fff",
     padding: "120px 24px 40px",
+  },
+  intro: {
+    maxWidth: 1200,
+    margin: "0 auto 24px",
+  },
+  introLabel: {
+    display: "block",
+    fontSize: 11,
+    textTransform: "uppercase",
+    letterSpacing: 2,
+    color: "#777",
+  },
+  introTitle: {
+    margin: "6px 0 0",
+    fontSize: 28,
+    fontWeight: 600,
+    letterSpacing: -0.5,
   },
   board: {
     maxWidth: 1200,
