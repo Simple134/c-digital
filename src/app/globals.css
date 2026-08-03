@@ -2014,3 +2014,149 @@ header {
 .cdg-kanban .rkk-column-content-list:hover {
   scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
 }
+
+/* ---- Switch "Pendiente del cliente" ----
+   Se construye sobre un <input type="checkbox"> real (se mantiene accesible y
+   enfocable con teclado) pero visualmente oculto: el track y el thumb son los
+   dos <span> hermanos. */
+.cdg-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  user-select: none;
+}
+.cdg-switch input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+.cdg-switch-track {
+  position: relative;
+  flex-shrink: 0;
+  width: 40px;
+  height: 22px;
+  border-radius: 999px;
+  background: #2a2a2a;
+  border: 1px solid #333;
+  transition:
+    background-color 0.18s ease,
+    border-color 0.18s ease;
+}
+.cdg-switch-track::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #888;
+  transition:
+    transform 0.18s ease,
+    background-color 0.18s ease;
+}
+.cdg-switch input:checked + .cdg-switch-track {
+  background: #e6b800;
+  border-color: #e6b800;
+}
+.cdg-switch input:checked + .cdg-switch-track::after {
+  transform: translateX(18px);
+  background: #0a0a0a;
+}
+.cdg-switch input:focus-visible + .cdg-switch-track {
+  outline: 2px solid #5aa9ff;
+  outline-offset: 2px;
+}
+.cdg-switch:hover .cdg-switch-track {
+  border-color: #4a4a4a;
+}
+.cdg-switch-label {
+  font-size: 14px;
+  color: #ddd;
+}
+/* Variante compacta, para el pie de la tarjeta del tablero */
+.cdg-switch--sm .cdg-switch-track {
+  width: 30px;
+  height: 17px;
+}
+.cdg-switch--sm .cdg-switch-track::after {
+  width: 13px;
+  height: 13px;
+}
+.cdg-switch--sm input:checked + .cdg-switch-track::after {
+  transform: translateX(13px);
+}
+.cdg-switch--sm .cdg-switch-label {
+  font-size: 11px;
+  color: #999;
+}
+
+/* ---- Zona de subida de imagen ----
+   El <input type="file"> nativo se oculta y el <label> entero actúa como
+   dropzone: así se estiliza libremente sin perder el diálogo de archivos. */
+.cdg-upload {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 20px 16px;
+  border: 1px dashed #2f2f2f;
+  border-radius: 10px;
+  background: #131313;
+  cursor: pointer;
+  text-align: center;
+  transition:
+    border-color 0.18s ease,
+    background-color 0.18s ease;
+}
+.cdg-upload:hover,
+.cdg-upload.is-dragging {
+  border-color: #5aa9ff;
+  background: #15191f;
+}
+.cdg-upload input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+.cdg-upload.is-busy {
+  cursor: progress;
+  opacity: 0.7;
+}
+.cdg-upload-icon {
+  font-size: 20px;
+  line-height: 1;
+}
+.cdg-upload-title {
+  font-size: 13px;
+  color: #ddd;
+}
+.cdg-upload-hint {
+  font-size: 11px;
+  color: #666;
+}
+/* Acción secundaria (Quitar / Reemplazar) bajo la previsualización */
+.cdg-image-action {
+  padding: 6px 12px;
+  background: transparent;
+  border: 1px solid #2a2a2a;
+  border-radius: 7px;
+  color: #aaa;
+  font-size: 12px;
+  cursor: pointer;
+  transition:
+    color 0.18s ease,
+    border-color 0.18s ease;
+}
+.cdg-image-action:hover {
+  color: #fff;
+  border-color: #4a4a4a;
+}
+.cdg-image-action--danger:hover {
+  color: #ff9b9b;
+  border-color: #4a2020;
+}

@@ -70,7 +70,16 @@ export interface KanbanCard {
   priority: string | null;
   assignee_id: string | null;
   client_id: string | null;
+  // true = la tarea está pendiente del cliente, no del equipo. `assignee_id`
+  // sigue indicando quién la supervisa por nuestro lado (puede ser null).
+  assigned_to_client: boolean;
+  // Imagen de referencia de la tarea. `image_path` es el objeto en el bucket
+  // `kanban-attachments`; `image_url` su URL pública ya resuelta.
+  image_url: string | null;
+  image_path: string | null;
   sort_order: number;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface Client {

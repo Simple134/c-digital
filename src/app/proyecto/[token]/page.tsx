@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import Header from "@/components/layout/Header";
+import { fmtDateTime } from "@/lib/format";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type {
   Client,
@@ -19,6 +20,18 @@ const PRIORITY_COLOR: Record<string, string> = {
   media: "#e6b800",
   baja: "#5aa9ff",
 };
+
+/**
+ * Ordena las tarjetas de una columna para la vista del cliente.
+ *
+ * TODO(josue): define el criterio. Las tarjetas llegan ya ordenadas por
+ * `sort_order` (el orden interno del equipo). Decide si las que esperan al
+ * cliente (`assigned_to_client`) suben al principio de su columna o si el orden
+ * del tablero se respeta tal cual y el resaltado visual basta.
+ */
+function sortCardsForClient(cards: KanbanCard[]): KanbanCard[] {
+  return cards;
+}
 
 export default async function PublicKanbanPage({
   params,
@@ -59,7 +72,9 @@ export default async function PublicKanbanPage({
       <Header dark minimal />
       <div style={styles.board}>
         {cols.map((col) => {
-          const colCards = allCards.filter((c) => c.column_id === col.id);
+          const colCards = sortCardsForClient(
+            allCards.filter((c) => c.column_id === col.id),
+          );
           return (
             <div key={col.id} style={styles.column}>
               <div style={styles.columnHeader}>
@@ -93,12 +108,35 @@ function Card({
     ? (PRIORITY_COLOR[card.priority] ?? "#555")
     : "#555";
   const assignee = members.find((m) => m.id === card.assignee_id);
+  const waitingOnClient = card.assigned_to_client;
 
   return (
-    <div style={styles.card}>
+    <div
+      style={{
+        ...styles.card,
+        ...(waitingOnClient ? styles.cardWaitingClient : null),
+      }}
+    >
+      {waitingOnClient && <span style={styles.waitingTag}>Pendiente de ti</span>}
       <span style={styles.cardTitle}>{card.title}</span>
+      {card.image_url && (
+        // Se enlaza al original para que el cliente pueda ampliarla.
+        <a href={card.image_url} target="_blank" rel="noopener noreferrer">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={card.image_url}
+            alt={`Referencia de: ${card.title}`}
+            style={styles.cardImage}
+          />
+        </a>
+      )}
       {card.description && (
         <p style={styles.cardDesc}>{card.description}</p>
+      )}
+      {card.created_at && (
+        <span style={styles.createdAt}>
+          Creada el {fmtDateTime(card.created_at)}
+        </span>
       )}
       <div style={styles.cardMeta}>
         {card.priority && (
@@ -108,7 +146,7 @@ function Card({
             {PRIORITY_LABEL[card.priority] ?? card.priority}
           </span>
         )}
-        {assignee && (
+        {!waitingOnClient && assignee && (
           <span style={styles.assignee} title={assignee.name}>
             {assignee.name}
           </span>
@@ -179,8 +217,31 @@ const styles: Record<string, React.CSSProperties> = {
     flexDirection: "column",
     gap: 8,
   },
+  cardWaitingClient: {
+    borderColor: "#7a5c1a",
+    background: "#1d1a12",
+  },
+  waitingTag: {
+    alignSelf: "flex-start",
+    fontSize: 10,
+    fontWeight: 700,
+    textTransform: "uppercase",
+    letterSpacing: 1,
+    color: "#0a0a0a",
+    background: "#e6b800",
+    borderRadius: 5,
+    padding: "2px 7px",
+  },
   cardTitle: { fontWeight: 600, fontSize: 14 },
   cardDesc: { color: "#999", fontSize: 12, margin: 0, lineHeight: 1.4 },
+  createdAt: { fontSize: 10, color: "#666", letterSpacing: 0.3 },
+  cardImage: {
+    width: "100%",
+    maxHeight: 160,
+    objectFit: "cover",
+    borderRadius: 6,
+    display: "block",
+  },
   cardMeta: {
     display: "flex",
     alignItems: "center",

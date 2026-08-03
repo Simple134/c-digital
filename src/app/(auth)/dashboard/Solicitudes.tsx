@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState, type CSSProperties } from "react";
+import { fmtDateTime } from "@/lib/format";
 import type { createClient } from "@/lib/supabase/client";
 import type {
   FormSubmission,
@@ -43,19 +44,6 @@ const LEVEL_COLOR: Record<AuditLevel, string> = {
 
 const areaTitle = (id: string) => AREAS.find((a) => a.id === id)?.title ?? id;
 
-function fmtDate(iso: string) {
-  try {
-    return new Date(iso).toLocaleString("es-DO", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  } catch {
-    return iso;
-  }
-}
 
 // Enlace de WhatsApp: usa los dígitos del teléfono (RD = código país 1).
 function waLink(phone: string | null) {
@@ -337,7 +325,7 @@ function RequestCard({
           </div>
         </div>
         <div style={{ color: "#666", fontSize: 12, whiteSpace: "nowrap" }}>
-          {fmtDate(row.created_at)}
+          {fmtDateTime(row.created_at)}
         </div>
       </div>
 
