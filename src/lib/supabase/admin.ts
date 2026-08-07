@@ -15,21 +15,19 @@ export function createAdminClient() {
         !serviceRoleKey && "SUPABASE_SERVICE_ROLE_KEY",
       ]
         .filter(Boolean)
-        .join(", ")}. Configúralas en el proyecto de Vercel (Production) y redeploy.`,
+        .join(
+          ", ",
+        )}. Configúralas en el proyecto de Vercel (Production) y redeploy.`,
     );
   }
 
-  return createSupabaseClient(
-    url,
-    serviceRoleKey,
-    {
-      auth: { persistSession: false },
-      // Next.js parchea el fetch global y cachea agresivamente las
-      // peticiones de Server Components; sin esto, resultados viejos (ej.
-      // "cliente no encontrado" de una prueba anterior) quedan pegados.
-      global: {
-        fetch: (input, init) => fetch(input, { ...init, cache: "no-store" }),
-      },
+  return createSupabaseClient(url, serviceRoleKey, {
+    auth: { persistSession: false },
+    // Next.js parchea el fetch global y cachea agresivamente las
+    // peticiones de Server Components; sin esto, resultados viejos (ej.
+    // "cliente no encontrado" de una prueba anterior) quedan pegados.
+    global: {
+      fetch: (input, init) => fetch(input, { ...init, cache: "no-store" }),
     },
-  );
+  });
 }

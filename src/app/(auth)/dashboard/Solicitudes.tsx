@@ -16,8 +16,7 @@ type Supabase = ReturnType<typeof createClient>;
 // Une los dos orígenes de solicitudes en un solo tipo etiquetado para
 // mostrarlos en una sola lista, distinguidos por la etiqueta `kind`.
 type Row =
-  | ({ kind: "audit" } & FormSubmission)
-  | ({ kind: "meeting" } & MeetingRequest);
+  ({ kind: "audit" } & FormSubmission) | ({ kind: "meeting" } & MeetingRequest);
 
 const KIND_META = {
   audit: { label: "Auditoría", color: "#5a8cff" },
@@ -43,7 +42,6 @@ const LEVEL_COLOR: Record<AuditLevel, string> = {
 };
 
 const areaTitle = (id: string) => AREAS.find((a) => a.id === id)?.title ?? id;
-
 
 // Enlace de WhatsApp: usa los dígitos del teléfono (RD = código país 1).
 function waLink(phone: string | null) {
@@ -82,12 +80,14 @@ export default function Solicitudes({ supabase }: { supabase: Supabase }) {
     else if (meetings.error) setError(meetings.error.message);
 
     const merged: Row[] = [
-      ...((audits.data as FormSubmission[]) ?? []).map(
-        (r): Row => ({ kind: "audit", ...r }),
-      ),
-      ...((meetings.data as MeetingRequest[]) ?? []).map(
-        (r): Row => ({ kind: "meeting", ...r }),
-      ),
+      ...((audits.data as FormSubmission[]) ?? []).map((r): Row => ({
+        kind: "audit",
+        ...r,
+      })),
+      ...((meetings.data as MeetingRequest[]) ?? []).map((r): Row => ({
+        kind: "meeting",
+        ...r,
+      })),
     ].sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
 
     setRows(merged);

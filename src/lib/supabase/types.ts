@@ -60,6 +60,10 @@ export interface KanbanColumn {
   id: string;
   title: string;
   sort_order: number;
+  // Columna terminal: al entrar aquí una tarjeta se considera entregada y se
+  // sella su `completed_at`. Es un flag y no el título/orden porque las columnas
+  // son editables: renombrar "Hecho" no debe romper el reporte de rendimiento.
+  is_done: boolean;
 }
 
 export interface KanbanCard {
@@ -77,6 +81,11 @@ export interface KanbanCard {
   // `kanban-attachments`; `image_url` su URL pública ya resuelta.
   image_url: string | null;
   image_path: string | null;
+  // Fecha límite de entrega (solo día, sin hora). Null = no medible.
+  due_date: string | null;
+  // Instante en que la tarjeta entró a una columna terminal. Se sella una vez y
+  // se limpia si vuelve a salir, para que reabrir una tarea no falsee la métrica.
+  completed_at: string | null;
   sort_order: number;
   created_at: string;
   updated_at: string;
@@ -86,6 +95,9 @@ export interface Client {
   id: string;
   name: string;
   public_token: string;
+  // Destinatario de los avisos de tareas pendientes del cliente. Null = no se
+  // le puede notificar (el tablero lo advierte en lugar de fallar).
+  email: string | null;
   created_at: string;
 }
 
@@ -158,4 +170,58 @@ export type TableName =
   | "kanban_cards"
   | "clients"
   | "form_submissions"
-  | "meeting_requests";
+  | "meeting_requests"
+  | "invoices"
+  | "invoice_items"
+  | "invoice_payments";
+
+/* ---------------- Facturación ---------------- */
+
+// A quién se le factura: un cliente externo o un miembro del equipo (lo que se
+// le debe por su trabajo). Las dos FKs son excluyentes, con CHECK en la BD.
+export type InvoiceParty = "client" | "team";
+
+export type InvoiceCurrency = "DOP" | "USD";
+
+export interface Invoice {
+  id: string;
+  number: string;
+  party_type: InvoiceParty;
+  client_id: string | null;
+  team_member_id: string | null;
+  // Nombre y correo congelados al emitir: la factura ya enviada no debe cambiar
+  // si después se renombra o se borra el cliente.
+  party_name: string;
+  party_email: string | null;
+  issued_at: string;
+  currency: InvoiceCurrency;
+  discount: number;
+  tax_rate: number;
+  description: string | null;
+  note: string | null;
+  public_token: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface InvoiceItem {
+  id: string;
+  invoice_id: string;
+  concept: string;
+  unit_price: number;
+  quantity: number;
+  unit: string;
+  sort_order: number;
+}
+
+// Un abono. Varios por factura: así el PDF lista método y fecha de cada pago y
+// el saldo se deriva de la suma, sin campo `paid_amount` que desincronizar.
+export interface InvoicePayment {
+  id: string;
+  invoice_id: string;
+  method: string;
+  amount: number;
+  paid_at: string;
+  note: string | null;
+  created_at: string;
+}

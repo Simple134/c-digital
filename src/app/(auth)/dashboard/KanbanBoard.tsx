@@ -4,6 +4,14 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Kanban, dropColumnHandler, dropHandler } from "react-kanban-kit";
 import type { BoardData, BoardItem } from "react-kanban-kit";
 import { fmtDateTime } from "@/lib/format";
+import {
+  computeDeliveryStats,
+  dueBadge,
+  dueState,
+  fmtDueDate,
+  type DeliverableCard,
+  type MemberDeliveryStats,
+} from "@/lib/delivery";
 import type { createClient } from "@/lib/supabase/client";
 import type {
   Client,
@@ -24,11 +32,18 @@ type CardFormValues = {
   assigned_to_client: boolean;
   image_url: string | null;
   image_path: string | null;
+  /** "YYYY-MM-DD" o "" si no se fijó fecha límite. */
+  due_date: string;
 };
 
 const BUCKET = "kanban-attachments";
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
-const ACCEPTED_IMAGE_TYPES = ["image/png", "image/jpeg", "image/webp", "image/gif"];
+const ACCEPTED_IMAGE_TYPES = [
+  "image/png",
+  "image/jpeg",
+  "image/webp",
+  "image/gif",
+];
 
 // Valor especial del filtro de responsable: tareas que esperan al cliente.
 const CLIENT_FILTER = "__client__";
@@ -93,6 +108,8 @@ function buildBoardData(
           assigned_to_client: card.assigned_to_client,
           image_url: card.image_url,
           image_path: card.image_path,
+          due_date: card.due_date,
+          completed_at: card.completed_at,
           created_at: card.created_at,
         },
       };
@@ -104,6 +121,9 @@ function buildBoardData(
 
 export default function KanbanBoard({ supabase }: { supabase: Supabase }) {
   const [data, setData] = useState<BoardData | null>(null);
+  // Se guardan las filas de columnas además del BoardData porque `is_done` no
+  // cabe en el modelo de react-kanban-kit y hace falta para sellar las entregas.
+  const [columns, setColumns] = useState<KanbanColumn[]>([]);
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
@@ -111,6 +131,15 @@ export default function KanbanBoard({ supabase }: { supabase: Supabase }) {
   const [selectedClientId, setSelectedClientId] = useState("");
   const [selectedMemberId, setSelectedMemberId] = useState("");
   const [linkCopied, setLinkCopied] = useState(false);
+  // Resultado del último aviso por correo. Va aparte de `error` porque `error`
+  // reemplaza todo el tablero, y un correo que no salió no debe ocultarlo.
+  // `ok` distingue confirmación de fallo: pintar los dos en verde hizo que un
+  // "no se pudo enviar" se leyera como un envío exitoso.
+  const [notice, setNotice] = useState<{ text: string; ok: boolean } | null>(
+    null,
+  );
+  const [showStats, setShowStats] = useState(false);
+  const [statsDays, setStatsDays] = useState(30);
 
   // Modales: qué columna recibe una tarjeta nueva / si se crea una columna.
   const [cardModalColumn, setCardModalColumn] = useState<BoardItem | null>(
@@ -118,6 +147,7 @@ export default function KanbanBoard({ supabase }: { supabase: Supabase }) {
   );
   const [columnModalOpen, setColumnModalOpen] = useState(false);
   const [clientModalOpen, setClientModalOpen] = useState(false);
+  const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [editingCard, setEditingCard] = useState<BoardItem | null>(null);
   const [editingColumn, setEditingColumn] = useState<BoardItem | null>(null);
 
@@ -152,6 +182,7 @@ export default function KanbanBoard({ supabase }: { supabase: Supabase }) {
     }
     setMembers((team.data as TeamMember[]) ?? []);
     setClients((clientRows.data as Client[]) ?? []);
+    setColumns((cols.data as KanbanColumn[]) ?? []);
     setData(
       buildBoardData(
         (cols.data as KanbanColumn[]) ?? [],
@@ -167,6 +198,11 @@ export default function KanbanBoard({ supabase }: { supabase: Supabase }) {
 
   const selectedClient = clients.find((c) => c.id === selectedClientId);
 
+  const doneColumnIds = useMemo(
+    () => new Set(columns.filter((c) => c.is_done).map((c) => c.id)),
+    [columns],
+  );
+
   // Cuando se elige un cliente y/o un miembro del equipo, el tablero solo
   // muestra las tarjetas que cumplen ambos filtros (las columnas siguen
   // siendo las mismas para todos).
@@ -181,7 +217,10 @@ export default function KanbanBoard({ supabase }: { supabase: Supabase }) {
           return false;
         if (selectedMemberId === CLIENT_FILTER) {
           if (!content?.assigned_to_client) return false;
-        } else if (selectedMemberId && content?.assignee_id !== selectedMemberId)
+        } else if (
+          selectedMemberId &&
+          content?.assignee_id !== selectedMemberId
+        )
           return false;
         return true;
       });
@@ -194,6 +233,83 @@ export default function KanbanBoard({ supabase }: { supabase: Supabase }) {
     }
     return next;
   }, [data, selectedClientId, selectedMemberId]);
+
+  /**
+   * Tarjetas aplanadas para el reporte. Respeta el filtro de cliente (permite
+   * ver el rendimiento dentro de un proyecto) pero no el de responsable: el
+   * panel ya desglosa por persona.
+   */
+  const deliveryStats = useMemo(() => {
+    if (!data) return null;
+    const cards: DeliverableCard[] = [];
+    for (const colId of data.root.children) {
+      for (const cardId of data[colId].children) {
+        const content = data[cardId]?.content;
+        if (!content) continue;
+        if (selectedClientId && content.client_id !== selectedClientId)
+          continue;
+        cards.push({
+          assignee_id: (content.assignee_id as string | null) ?? null,
+          assigned_to_client: Boolean(content.assigned_to_client),
+          due_date: (content.due_date as string | null) ?? null,
+          completed_at: (content.completed_at as string | null) ?? null,
+        });
+      }
+    }
+    return computeDeliveryStats(cards, statsDays);
+  }, [data, selectedClientId, statsDays]);
+
+  /**
+   * Pide al servidor que avise por correo a quien acabó de recibir la tarea.
+   *
+   * Se llama siempre *después* de que el cambio ya está guardado, y nunca se
+   * espera su resultado para actualizar la UI: el correo es un extra, no parte
+   * de la operación. Solo se envía el id de la tarjeta — el route handler relee
+   * los datos y decide el destinatario, para que este cliente no pueda dirigir
+   * correos a direcciones arbitrarias.
+   */
+  const notifyAssignment = useCallback(
+    async (cardId: string, kind: "assignee" | "client") => {
+      try {
+        const res = await fetch("/api/kanban-notify", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ cardId, kind }),
+        });
+        const result = (await res.json()) as {
+          sent?: boolean;
+          reason?: string;
+          recipientName?: string;
+        };
+        if (result.sent) {
+          setNotice({
+            text: `✓ Aviso enviado a ${result.recipientName ?? "el destinatario"}.`,
+            ok: true,
+          });
+        } else if (result.reason && result.reason !== "self") {
+          // "self" es una omisión esperada (te asignaste la tarea tú mismo):
+          // avisar de ella sería ruido.
+          setNotice({
+            text: `⚠ Sin aviso por correo: ${result.reason}`,
+            ok: false,
+          });
+        }
+      } catch {
+        setNotice({
+          text: "⚠ Sin aviso por correo: no se pudo contactar al servidor.",
+          ok: false,
+        });
+      }
+    },
+    [],
+  );
+
+  // El aviso es informativo: se descarta solo para no quedar pegado en pantalla.
+  useEffect(() => {
+    if (!notice) return;
+    const timer = setTimeout(() => setNotice(null), 6000);
+    return () => clearTimeout(timer);
+  }, [notice]);
 
   async function copyPublicLink() {
     if (!selectedClient) return;
@@ -226,6 +342,11 @@ export default function KanbanBoard({ supabase }: { supabase: Supabase }) {
             assigned_to_client: item.content?.assigned_to_client ?? false,
             image_url: item.content?.image_url ?? null,
             image_path: item.content?.image_path ?? null,
+            due_date: item.content?.due_date ?? null,
+            // Igual que assigned_to_client: sin enviarlo, el upsert al arrastrar
+            // borraría el sello de entrega. handleCardMove ya dejó en `next` el
+            // valor correcto para la tarjeta movida.
+            completed_at: item.content?.completed_at ?? null,
             // created_at se omite a propósito: el UPDATE del upsert solo toca
             // las columnas presentes, así que la fecha original se conserva.
             sort_order: index,
@@ -260,11 +381,26 @@ export default function KanbanBoard({ supabase }: { supabase: Supabase }) {
           const col = next[colId];
           next[colId] = { ...col, totalChildrenCount: col.children.length };
         }
-        // Refleja el nuevo padre de la tarjeta movida.
+        // Refleja el nuevo padre de la tarjeta movida y sella (o libera) la
+        // entrega: entrar a una columna terminal marca `completed_at`, salir de
+        // ella lo limpia, y reordenar dentro de la misma columna no lo toca.
         if (next[move.cardId]) {
+          const card = next[move.cardId];
+          const isDone = doneColumnIds.has(move.toColumnId);
+          const wasDone = doneColumnIds.has(move.fromColumnId);
+          const previous =
+            (card.content?.completed_at as string | null) ?? null;
+          const completedAt = isDone
+            ? // Si ya venía sellada se respeta la marca original: mover una
+              // tarjeta entre dos columnas terminales no reescribe la entrega.
+              (previous ?? new Date().toISOString())
+            : wasDone
+              ? null
+              : previous;
           next[move.cardId] = {
-            ...next[move.cardId],
+            ...card,
             parentId: move.toColumnId,
+            content: { ...card.content, completed_at: completedAt },
           };
         }
         // Persiste origen y destino (o solo uno si es reordenamiento interno).
@@ -272,7 +408,7 @@ export default function KanbanBoard({ supabase }: { supabase: Supabase }) {
         return next;
       });
     },
-    [persistColumns],
+    [persistColumns, doneColumnIds],
   );
 
   const persistColumnOrder = useCallback(
@@ -345,19 +481,32 @@ export default function KanbanBoard({ supabase }: { supabase: Supabase }) {
   async function createCard(values: CardFormValues) {
     if (!cardModalColumn) return;
     const clientId = selectedClientId || values.client_id || null;
-    const { error } = await supabase.from("kanban_cards").insert({
-      column_id: cardModalColumn.id,
-      title: values.title,
-      description: values.description || null,
-      priority: values.priority || null,
-      assignee_id: values.assignee_id || null,
-      client_id: clientId,
-      // Solo tiene sentido esperar al cliente si la tarjeta le pertenece.
-      assigned_to_client: clientId ? values.assigned_to_client : false,
-      image_url: values.image_url,
-      image_path: values.image_path,
-      sort_order: cardModalColumn.children.length,
-    });
+    const waitingOnClient = clientId ? values.assigned_to_client : false;
+    // Se pide el id de vuelta porque los avisos por correo se resuelven en el
+    // servidor a partir de la tarjeta ya guardada.
+    const { data: created, error } = await supabase
+      .from("kanban_cards")
+      .insert({
+        column_id: cardModalColumn.id,
+        title: values.title,
+        description: values.description || null,
+        priority: values.priority || null,
+        assignee_id: values.assignee_id || null,
+        client_id: clientId,
+        // Solo tiene sentido esperar al cliente si la tarjeta le pertenece.
+        assigned_to_client: waitingOnClient,
+        image_url: values.image_url,
+        image_path: values.image_path,
+        due_date: values.due_date || null,
+        // Una tarjeta creada directamente en una columna terminal ya está
+        // entregada: sin esto quedaría en "Hecho" pero fuera del reporte.
+        completed_at: doneColumnIds.has(cardModalColumn.id)
+          ? new Date().toISOString()
+          : null,
+        sort_order: cardModalColumn.children.length,
+      })
+      .select("id")
+      .single();
     if (error) {
       setError(error.message);
       // La imagen ya está en el bucket pero no hay fila que la referencie:
@@ -366,6 +515,13 @@ export default function KanbanBoard({ supabase }: { supabase: Supabase }) {
       return;
     }
     setCardModalColumn(null);
+    // Una tarjeta nueva puede disparar los dos avisos a la vez: al responsable
+    // interno y al cliente, si además queda pendiente de él.
+    const newId = (created as { id: string } | null)?.id;
+    if (newId) {
+      if (values.assignee_id) void notifyAssignment(newId, "assignee");
+      if (waitingOnClient) void notifyAssignment(newId, "client");
+    }
     load();
   }
 
@@ -379,11 +535,15 @@ export default function KanbanBoard({ supabase }: { supabase: Supabase }) {
       assigned_to_client: values.client_id ? values.assigned_to_client : false,
       image_url: values.image_url,
       image_path: values.image_path,
+      due_date: values.due_date || null,
     };
+    // Estado anterior, para avisar solo de cambios reales de responsabilidad:
+    // guardar el modal sin tocar el responsable no debe generar otro correo.
+    const before = data?.[cardId]?.content;
+    const previousAssignee = (before?.assignee_id as string | null) ?? null;
+    const previouslyWaitingOnClient = Boolean(before?.assigned_to_client);
     const previousPath = data?.[cardId]?.content?.image_path as
-      | string
-      | null
-      | undefined;
+      string | null | undefined;
     const { error } = await supabase
       .from("kanban_cards")
       .update(patch)
@@ -398,6 +558,12 @@ export default function KanbanBoard({ supabase }: { supabase: Supabase }) {
       await removeImageObject(previousPath);
     }
     setEditingCard(null);
+    if (patch.assignee_id && patch.assignee_id !== previousAssignee) {
+      void notifyAssignment(cardId, "assignee");
+    }
+    if (patch.assigned_to_client && !previouslyWaitingOnClient) {
+      void notifyAssignment(cardId, "client");
+    }
     setData((current) => {
       if (!current || !current[cardId]) return current;
       const { title, ...content } = patch;
@@ -450,6 +616,8 @@ export default function KanbanBoard({ supabase }: { supabase: Supabase }) {
       setError(error.message);
       return;
     }
+    // Solo al activarlo: desmarcar significa que la pelota volvió al equipo.
+    if (next) void notifyAssignment(cardId, "client");
     setData((current) => {
       if (!current || !current[cardId]) return current;
       return {
@@ -462,11 +630,11 @@ export default function KanbanBoard({ supabase }: { supabase: Supabase }) {
     });
   }
 
-  async function createClientRecord(name: string) {
+  async function createClientRecord(name: string, email: string) {
     const count = clients.length;
     const { data: created, error } = await supabase
       .from("clients")
-      .insert({ name, sort_order: count })
+      .insert({ name, email: email || null, sort_order: count })
       .select()
       .single();
     if (error) {
@@ -478,11 +646,32 @@ export default function KanbanBoard({ supabase }: { supabase: Supabase }) {
     setSelectedClientId((created as Client).id);
   }
 
-  async function createColumn(title: string) {
+  async function updateClientRecord(
+    clientId: string,
+    name: string,
+    email: string,
+  ) {
+    const { error } = await supabase
+      .from("clients")
+      .update({ name, email: email || null })
+      .eq("id", clientId);
+    if (error) {
+      setError(error.message);
+      return;
+    }
+    setEditingClient(null);
+    setClients((current) =>
+      current.map((c) =>
+        c.id === clientId ? { ...c, name, email: email || null } : c,
+      ),
+    );
+  }
+
+  async function createColumn(title: string, isDone: boolean) {
     const count = data?.root.children.length ?? 0;
     const { error } = await supabase
       .from("kanban_columns")
-      .insert({ title, sort_order: count });
+      .insert({ title, sort_order: count, is_done: isDone });
     if (error) {
       setError(error.message);
       return;
@@ -491,16 +680,25 @@ export default function KanbanBoard({ supabase }: { supabase: Supabase }) {
     load();
   }
 
-  async function updateColumn(columnId: string, title: string) {
+  async function updateColumn(
+    columnId: string,
+    title: string,
+    isDone: boolean,
+  ) {
     const { error } = await supabase
       .from("kanban_columns")
-      .update({ title })
+      .update({ title, is_done: isDone })
       .eq("id", columnId);
     if (error) {
       setError(error.message);
       return;
     }
     setEditingColumn(null);
+    setColumns((current) =>
+      current.map((c) =>
+        c.id === columnId ? { ...c, title, is_done: isDone } : c,
+      ),
+    );
     setData((current) => {
       if (!current || !current[columnId]) return current;
       return {
@@ -516,9 +714,7 @@ export default function KanbanBoard({ supabase }: { supabase: Supabase }) {
   async function deleteCard(cardId: string) {
     if (!window.confirm("¿Eliminar esta tarjeta?")) return;
     const imagePath = data?.[cardId]?.content?.image_path as
-      | string
-      | null
-      | undefined;
+      string | null | undefined;
     const { error } = await supabase
       .from("kanban_cards")
       .delete()
@@ -563,86 +759,127 @@ export default function KanbanBoard({ supabase }: { supabase: Supabase }) {
             </option>
           ))}
         </select>
-        <button style={styles.ghostBtn} onClick={() => setClientModalOpen(true)}>
+        <button
+          style={styles.ghostBtn}
+          onClick={() => setClientModalOpen(true)}
+        >
           + Nuevo cliente
         </button>
+        {selectedClient && (
+          <button
+            style={styles.ghostBtn}
+            onClick={() => setEditingClient(selectedClient)}
+            title={
+              selectedClient.email
+                ? `Avisos a ${selectedClient.email}`
+                : "Sin correo: no recibirá avisos"
+            }
+          >
+            {selectedClient.email ? "✎ Cliente" : "⚠ Añadir correo"}
+          </button>
+        )}
         {selectedClient && (
           <button style={styles.ghostBtn} onClick={copyPublicLink}>
             {linkCopied ? "¡Link copiado!" : "Copiar link público"}
           </button>
         )}
+        <button
+          style={styles.ghostBtn}
+          onClick={() => setShowStats((v) => !v)}
+          aria-expanded={showStats}
+        >
+          {showStats ? "▾ Ocultar rendimiento" : "▸ Rendimiento"}
+        </button>
       </div>
+
+      {notice && (
+        <div style={notice.ok ? styles.noticeBox : styles.noticeBoxWarn}>
+          {notice.text}
+        </div>
+      )}
+
+      {showStats && deliveryStats && (
+        <DeliveryPanel
+          stats={deliveryStats}
+          members={members}
+          days={statsDays}
+          onDaysChange={setStatsDays}
+        />
+      )}
 
       <div
         className="cdg-kanban-board"
         style={{ flex: 1, minHeight: 0, height: "calc(100vh - 220px)" }}
       >
-      <Kanban
-        dataSource={visibleData}
-        configMap={{
-          card: {
-            isDraggable: true,
-            render: ({ data: card }) => (
-              <Card
-                card={card}
-                members={members}
-                clients={clients}
-                showClientSelector={!selectedClientId}
-                onDelete={() => deleteCard(card.id)}
-                onAssignClient={(clientId) => assignClient(card.id, clientId)}
-                onToggleAssignedToClient={(next) =>
-                  toggleAssignedToClient(card.id, next)
-                }
-                onEdit={() => setEditingCard(card)}
-              />
-            ),
-          },
-        }}
-        onCardMove={handleCardMove}
-        allowColumnDrag
-        onColumnMove={handleColumnMove}
-        allowColumnAdder
-        renderColumnAdder={() => (
-          <button
-            style={styles.addColumnBtn}
-            onClick={() => setColumnModalOpen(true)}
-          >
-            + Añadir columna
-          </button>
-        )}
-        renderColumnHeader={(column) => (
-          <div style={styles.columnHeader}>
-            <span style={styles.columnTitle} title="Arrastra para mover columna">
-              {column.title}
-            </span>
-            <span style={styles.columnActions}>
-              <button
-                type="button"
-                style={styles.columnEditBtn}
-                title="Editar columna"
-                onPointerDown={(e) => e.stopPropagation()}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setEditingColumn(column);
-                }}
+        <Kanban
+          dataSource={visibleData}
+          configMap={{
+            card: {
+              isDraggable: true,
+              render: ({ data: card }) => (
+                <Card
+                  card={card}
+                  members={members}
+                  clients={clients}
+                  showClientSelector={!selectedClientId}
+                  onDelete={() => deleteCard(card.id)}
+                  onAssignClient={(clientId) => assignClient(card.id, clientId)}
+                  onToggleAssignedToClient={(next) =>
+                    toggleAssignedToClient(card.id, next)
+                  }
+                  onEdit={() => setEditingCard(card)}
+                />
+              ),
+            },
+          }}
+          onCardMove={handleCardMove}
+          allowColumnDrag
+          onColumnMove={handleColumnMove}
+          allowColumnAdder
+          renderColumnAdder={() => (
+            <button
+              style={styles.addColumnBtn}
+              onClick={() => setColumnModalOpen(true)}
+            >
+              + Añadir columna
+            </button>
+          )}
+          renderColumnHeader={(column) => (
+            <div style={styles.columnHeader}>
+              <span
+                style={styles.columnTitle}
+                title="Arrastra para mover columna"
               >
-                ✎
-              </button>
-              <span style={styles.count}>{column.totalChildrenCount}</span>
-            </span>
-          </div>
-        )}
-        allowListFooter={() => true}
-        renderListFooter={(column) => (
-          <button
-            style={styles.addCardBtn}
-            onClick={() => setCardModalColumn(column)}
-          >
-            + Añadir tarjeta
-          </button>
-        )}
-        rootStyle={{ background: "transparent", height: "100%" }}
-      />
+                {column.title}
+              </span>
+              <span style={styles.columnActions}>
+                <button
+                  type="button"
+                  style={styles.columnEditBtn}
+                  title="Editar columna"
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setEditingColumn(column);
+                  }}
+                >
+                  ✎
+                </button>
+                <span style={styles.count}>{column.totalChildrenCount}</span>
+              </span>
+            </div>
+          )}
+          allowListFooter={() => true}
+          renderListFooter={(column) => (
+            <button
+              style={styles.addCardBtn}
+              onClick={() => setCardModalColumn(column)}
+            >
+              + Añadir tarjeta
+            </button>
+          )}
+          rootStyle={{ background: "transparent", height: "100%" }}
+        />
       </div>
 
       {cardModalColumn && (
@@ -686,16 +923,138 @@ export default function KanbanBoard({ supabase }: { supabase: Supabase }) {
           submitLabel="Guardar cambios"
           savingLabel="Guardando…"
           initialTitle={editingColumn.title}
+          initialIsDone={doneColumnIds.has(editingColumn.id)}
           onClose={() => setEditingColumn(null)}
-          onCreate={(title) => updateColumn(editingColumn.id, title)}
+          onCreate={(title, isDone) =>
+            updateColumn(editingColumn.id, title, isDone)
+          }
         />
       )}
 
       {clientModalOpen && (
         <ClientModal
           onClose={() => setClientModalOpen(false)}
-          onCreate={createClientRecord}
+          onSave={createClientRecord}
         />
+      )}
+
+      {editingClient && (
+        <ClientModal
+          title="Editar cliente"
+          submitLabel="Guardar cambios"
+          initialName={editingClient.name}
+          initialEmail={editingClient.email ?? ""}
+          onClose={() => setEditingClient(null)}
+          onSave={(name, email) =>
+            updateClientRecord(editingClient.id, name, email)
+          }
+        />
+      )}
+    </div>
+  );
+}
+
+/* ---------------- Rendimiento ---------------- */
+
+const STATS_RANGES = [
+  { days: 30, label: "30 días" },
+  { days: 90, label: "90 días" },
+  { days: 365, label: "1 año" },
+];
+
+/** Color del % de puntualidad. Verde ≥85, ámbar ≥60, rojo por debajo. */
+function rateColor(rate: number): string {
+  if (rate >= 85) return "#4ade80";
+  if (rate >= 60) return "#e6b800";
+  return "#ff8080";
+}
+
+/**
+ * Rendimiento de entrega por miembro. Solo lista a quien tiene actividad en el
+ * rango, y muestra siempre el denominador (`X de Y medibles`) para que un 100%
+ * sobre una sola tarjeta no se lea como un 100% sobre veinte.
+ */
+function DeliveryPanel({
+  stats,
+  members,
+  days,
+  onDaysChange,
+}: {
+  stats: Map<string, MemberDeliveryStats>;
+  members: TeamMember[];
+  days: number;
+  onDaysChange: (days: number) => void;
+}) {
+  const rows = members
+    .map((member) => ({ member, stat: stats.get(member.id) }))
+    .filter(
+      (r) => r.stat && (r.stat.delivered > 0 || r.stat.openOverdue > 0),
+    ) as { member: TeamMember; stat: MemberDeliveryStats }[];
+
+  return (
+    <div style={styles.statsPanel}>
+      <div style={styles.statsHeader}>
+        <span style={styles.statsTitle}>Entrega a tiempo</span>
+        <span style={styles.statsRanges}>
+          {STATS_RANGES.map((r) => (
+            <button
+              key={r.days}
+              onClick={() => onDaysChange(r.days)}
+              style={{
+                ...styles.rangeBtn,
+                ...(r.days === days ? styles.rangeBtnActive : null),
+              }}
+            >
+              {r.label}
+            </button>
+          ))}
+        </span>
+      </div>
+
+      {rows.length === 0 ? (
+        <p style={styles.help}>
+          Sin entregas en este rango. Asigna una fecha límite a las tarjetas y
+          muévelas a una columna marcada como terminal para empezar a medir.
+        </p>
+      ) : (
+        <div style={styles.statsGrid}>
+          {rows.map(({ member, stat }) => (
+            <div key={member.id} style={styles.statCard}>
+              <span style={styles.statName}>{member.name}</span>
+              {stat.onTimeRate === null ? (
+                <span style={styles.statRateEmpty}>—</span>
+              ) : (
+                <span
+                  style={{
+                    ...styles.statRate,
+                    color: rateColor(stat.onTimeRate),
+                  }}
+                >
+                  {stat.onTimeRate}%
+                </span>
+              )}
+              <span style={styles.statDetail}>
+                {stat.onTimeRate === null
+                  ? `${stat.delivered} entregadas, ninguna con fecha límite`
+                  : `${stat.onTime} de ${stat.measurable} medibles`}
+              </span>
+              {stat.late > 0 && (
+                <span style={styles.statLate}>{stat.late} tarde</span>
+              )}
+              {stat.openOverdue > 0 && (
+                <span style={styles.statOverdue}>
+                  {stat.openOverdue} atrasada
+                  {stat.openOverdue === 1 ? "" : "s"} sin entregar
+                </span>
+              )}
+              {stat.delivered > stat.measurable && (
+                <span style={styles.statExcluded}>
+                  {stat.delivered - stat.measurable} sin fecha (fuera del %)
+                </span>
+              )}
+            </div>
+          ))}
+        </div>
       )}
     </div>
   );
@@ -729,6 +1088,9 @@ function Card({
   const client = clients.find((c) => c.id === clientId);
   const waitingOnClient = Boolean(card.content?.assigned_to_client);
   const createdAt = fmtDateTime(card.content?.created_at as string | undefined);
+  const dueDate = card.content?.due_date as string | null | undefined;
+  const completedAt = card.content?.completed_at as string | null | undefined;
+  const badge = dueBadge(dueState(dueDate, completedAt), dueDate);
   return (
     <div
       style={{
@@ -763,6 +1125,22 @@ function Card({
         </span>
       )}
       <div style={styles.cardMeta}>
+        {badge && (
+          <span
+            style={{
+              ...styles.dueBadge,
+              color: badge.color,
+              borderColor: badge.color,
+            }}
+            title={
+              completedAt
+                ? `Entregada el ${fmtDateTime(completedAt)}`
+                : `Fecha límite: ${fmtDueDate(dueDate)}`
+            }
+          >
+            {badge.label}
+          </span>
+        )}
         {priority && (
           <span
             style={{ ...styles.priority, color: accent, borderColor: accent }}
@@ -888,6 +1266,35 @@ function Switch({
 }
 
 /**
+ * Fecha límite de entrega. Es opcional a propósito: las tarjetas sin fecha
+ * quedan fuera del porcentaje de puntualidad en lugar de contar como cumplidas,
+ * así que no vale la pena forzar una fecha inventada en cada captura rápida.
+ */
+function DueDateField({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (next: string) => void;
+}) {
+  return (
+    <label style={styles.field}>
+      <span style={styles.label}>Fecha límite</span>
+      <input
+        type="date"
+        style={styles.input}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+      />
+      <span style={styles.help}>
+        Opcional. Solo las tarjetas con fecha límite entran al reporte de
+        entrega a tiempo. El plazo vence al final del día.
+      </span>
+    </label>
+  );
+}
+
+/**
  * Campo compartido por los modales de crear y editar: marca la tarjeta como
  * responsabilidad del cliente. Solo se renderiza cuando hay un cliente.
  */
@@ -926,8 +1333,13 @@ function ImageField({
   onRemoveObject,
 }: {
   imageUrl: string | null;
-  onUpload: (file: File) => Promise<{ image_path: string; image_url: string } | null>;
-  onChange: (next: { image_url: string | null; image_path: string | null }) => void;
+  onUpload: (
+    file: File,
+  ) => Promise<{ image_path: string; image_url: string } | null>;
+  onChange: (next: {
+    image_url: string | null;
+    image_path: string | null;
+  }) => void;
   onRemoveObject: (path: string | null) => Promise<void>;
 }) {
   const [uploading, setUploading] = useState(false);
@@ -1035,9 +1447,7 @@ function ImageField({
         onChange={(e) => pick(e.target.files?.[0])}
       />
 
-      <span style={styles.help}>
-        El cliente la verá en su link público.
-      </span>
+      <span style={styles.help}>El cliente la verá en su link público.</span>
     </div>
   );
 }
@@ -1058,7 +1468,9 @@ function CardModal({
   lockedClientId?: string;
   onClose: () => void;
   onCreate: (v: CardFormValues) => Promise<void>;
-  onUpload: (file: File) => Promise<{ image_path: string; image_url: string } | null>;
+  onUpload: (
+    file: File,
+  ) => Promise<{ image_path: string; image_url: string } | null>;
   onRemoveObject: (path: string | null) => Promise<void>;
 }) {
   const [title, setTitle] = useState("");
@@ -1067,6 +1479,7 @@ function CardModal({
   const [assigneeId, setAssigneeId] = useState("");
   const [clientId, setClientId] = useState("");
   const [assignedToClient, setAssignedToClient] = useState(false);
+  const [dueDate, setDueDate] = useState("");
   const [image, setImage] = useState<{
     image_url: string | null;
     image_path: string | null;
@@ -1086,6 +1499,7 @@ function CardModal({
       assignee_id: assigneeId,
       client_id: clientId,
       assigned_to_client: assignedToClient,
+      due_date: dueDate,
       ...image,
     });
     setSaving(false);
@@ -1153,6 +1567,8 @@ function CardModal({
           onRemoveObject={onRemoveObject}
         />
 
+        <DueDateField value={dueDate} onChange={setDueDate} />
+
         {!lockedClientId && (
           <label style={styles.field}>
             <span style={styles.label}>Cliente</span>
@@ -1215,7 +1631,9 @@ function EditCardModal({
   clients: Client[];
   onClose: () => void;
   onSave: (v: CardFormValues) => Promise<void>;
-  onUpload: (file: File) => Promise<{ image_path: string; image_url: string } | null>;
+  onUpload: (
+    file: File,
+  ) => Promise<{ image_path: string; image_url: string } | null>;
   onRemoveObject: (path: string | null) => Promise<void>;
 }) {
   const [title, setTitle] = useState(card.title);
@@ -1233,6 +1651,11 @@ function EditCardModal({
   );
   const [assignedToClient, setAssignedToClient] = useState(
     Boolean(card.content?.assigned_to_client),
+  );
+  // Un `date` de Postgres ya viene como "YYYY-MM-DD", el formato que espera
+  // <input type="date"> — no hace falta convertir nada.
+  const [dueDate, setDueDate] = useState(
+    (card.content?.due_date as string | null) ?? "",
   );
   const [image, setImage] = useState<{
     image_url: string | null;
@@ -1253,6 +1676,7 @@ function EditCardModal({
       assignee_id: assigneeId,
       client_id: clientId,
       assigned_to_client: assignedToClient,
+      due_date: dueDate,
       ...image,
     });
     setSaving(false);
@@ -1313,6 +1737,8 @@ function EditCardModal({
           </select>
         </label>
 
+        <DueDateField value={dueDate} onChange={setDueDate} />
+
         <label style={styles.field}>
           <span style={styles.label}>Cliente</span>
           <select
@@ -1351,6 +1777,15 @@ function EditCardModal({
             Creada el {fmtDateTime(card.content.created_at as string)}
           </span>
         )}
+
+        {typeof card.content?.completed_at === "string" && (
+          <span style={styles.help}>
+            Entregada el {fmtDateTime(card.content.completed_at)}
+            {card.content.due_date
+              ? ` · vencía el ${fmtDueDate(card.content.due_date as string)}`
+              : ""}
+          </span>
+        )}
       </div>
 
       <div style={styles.modalFooter}>
@@ -1375,6 +1810,7 @@ function EditCardModal({
 function ColumnModal({
   title: modalTitle,
   initialTitle = "",
+  initialIsDone = false,
   submitLabel,
   savingLabel,
   onClose,
@@ -1382,18 +1818,20 @@ function ColumnModal({
 }: {
   title: string;
   initialTitle?: string;
+  initialIsDone?: boolean;
   submitLabel: string;
   savingLabel: string;
   onClose: () => void;
-  onCreate: (title: string) => Promise<void>;
+  onCreate: (title: string, isDone: boolean) => Promise<void>;
 }) {
   const [title, setTitle] = useState(initialTitle);
+  const [isDone, setIsDone] = useState(initialIsDone);
   const [saving, setSaving] = useState(false);
 
   async function submit() {
     if (!title.trim()) return;
     setSaving(true);
-    await onCreate(title.trim());
+    await onCreate(title.trim(), isDone);
     setSaving(false);
   }
 
@@ -1410,6 +1848,19 @@ function ColumnModal({
             onKeyDown={(e) => e.key === "Enter" && submit()}
           />
         </label>
+
+        <div style={styles.field}>
+          <span style={styles.label}>Estado</span>
+          <Switch
+            checked={isDone}
+            onChange={setIsDone}
+            label="Columna de entrega"
+          />
+          <span style={styles.help}>
+            Al mover una tarjeta a esta columna se registra su entrega y empieza
+            a contar en el reporte de rendimiento.
+          </span>
+        </div>
       </div>
       <div style={styles.modalFooter}>
         <button onClick={onClose} style={styles.ghostBtn}>
@@ -1430,25 +1881,35 @@ function ColumnModal({
   );
 }
 
+/** Sirve para crear y para editar: la diferencia son solo las etiquetas. */
 function ClientModal({
+  title = "Nuevo cliente",
+  submitLabel = "Crear cliente",
+  initialName = "",
+  initialEmail = "",
   onClose,
-  onCreate,
+  onSave,
 }: {
+  title?: string;
+  submitLabel?: string;
+  initialName?: string;
+  initialEmail?: string;
   onClose: () => void;
-  onCreate: (name: string) => Promise<void>;
+  onSave: (name: string, email: string) => Promise<void>;
 }) {
-  const [name, setName] = useState("");
+  const [name, setName] = useState(initialName);
+  const [email, setEmail] = useState(initialEmail);
   const [saving, setSaving] = useState(false);
 
   async function submit() {
     if (!name.trim()) return;
     setSaving(true);
-    await onCreate(name.trim());
+    await onSave(name.trim(), email.trim());
     setSaving(false);
   }
 
   return (
-    <Modal title="Nuevo cliente" onClose={onClose}>
+    <Modal title={title} onClose={onClose}>
       <div style={styles.modalBody}>
         <label style={styles.field}>
           <span style={styles.label}>Nombre del cliente</span>
@@ -1464,6 +1925,21 @@ function ClientModal({
             y quedará seleccionado en el tablero al crearlo.
           </span>
         </label>
+
+        <label style={styles.field}>
+          <span style={styles.label}>Correo</span>
+          <input
+            type="email"
+            style={styles.input}
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && submit()}
+          />
+          <span style={styles.help}>
+            Se le avisa a esta dirección cuando una tarea queda marcada como
+            pendiente de su parte. Sin correo, el aviso simplemente se omite.
+          </span>
+        </label>
       </div>
       <div style={styles.modalFooter}>
         <button onClick={onClose} style={styles.ghostBtn}>
@@ -1477,7 +1953,7 @@ function ClientModal({
             opacity: saving || !name.trim() ? 0.5 : 1,
           }}
         >
-          {saving ? "Creando…" : "Crear cliente"}
+          {saving ? "Guardando…" : submitLabel}
         </button>
       </div>
     </Modal>
@@ -1502,6 +1978,24 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: 13,
     outline: "none",
     minWidth: 220,
+  },
+  noticeBox: {
+    background: "#14201c",
+    border: "1px solid #1f3a32",
+    color: "#8fd8c0",
+    padding: "8px 14px",
+    borderRadius: 8,
+    fontSize: 12,
+    marginBottom: 12,
+  },
+  noticeBoxWarn: {
+    background: "#231c10",
+    border: "1px solid #4a3a18",
+    color: "#e6c078",
+    padding: "8px 14px",
+    borderRadius: 8,
+    fontSize: 12,
+    marginBottom: 12,
   },
   errorBox: {
     background: "#2a1515",
@@ -1648,6 +2142,15 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: 6,
     padding: "2px 8px",
   },
+  dueBadge: {
+    fontSize: 10,
+    letterSpacing: 0.3,
+    borderWidth: 1,
+    borderStyle: "solid",
+    borderRadius: 6,
+    padding: "2px 8px",
+    whiteSpace: "nowrap",
+  },
   assignee: {
     display: "inline-flex",
     alignItems: "center",
@@ -1656,6 +2159,65 @@ const styles: Record<string, React.CSSProperties> = {
     color: "#bbb",
     marginLeft: "auto",
   },
+  statsPanel: {
+    background: "#111",
+    border: "1px solid #222",
+    borderRadius: 10,
+    padding: "14px 16px",
+    marginBottom: 14,
+    display: "flex",
+    flexDirection: "column",
+    gap: 12,
+  },
+  statsHeader: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+    flexWrap: "wrap",
+  },
+  statsTitle: { fontSize: 13, fontWeight: 600, color: "#fff" },
+  statsRanges: { display: "inline-flex", gap: 6 },
+  rangeBtn: {
+    padding: "4px 10px",
+    background: "transparent",
+    border: "1px solid #2a2a2a",
+    borderRadius: 6,
+    color: "#888",
+    fontSize: 11,
+    cursor: "pointer",
+  },
+  rangeBtnActive: {
+    borderColor: "#4a4a4a",
+    color: "#fff",
+    background: "#1c1c1c",
+  },
+  statsGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))",
+    gap: 10,
+  },
+  statCard: {
+    background: "#161616",
+    border: "1px solid #232323",
+    borderRadius: 8,
+    padding: "10px 12px",
+    display: "flex",
+    flexDirection: "column",
+    gap: 2,
+  },
+  statName: { fontSize: 12, color: "#bbb", fontWeight: 600 },
+  statRate: { fontSize: 26, fontWeight: 700, lineHeight: 1.1 },
+  statRateEmpty: {
+    fontSize: 26,
+    fontWeight: 700,
+    color: "#555",
+    lineHeight: 1.1,
+  },
+  statDetail: { fontSize: 11, color: "#777" },
+  statLate: { fontSize: 11, color: "#ff8080" },
+  statOverdue: { fontSize: 11, color: "#e6b800" },
+  statExcluded: { fontSize: 11, color: "#666" },
   avatarImg: {
     width: 20,
     height: 20,

@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import Header from "@/components/layout/Header";
 import { fmtDateTime } from "@/lib/format";
+import { dueBadge, dueState } from "@/lib/delivery";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type {
   Client,
@@ -118,18 +119,18 @@ export default async function PublicKanbanPage({
   );
 }
 
-function Card({
-  card,
-  members,
-}: {
-  card: KanbanCard;
-  members: TeamMember[];
-}) {
+function Card({ card, members }: { card: KanbanCard; members: TeamMember[] }) {
   const accent = card.priority
     ? (PRIORITY_COLOR[card.priority] ?? "#555")
     : "#555";
   const assignee = members.find((m) => m.id === card.assignee_id);
   const waitingOnClient = card.assigned_to_client;
+  // El estado de plazo se calcula con la zona del negocio, así que sale igual
+  // aquí (Server Component en UTC) que en el dashboard del equipo.
+  const dueInfo = dueBadge(
+    dueState(card.due_date, card.completed_at),
+    card.due_date,
+  );
 
   return (
     <div
@@ -138,7 +139,9 @@ function Card({
         ...(waitingOnClient ? styles.cardWaitingClient : null),
       }}
     >
-      {waitingOnClient && <span style={styles.waitingTag}>Pendiente de ti</span>}
+      {waitingOnClient && (
+        <span style={styles.waitingTag}>Pendiente de ti</span>
+      )}
       <span style={styles.cardTitle}>{card.title}</span>
       {card.image_url && (
         // Se enlaza al original para que el cliente pueda ampliarla.
@@ -151,15 +154,24 @@ function Card({
           />
         </a>
       )}
-      {card.description && (
-        <p style={styles.cardDesc}>{card.description}</p>
-      )}
+      {card.description && <p style={styles.cardDesc}>{card.description}</p>}
       {card.created_at && (
         <span style={styles.createdAt}>
           Creada el {fmtDateTime(card.created_at)}
         </span>
       )}
       <div style={styles.cardMeta}>
+        {dueInfo && (
+          <span
+            style={{
+              ...styles.dueBadge,
+              color: dueInfo.color,
+              borderColor: dueInfo.color,
+            }}
+          >
+            {dueInfo.label}
+          </span>
+        )}
         {card.priority && (
           <span
             style={{ ...styles.priority, color: accent, borderColor: accent }}
@@ -286,6 +298,15 @@ const styles: Record<string, React.CSSProperties> = {
     justifyContent: "space-between",
     gap: 8,
     flexWrap: "wrap",
+  },
+  dueBadge: {
+    fontSize: 10,
+    letterSpacing: 0.3,
+    borderWidth: 1,
+    borderStyle: "solid",
+    borderRadius: 6,
+    padding: "2px 8px",
+    whiteSpace: "nowrap",
   },
   priority: {
     fontSize: 10,

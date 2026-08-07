@@ -5,9 +5,10 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import KanbanBoard from "./KanbanBoard";
 import Solicitudes from "./Solicitudes";
+import Facturacion from "./Facturacion";
 import { RESOURCES, emptyRecord, type Field, type Resource } from "./resources";
 
-type View = "resource" | "kanban" | "solicitudes";
+type View = "resource" | "kanban" | "solicitudes" | "facturacion";
 
 type Row = Record<string, unknown> & { id?: string };
 
@@ -155,6 +156,20 @@ export default function Dashboard({ userEmail }: { userEmail: string }) {
           >
             Solicitudes
           </button>
+
+          <button
+            onClick={() => {
+              setView("facturacion");
+              setEditing(null);
+            }}
+            style={{
+              ...styles.navItem,
+              background: view === "facturacion" ? "#1e1e1e" : "transparent",
+              color: view === "facturacion" ? "#fff" : "#999",
+            }}
+          >
+            Facturación
+          </button>
         </nav>
 
         <div style={{ marginTop: "auto", paddingTop: 24 }}>
@@ -171,7 +186,8 @@ export default function Dashboard({ userEmail }: { userEmail: string }) {
       <section
         style={{
           ...styles.content,
-          maxWidth: view === "kanban" ? "none" : 1000,
+          maxWidth:
+            view === "kanban" ? "none" : view === "facturacion" ? 1200 : 1000,
         }}
       >
         {view === "kanban" ? (
@@ -192,6 +208,18 @@ export default function Dashboard({ userEmail }: { userEmail: string }) {
               </div>
             </div>
             <Solicitudes supabase={supabase} />
+          </>
+        ) : view === "facturacion" ? (
+          <>
+            <div style={styles.header}>
+              <div>
+                <h1 style={{ fontSize: 28, margin: 0 }}>Facturación</h1>
+                <p style={{ color: "#888", fontSize: 13, marginTop: 6 }}>
+                  Facturas a clientes y pagos al equipo, con abonos parciales
+                </p>
+              </div>
+            </div>
+            <Facturacion supabase={supabase} />
           </>
         ) : (
           <>

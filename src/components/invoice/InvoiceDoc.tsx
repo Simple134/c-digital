@@ -1,0 +1,210 @@
+import { fmtDateTime } from "@/lib/format";
+import {
+  computeTotals,
+  fmtMoney,
+  itemTotal,
+  STATUS_LABEL,
+} from "@/lib/invoices";
+import type {
+  Invoice,
+  InvoiceItem,
+  InvoicePayment,
+} from "@/lib/supabase/types";
+
+/**
+ * La factura tal como se imprime y se envía.
+ *
+ * Es un Server Component sin estado: la misma marca sirve para la página
+ * pública, para la vista previa del dashboard y —serializada— para el correo.
+ * Todo va en estilos inline porque el destino final es un PDF impreso y un
+ * cliente de correo: ninguno de los dos carga hojas de estilo externas.
+ */
+export default function InvoiceDoc({
+  invoice,
+  items,
+  payments,
+}: {
+  invoice: Invoice;
+  items: InvoiceItem[];
+  payments: InvoicePayment[];
+}) {
+  const t = computeTotals(invoice, items, payments);
+  const cur = invoice.currency;
+
+  return (
+    <article style={S.sheet}>
+      {/* Encabezado: destinatario a la izquierda, fecha y estado a la derecha */}
+      <header style={S.top}>
+        <div>
+          <div style={S.muted}>
+            {invoice.party_type === "client" ? "Cliente:" : "Colaborador:"}
+          </div>
+          <div style={S.partyName}>{invoice.party_name}</div>
+          <div style={S.rule} />
+        </div>
+        <div style={{ textAlign: "right" }}>
+          <div style={S.dateLine}>Fecha: {fmtDateTime(invoice.issued_at)}</div>
+          <div style={{ ...S.muted, marginTop: 14 }}>Estado de la Factura</div>
+          <div style={S.statusLine}>
+            {STATUS_LABEL[t.status]} {fmtMoney(Math.max(t.balance, 0), cur)}
+          </div>
+        </div>
+      </header>
+
+      <h1 style={S.invoiceNo}>Factura #{invoice.number}</h1>
+
+      {/* Ítems */}
+      <div style={S.itemsHead}>
+        <span>Precio</span>
+        <span>Cantidad</span>
+        <span>Total</span>
+      </div>
+      {items.map((it) => (
+        <div key={it.id} style={{ marginTop: 18 }}>
+          <div style={S.concept}>{it.concept}</div>
+          <div style={S.itemsRow}>
+            <span>{fmtMoney(Number(it.unit_price), cur)}</span>
+            <span>
+              {Number(it.quantity)} {it.unit}
+            </span>
+            <span>{fmtMoney(itemTotal(it), cur)}</span>
+          </div>
+        </div>
+      ))}
+      {items.length === 0 && (
+        <div style={{ ...S.muted, marginTop: 18 }}>Sin conceptos.</div>
+      )}
+
+      {/* Totales */}
+      <div style={S.totals}>
+        <div style={S.discount}>Descuento: {fmtMoney(t.discount, cur)}</div>
+        {t.tax > 0 && (
+          <div style={S.discount}>
+            ITBIS ({Number(invoice.tax_rate)}%): {fmtMoney(t.tax, cur)}
+          </div>
+        )}
+        <div style={S.total}>Total: {fmtMoney(t.total, cur)}</div>
+      </div>
+
+      {/* Abonos */}
+      {payments.length > 0 && (
+        <section style={{ marginTop: 46 }}>
+          <div style={S.payHead}>
+            <span>Método de pago</span>
+            <span>Fecha</span>
+            <span style={{ textAlign: "right" }}>Cantidad</span>
+          </div>
+          {payments.map((p) => (
+            <div key={p.id} style={S.payRow}>
+              <span>{p.method}</span>
+              <span>{fmtDateTime(p.paid_at)}</span>
+              <span style={{ textAlign: "right" }}>
+                {fmtMoney(Number(p.amount), cur)}
+              </span>
+            </div>
+          ))}
+          {t.balance > 0 && (
+            <div style={S.balance}>
+              Saldo pendiente: {fmtMoney(t.balance, cur)}
+            </div>
+          )}
+        </section>
+      )}
+
+      {invoice.description && (
+        <section style={{ marginTop: 46 }}>
+          <h2 style={S.h2}>Descripción de Factura</h2>
+          <p style={S.body}>{invoice.description}</p>
+        </section>
+      )}
+
+      <div style={{ marginTop: 30, fontSize: 13, fontWeight: 700 }}>
+        Nota:{" "}
+        <span style={{ fontWeight: 400, color: "#ccc" }}>
+          {invoice.note ?? ""}
+        </span>
+      </div>
+
+      <footer style={S.footer}>
+        <div style={S.logo}>
+          C Digital<span style={{ color: "#00e5a0" }}>.</span>
+        </div>
+        <div style={S.linktree}>Linktree: C Digital</div>
+      </footer>
+    </article>
+  );
+}
+
+const S: Record<string, React.CSSProperties> = {
+  sheet: {
+    background: "#0a0a0a",
+    color: "#fff",
+    padding: "64px 56px",
+    maxWidth: 820,
+    margin: "0 auto",
+    fontFamily: "Helvetica, Arial, sans-serif",
+    // El PDF del ejemplo es una hoja completa en negro; sin esto la impresión
+    // deja franjas blancas arriba y abajo.
+    minHeight: "100vh",
+    boxSizing: "border-box",
+  },
+  top: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    gap: 24,
+  },
+  muted: { fontSize: 13, color: "#bbb" },
+  partyName: { fontSize: 26, fontWeight: 400, marginTop: 4 },
+  rule: {
+    width: 110,
+    borderBottom: "2px solid #fff",
+    marginTop: 10,
+  },
+  dateLine: { fontSize: 15, fontWeight: 700 },
+  statusLine: { fontSize: 26, marginTop: 2 },
+  invoiceNo: { fontSize: 30, fontWeight: 700, margin: "44px 0 34px" },
+  itemsHead: {
+    display: "grid",
+    gridTemplateColumns: "1fr 1fr 1fr",
+    fontSize: 13,
+    fontWeight: 700,
+    color: "#fff",
+  },
+  concept: { fontStyle: "italic", fontSize: 14, color: "#ddd" },
+  itemsRow: {
+    display: "grid",
+    gridTemplateColumns: "1fr 1fr 1fr",
+    fontSize: 14,
+    marginTop: 12,
+    color: "#eee",
+  },
+  totals: { marginTop: 56, textAlign: "right" },
+  discount: { fontSize: 13, fontWeight: 700, marginBottom: 8 },
+  total: { fontSize: 28 },
+  payHead: {
+    display: "grid",
+    gridTemplateColumns: "1fr 1.4fr 1fr",
+    fontSize: 13,
+    fontWeight: 700,
+  },
+  payRow: {
+    display: "grid",
+    gridTemplateColumns: "1fr 1.4fr 1fr",
+    fontSize: 14,
+    color: "#ddd",
+    marginTop: 14,
+  },
+  balance: {
+    marginTop: 22,
+    textAlign: "right",
+    fontSize: 15,
+    fontWeight: 700,
+    color: "#e6b800",
+  },
+  h2: { fontSize: 24, fontWeight: 400, margin: "0 0 6px" },
+  body: { fontSize: 13, color: "#ccc", margin: 0 },
+  footer: { marginTop: 80 },
+  logo: { fontSize: 54, fontWeight: 300, letterSpacing: -1 },
+  linktree: { textAlign: "right", fontSize: 13, color: "#ddd", marginTop: 26 },
+};
