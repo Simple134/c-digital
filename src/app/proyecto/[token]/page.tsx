@@ -59,9 +59,12 @@ export default async function PublicKanbanPage({
   const { token } = await params;
   const supabase = createAdminClient();
 
+  // Solo lo que esta página necesita. Con `*` la service role key traería
+  // también `notes`, `tax_id` y el resto de la ficha interna a un render que el
+  // cliente puede ver: no hay razón para que ese dato salga de la base.
   const { data: client } = await supabase
     .from("clients")
-    .select("*")
+    .select("id, name")
     .eq("public_token", token)
     .maybeSingle();
 
@@ -76,7 +79,7 @@ export default async function PublicKanbanPage({
       supabase
         .from("kanban_cards")
         .select("*")
-        .eq("client_id", (client as Client).id)
+        .eq("client_id", (client as Pick<Client, "id" | "name">).id)
         .order("sort_order", { ascending: true }),
       supabase.from("team_members").select("*"),
     ]);
@@ -90,7 +93,9 @@ export default async function PublicKanbanPage({
       <Header dark minimal />
       <header style={styles.intro}>
         <span style={styles.introLabel}>Proyecto de</span>
-        <h1 style={styles.introTitle}>{(client as Client).name}</h1>
+        <h1 style={styles.introTitle}>
+          {(client as Pick<Client, "id" | "name">).name}
+        </h1>
       </header>
       <div style={styles.board}>
         {cols.map((col) => {

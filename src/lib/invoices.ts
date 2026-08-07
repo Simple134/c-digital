@@ -95,6 +95,34 @@ export function paymentWarning(amount: number, balance: number): string | null {
   return `El abono (${amount}) supera el saldo pendiente (${balance}). ¿Registrarlo de todas formas?`;
 }
 
+/**
+ * Datos del cliente que se congelan en la factura al emitirla.
+ *
+ * Se copian en vez de leerse por JOIN a propósito: la factura ya enviada no
+ * debe cambiar si después se corrige el RNC o se renombra al cliente.
+ *
+ * `party_name` es la razón social cuando existe, y el nombre corto cuando no.
+ * Decidido así porque es el nombre con validez fiscal en RD; el nombre comercial
+ * queda solo para el panel. Este es el único punto que lo determina.
+ */
+export function clientBillingSnapshot(client: {
+  name: string;
+  email: string | null;
+  company: string | null;
+  tax_id: string | null;
+  phone: string | null;
+  address: string | null;
+}) {
+  return {
+    party_name: client.company?.trim() || client.name,
+    party_email: client.email ?? null,
+    party_company: client.company ?? null,
+    party_tax_id: client.tax_id ?? null,
+    party_phone: client.phone ?? null,
+    party_address: client.address ?? null,
+  };
+}
+
 /** Métodos de pago sugeridos; el campo admite texto libre. */
 export const PAYMENT_METHODS = [
   "Efectivo",

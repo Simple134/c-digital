@@ -40,6 +40,21 @@ export default function InvoiceDoc({
             {invoice.party_type === "client" ? "Cliente:" : "Colaborador:"}
           </div>
           <div style={S.partyName}>{invoice.party_name}</div>
+          {/* Datos fiscales congelados al emitir. Cada línea se omite si falta,
+              para que una factura vieja (sin snapshot) no imprima huecos. */}
+          {invoice.party_tax_id && (
+            <div style={S.partyLine}>RNC/Cédula: {invoice.party_tax_id}</div>
+          )}
+          {invoice.party_address && (
+            <div style={S.partyLine}>{invoice.party_address}</div>
+          )}
+          {(invoice.party_phone || invoice.party_email) && (
+            <div style={S.partyLine}>
+              {[invoice.party_phone, invoice.party_email]
+                .filter(Boolean)
+                .join(" · ")}
+            </div>
+          )}
           <div style={S.rule} />
         </div>
         <div style={{ textAlign: "right" }}>
@@ -156,6 +171,7 @@ const S: Record<string, React.CSSProperties> = {
   },
   muted: { fontSize: 13, color: "#bbb" },
   partyName: { fontSize: 26, fontWeight: 400, marginTop: 4 },
+  partyLine: { fontSize: 13, color: "#bbb", marginTop: 3 },
   rule: {
     width: 110,
     borderBottom: "2px solid #fff",

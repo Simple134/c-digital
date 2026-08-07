@@ -140,24 +140,9 @@ export const RESOURCES: Resource[] = [
       { key: "sort_order", label: "Orden", type: "number" },
     ],
   },
-  {
-    table: "clients",
-    label: "Clientes",
-    singular: "cliente",
-    titleKey: "name",
-    subtitleKey: "public_token",
-    fields: [
-      { key: "name", label: "Nombre", type: "text" },
-      {
-        key: "public_token",
-        label: "Token del link público",
-        type: "text",
-        optional: true,
-        help: "Déjalo vacío al crear para que se genere automáticamente. El link público es /proyecto/<token>.",
-      },
-      { key: "sort_order", label: "Orden", type: "number" },
-    ],
-  },
+  // `clients` no está aquí a propósito: tiene su propia vista (Clientes.tsx),
+  // porque la ficha necesita mostrar las facturas y las tareas del cliente y
+  // este CRUD declarativo solo sabe leer una tabla.
   {
     table: "brands",
     label: "Marcas",

@@ -119,7 +119,21 @@ function buildBoardData(
   return data;
 }
 
-export default function KanbanBoard({ supabase }: { supabase: Supabase }) {
+export default function KanbanBoard({
+  supabase,
+  // Cliente con el que entrar al tablero, enviado desde la ficha de Clientes:
+  // filtra el tablero por él y deja el selector listo para crear su tarea.
+  prefillClientId,
+  // Tarjeta concreta a abrir al entrar, cuando el salto viene de una tarea de la
+  // ficha del cliente y no del botón general de "asignar tarea".
+  prefillCardId,
+  onPrefillUsed,
+}: {
+  supabase: Supabase;
+  prefillClientId?: string | null;
+  prefillCardId?: string | null;
+  onPrefillUsed?: () => void;
+}) {
   const [data, setData] = useState<BoardData | null>(null);
   // Se guardan las filas de columnas además del BoardData porque `is_done` no
   // cabe en el modelo de react-kanban-kit y hace falta para sellar las entregas.
@@ -196,7 +210,34 @@ export default function KanbanBoard({ supabase }: { supabase: Supabase }) {
     load();
   }, [load]);
 
+  // La tarjeta a abrir se guarda pendiente: cuando llega la prop el tablero
+  // todavía puede estar cargando, y `data[cardId]` no existiría aún.
+  const [pendingCardId, setPendingCardId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!prefillClientId && !prefillCardId) return;
+    if (prefillClientId) setSelectedClientId(prefillClientId);
+    if (prefillCardId) setPendingCardId(prefillCardId);
+    onPrefillUsed?.();
+  }, [prefillClientId, prefillCardId, onPrefillUsed]);
+
+  useEffect(() => {
+    if (!pendingCardId || !data) return;
+    const card = data[pendingCardId];
+    // Si la tarjeta ya no existe (la borraron entre pantallas) se descarta sin
+    // más: abrir un modal vacío sería peor que no abrir nada.
+    if (card) setEditingCard(card);
+    setPendingCardId(null);
+  }, [pendingCardId, data]);
+
   const selectedClient = clients.find((c) => c.id === selectedClientId);
+
+  // Los archivados salen de los selectores pero no del tablero: sus tarjetas
+  // viejas siguen existiendo y deben poder verse.
+  const activeClients = useMemo(
+    () => clients.filter((c) => c.active !== false),
+    [clients],
+  );
 
   const doneColumnIds = useMemo(
     () => new Set(columns.filter((c) => c.is_done).map((c) => c.id)),
@@ -740,9 +781,15 @@ export default function KanbanBoard({ supabase }: { supabase: Supabase }) {
           onChange={(e) => setSelectedClientId(e.target.value)}
         >
           <option value="">Todos (vista interna)</option>
-          {clients.map((c) => (
+          {/* Un cliente archivado solo aparece si es el que ya está filtrado:
+              así el filtro no se vacía solo al archivarlo. */}
+          {(selectedClient && selectedClient.active === false
+            ? [...activeClients, selectedClient]
+            : activeClients
+          ).map((c) => (
             <option key={c.id} value={c.id}>
               {c.name}
+              {c.active === false ? " (archivado)" : ""}
             </option>
           ))}
         </select>
@@ -886,7 +933,7 @@ export default function KanbanBoard({ supabase }: { supabase: Supabase }) {
         <CardModal
           columnTitle={cardModalColumn.title}
           members={members}
-          clients={clients}
+          clients={activeClients}
           lockedClientId={selectedClientId || undefined}
           onClose={() => setCardModalColumn(null)}
           onCreate={createCard}

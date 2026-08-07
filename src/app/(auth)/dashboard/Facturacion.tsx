@@ -10,6 +10,7 @@ import {
 import InvoicePrintButton from "@/components/invoice/InvoicePrintButton";
 import { fmtDateTime } from "@/lib/format";
 import {
+  clientBillingSnapshot,
   computeTotals,
   fmtMoney,
   itemTotal,
@@ -62,7 +63,18 @@ function toLocalInput(iso: string): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-export default function Facturacion({ supabase }: { supabase: Supabase }) {
+export default function Facturacion({
+  supabase,
+  // Cliente con el que abrir una factura nueva al entrar. Lo manda la ficha de
+  // Clientes; `onPrefillUsed` lo limpia para que cerrar el formulario y volver
+  // a la sección no lo reabra solo.
+  prefillClientId,
+  onPrefillUsed,
+}: {
+  supabase: Supabase;
+  prefillClientId?: string | null;
+  onPrefillUsed?: () => void;
+}) {
   const [invoices, setInvoices] = useState<FullInvoice[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
   const [team, setTeam] = useState<TeamMember[]>([]);
@@ -110,6 +122,17 @@ export default function Facturacion({ supabase }: { supabase: Supabase }) {
   useEffect(() => {
     load();
   }, [load]);
+
+  // El id se copia a estado local antes de avisar al padre: si solo leyéramos la
+  // prop, el `onPrefillUsed` la dejaría en null en el mismo ciclo y el editor
+  // abriría sin cliente seleccionado.
+  const [prefilled, setPrefilled] = useState<string | null>(null);
+  useEffect(() => {
+    if (!prefillClientId) return;
+    setPrefilled(prefillClientId);
+    setEditing("new");
+    onPrefillUsed?.();
+  }, [prefillClientId, onPrefillUsed]);
 
   async function removeInvoice(inv: FullInvoice) {
     if (
@@ -280,9 +303,14 @@ export default function Facturacion({ supabase }: { supabase: Supabase }) {
           clients={clients}
           team={team}
           invoice={editing === "new" ? null : editing}
-          onClose={() => setEditing(null)}
+          defaultClientId={editing === "new" ? prefilled : null}
+          onClose={() => {
+            setEditing(null);
+            setPrefilled(null);
+          }}
           onSaved={() => {
             setEditing(null);
+            setPrefilled(null);
             load();
           }}
         />
@@ -536,6 +564,7 @@ function InvoiceEditor({
   clients,
   team,
   invoice,
+  defaultClientId,
   onClose,
   onSaved,
 }: {
@@ -543,6 +572,7 @@ function InvoiceEditor({
   clients: Client[];
   team: TeamMember[];
   invoice: FullInvoice | null;
+  defaultClientId?: string | null;
   onClose: () => void;
   onSaved: () => void;
 }) {
@@ -550,7 +580,7 @@ function InvoiceEditor({
     invoice?.party_type ?? "client",
   );
   const [partyId, setPartyId] = useState<string>(
-    invoice?.client_id ?? invoice?.team_member_id ?? "",
+    invoice?.client_id ?? invoice?.team_member_id ?? defaultClientId ?? "",
   );
   const [currency, setCurrency] = useState<InvoiceCurrency>(
     invoice?.currency ?? "DOP",
@@ -580,7 +610,14 @@ function InvoiceEditor({
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
-  const options = partyType === "client" ? clients : team;
+  // Los clientes archivados no se ofrecen, pero el de una factura ya emitida sí
+  // sigue en la lista: si no, editarla vaciaría el destinatario.
+  const options =
+    partyType === "client"
+      ? clients.filter(
+          (c) => c.active !== false || c.id === invoice?.client_id,
+        )
+      : team;
 
   const preview = computeTotals(
     { discount: Number(discount) || 0, tax_rate: withTax ? ITBIS : 0 },
@@ -607,14 +644,25 @@ function InvoiceEditor({
 
     setSaving(true);
 
+    // Al cliente se le congela la ficha fiscal completa; al colaborador solo
+    // nombre y correo, porque a un miembro del equipo no se le factura con RNC.
+    const partySnapshot =
+      partyType === "client"
+        ? clientBillingSnapshot(party as Client)
+        : {
+            party_name: party.name,
+            party_email: party.email ?? null,
+            party_company: null,
+            party_tax_id: null,
+            party_phone: null,
+            party_address: null,
+          };
+
     const base = {
       party_type: partyType,
       client_id: partyType === "client" ? party.id : null,
       team_member_id: partyType === "team" ? party.id : null,
-      // Se congelan nombre y correo: la factura emitida no debe cambiar si
-      // después se renombra al cliente.
-      party_name: party.name,
-      party_email: party.email ?? null,
+      ...partySnapshot,
       issued_at: new Date(issuedAt).toISOString(),
       currency,
       discount: Number(discount) || 0,

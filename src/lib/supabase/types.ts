@@ -98,6 +98,28 @@ export interface Client {
   // Destinatario de los avisos de tareas pendientes del cliente. Null = no se
   // le puede notificar (el tablero lo advierte en lugar de fallar).
   email: string | null;
+  // Razón social. Si está presente es el nombre que se imprime en la factura;
+  // `name` sigue siendo el nombre corto con el que se le llama en el panel.
+  company: string | null;
+  contact_name: string | null;
+  phone: string | null;
+  // RNC o cédula, imprescindible para una factura con ITBIS válida en RD.
+  tax_id: string | null;
+  address: string | null;
+  // Ya normalizada con esquema (https://…) al guardarse, para poder enlazarla
+  // sin volver a validarla en cada lugar que la muestre.
+  website: string | null;
+  // Solo el día (YYYY-MM-DD): sirve para felicitarlo, no para facturar.
+  birth_date: string | null;
+  notes: string | null;
+  // Campos adicionales que define el equipo, distintos para cada cliente
+  // (Instagram, número de contrato, contacto secundario…). Mapa plano por
+  // CHECK en la base de datos: nada de anidamiento.
+  custom_fields: Record<string, string>;
+  // false = archivado. Desaparece de los selectores de factura y de tareas pero
+  // conserva su historial, que es justo lo que borrarlo destruiría.
+  active: boolean;
+  sort_order: number;
   created_at: string;
 }
 
@@ -193,6 +215,12 @@ export interface Invoice {
   // si después se renombra o se borra el cliente.
   party_name: string;
   party_email: string | null;
+  // Resto del snapshot fiscal, congelado igual que el nombre. Solo se llena para
+  // clientes: a un miembro del equipo no se le factura con RNC.
+  party_company: string | null;
+  party_tax_id: string | null;
+  party_phone: string | null;
+  party_address: string | null;
   issued_at: string;
   currency: InvoiceCurrency;
   discount: number;

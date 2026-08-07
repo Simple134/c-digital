@@ -3,12 +3,13 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import Clientes from "./Clientes";
 import KanbanBoard from "./KanbanBoard";
 import Solicitudes from "./Solicitudes";
 import Facturacion from "./Facturacion";
 import { RESOURCES, emptyRecord, type Field, type Resource } from "./resources";
 
-type View = "resource" | "kanban" | "solicitudes" | "facturacion";
+type View = "resource" | "clientes" | "kanban" | "solicitudes" | "facturacion";
 
 type Row = Record<string, unknown> & { id?: string };
 
@@ -22,6 +23,26 @@ export default function Dashboard({ userEmail }: { userEmail: string }) {
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<Row | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // Cliente que la ficha de Clientes manda a otra vista para trabajar con él
+  // (facturarle o asignarle una tarea). La vista destino lo consume y lo limpia.
+  const [handoffClientId, setHandoffClientId] = useState<string | null>(null);
+  // Tarjeta concreta que el Kanban debe abrir al recibir el salto.
+  const [handoffCardId, setHandoffCardId] = useState<string | null>(null);
+
+  const handoff = useCallback(
+    (view: View, clientId: string, cardId?: string) => {
+      setEditing(null);
+      setHandoffClientId(clientId);
+      setHandoffCardId(cardId ?? null);
+      setView(view);
+    },
+    [],
+  );
+
+  const clearHandoff = useCallback(() => {
+    setHandoffClientId(null);
+    setHandoffCardId(null);
+  }, []);
 
   const load = useCallback(
     async (resource: Resource) => {
@@ -131,6 +152,20 @@ export default function Dashboard({ userEmail }: { userEmail: string }) {
 
           <button
             onClick={() => {
+              setView("clientes");
+              setEditing(null);
+            }}
+            style={{
+              ...styles.navItem,
+              background: view === "clientes" ? "#1e1e1e" : "transparent",
+              color: view === "clientes" ? "#fff" : "#999",
+            }}
+          >
+            Clientes
+          </button>
+
+          <button
+            onClick={() => {
               setView("kanban");
               setEditing(null);
             }}
@@ -187,15 +222,42 @@ export default function Dashboard({ userEmail }: { userEmail: string }) {
         style={{
           ...styles.content,
           maxWidth:
-            view === "kanban" ? "none" : view === "facturacion" ? 1200 : 1000,
+            view === "kanban"
+              ? "none"
+              : view === "facturacion" || view === "clientes"
+                ? 1200
+                : 1000,
         }}
       >
-        {view === "kanban" ? (
+        {view === "clientes" ? (
+          <>
+            <div style={styles.header}>
+              <div>
+                <h1 style={{ fontSize: 28, margin: 0 }}>Clientes</h1>
+                <p style={{ color: "#888", fontSize: 13, marginTop: 6 }}>
+                  Ficha, datos fiscales e historial: desde aquí se factura y se
+                  asignan tareas
+                </p>
+              </div>
+            </div>
+            <Clientes
+              supabase={supabase}
+              onCreateInvoice={(id) => handoff("facturacion", id)}
+              onAssignTask={(id) => handoff("kanban", id)}
+              onOpenTask={(id, cardId) => handoff("kanban", id, cardId)}
+            />
+          </>
+        ) : view === "kanban" ? (
           <>
             <div style={styles.header}>
               <h1 style={{ fontSize: 28, margin: 0 }}>Kanban</h1>
             </div>
-            <KanbanBoard supabase={supabase} />
+            <KanbanBoard
+              supabase={supabase}
+              prefillClientId={handoffClientId}
+              prefillCardId={handoffCardId}
+              onPrefillUsed={clearHandoff}
+            />
           </>
         ) : view === "solicitudes" ? (
           <>
@@ -219,7 +281,11 @@ export default function Dashboard({ userEmail }: { userEmail: string }) {
                 </p>
               </div>
             </div>
-            <Facturacion supabase={supabase} />
+            <Facturacion
+              supabase={supabase}
+              prefillClientId={handoffClientId}
+              onPrefillUsed={clearHandoff}
+            />
           </>
         ) : (
           <>
