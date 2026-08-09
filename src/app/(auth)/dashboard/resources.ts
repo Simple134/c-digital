@@ -9,6 +9,11 @@ export interface Field {
   type: FieldType;
   optional?: boolean;
   help?: string;
+  /**
+   * Ruta relativa del sitio público que se ofrece copiar junto al campo
+   * (p. ej. "/registro"). El origen se resuelve con `siteOrigin()`.
+   */
+  copyPath?: string;
 }
 
 export interface Resource {
@@ -136,6 +141,7 @@ export const RESOURCES: Resource[] = [
         type: "text",
         optional: true,
         help: "Con este correo el miembro podrá registrarse en /registro y acceder al dashboard.",
+        copyPath: "/registro",
       },
       { key: "sort_order", label: "Orden", type: "number" },
     ],

@@ -10,6 +10,7 @@ import type {
   AuditLevel,
 } from "@/lib/supabase/types";
 import { AREAS, levelLabels } from "@/app/form/audit-data";
+import useIsMobile from "./useIsMobile";
 
 type Supabase = ReturnType<typeof createClient>;
 
@@ -62,6 +63,7 @@ export default function Solicitudes({ supabase }: { supabase: Supabase }) {
   const [filter, setFilter] = useState<FormSubmissionStatus | "todos">("todos");
   const [kindFilter, setKindFilter] = useState<Row["kind"] | "todos">("todos");
   const [expanded, setExpanded] = useState<string | null>(null);
+  const isMobile = useIsMobile();
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -160,6 +162,7 @@ export default function Solicitudes({ supabase }: { supabase: Supabase }) {
             onClick={() => setKindFilter(k)}
             style={{
               ...styles.filterChip,
+              ...(isMobile ? styles.touchChip : {}),
               ...(kindFilter === k ? styles.filterChipActive : {}),
             }}
           >
@@ -176,6 +179,7 @@ export default function Solicitudes({ supabase }: { supabase: Supabase }) {
           onClick={() => setFilter("todos")}
           style={{
             ...styles.filterChip,
+            ...(isMobile ? styles.touchChip : {}),
             ...(filter === "todos" ? styles.filterChipActive : {}),
           }}
         >
@@ -187,6 +191,7 @@ export default function Solicitudes({ supabase }: { supabase: Supabase }) {
             onClick={() => setFilter(s.value)}
             style={{
               ...styles.filterChip,
+              ...(isMobile ? styles.touchChip : {}),
               ...(filter === s.value
                 ? {
                     ...styles.filterChipActive,
@@ -221,6 +226,7 @@ export default function Solicitudes({ supabase }: { supabase: Supabase }) {
               onStatus={(s) => updateStatus(row, s)}
               onSaveNotes={(n) => saveNotes(row, n)}
               onDelete={() => remove(row)}
+              isMobile={isMobile}
             />
           ))}
         </div>
@@ -238,6 +244,7 @@ function RequestCard({
   onStatus,
   onSaveNotes,
   onDelete,
+  isMobile,
 }: {
   row: Row;
   expanded: boolean;
@@ -245,6 +252,7 @@ function RequestCard({
   onStatus: (s: FormSubmissionStatus) => void;
   onSaveNotes: (n: string) => Promise<boolean>;
   onDelete: () => void;
+  isMobile: boolean;
 }) {
   const [noteDraft, setNoteDraft] = useState(row.admin_notes ?? "");
   const [savingNote, setSavingNote] = useState(false);
@@ -293,10 +301,22 @@ function RequestCard({
       : [];
 
   return (
-    <div style={styles.card}>
-      <div style={styles.cardTop}>
+    <div style={{ ...styles.card, padding: isMobile ? 14 : 20 }}>
+      <div
+        style={{
+          ...styles.cardTop,
+          ...(isMobile ? { flexDirection: "column", gap: 6 } : null),
+        }}
+      >
         <div style={{ minWidth: 0 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+              flexWrap: "wrap",
+            }}
+          >
             <span style={{ fontWeight: 700, fontSize: 16 }}>{row.name}</span>
             <span
               style={{
@@ -404,7 +424,7 @@ function RequestCard({
         <select
           value={row.status}
           onChange={(e) => onStatus(e.target.value as FormSubmissionStatus)}
-          style={styles.select}
+          style={{ ...styles.select, ...(isMobile ? styles.touchInput : null) }}
         >
           {STATUSES.map((s) => (
             <option key={s.value} value={s.value}>
@@ -412,10 +432,19 @@ function RequestCard({
             </option>
           ))}
         </select>
-        <button onClick={onToggle} style={styles.ghostBtn}>
+        <button
+          onClick={onToggle}
+          style={{ ...styles.ghostBtn, ...(isMobile ? styles.touchBtn : null) }}
+        >
           {expanded ? "Ocultar detalle" : "Ver detalle"}
         </button>
-        <button onClick={onDelete} style={styles.dangerBtn}>
+        <button
+          onClick={onDelete}
+          style={{
+            ...styles.dangerBtn,
+            ...(isMobile ? { ...styles.touchBtn, marginLeft: 0 } : null),
+          }}
+        >
           Eliminar
         </button>
       </div>
@@ -426,7 +455,10 @@ function RequestCard({
           value={noteDraft}
           onChange={(e) => setNoteDraft(e.target.value)}
           placeholder="Notas de seguimiento internas…"
-          style={styles.noteInput}
+          style={{
+            ...styles.noteInput,
+            ...(isMobile ? { fontSize: 16 } : null),
+          }}
         />
         <div
           style={{
@@ -638,6 +670,11 @@ const styles: Record<string, CSSProperties> = {
     borderTop: "1px solid #232323",
   },
   controlLabel: { fontSize: 12, color: "#888" },
+  // Variantes táctiles: 16px evita el zoom de iOS al enfocar; 40px de alto es
+  // el mínimo cómodo para el dedo.
+  touchInput: { fontSize: 16, minHeight: 40 },
+  touchBtn: { minHeight: 40, fontSize: 14 },
+  touchChip: { minHeight: 40, padding: "8px 14px" },
   select: {
     background: "#1a1a1a",
     border: "1px solid #2a2a2a",

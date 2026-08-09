@@ -30,6 +30,7 @@ import type {
   InvoicePayment,
   TeamMember,
 } from "@/lib/supabase/types";
+import useIsMobile from "./useIsMobile";
 
 type Supabase = ReturnType<typeof createClient>;
 
@@ -88,6 +89,7 @@ export default function Facturacion({
   );
   const [editing, setEditing] = useState<FullInvoice | "new" | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
+  const isMobile = useIsMobile();
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -211,7 +213,15 @@ export default function Facturacion({
             </div>
           </div>
         ))}
-        <button onClick={() => setEditing("new")} style={s.primaryBtn}>
+        <button
+          onClick={() => setEditing("new")}
+          style={{
+            ...s.primaryBtn,
+            ...(isMobile
+              ? { ...s.touchBtn, marginLeft: 0, width: "100%" }
+              : null),
+          }}
+        >
           + Nueva factura
         </button>
       </div>
@@ -224,6 +234,7 @@ export default function Facturacion({
             onClick={() => setPartyFilter(p)}
             style={{
               ...s.chip,
+              ...(isMobile ? s.touchChip : null),
               ...(partyFilter === p ? s.chipActive : {}),
             }}
           >
@@ -241,6 +252,7 @@ export default function Facturacion({
           onClick={() => setStatusFilter("todos")}
           style={{
             ...s.chip,
+            ...(isMobile ? s.touchChip : null),
             ...(statusFilter === "todos" ? s.chipActive : {}),
           }}
         >
@@ -253,6 +265,7 @@ export default function Facturacion({
               onClick={() => setStatusFilter(st)}
               style={{
                 ...s.chip,
+                ...(isMobile ? s.touchChip : null),
                 ...(statusFilter === st
                   ? {
                       ...s.chipActive,
@@ -292,6 +305,7 @@ export default function Facturacion({
               onDelete={() => removeInvoice(inv)}
               onSend={() => sendEmail(inv)}
               onChanged={load}
+              isMobile={isMobile}
             />
           ))}
         </div>
@@ -331,6 +345,7 @@ function InvoiceCard({
   onDelete,
   onSend,
   onChanged,
+  isMobile,
 }: {
   invoice: FullInvoice;
   totals: ReturnType<typeof computeTotals>;
@@ -341,13 +356,19 @@ function InvoiceCard({
   onDelete: () => void;
   onSend: () => void;
   onChanged: () => void;
+  isMobile: boolean;
 }) {
   const cur = invoice.currency;
   const color = STATUS_COLOR[totals.status];
 
   return (
-    <div style={s.card}>
-      <div style={s.cardTop}>
+    <div style={{ ...s.card, ...(isMobile ? { padding: 14 } : null) }}>
+      <div
+        style={{
+          ...s.cardTop,
+          ...(isMobile ? { flexDirection: "column", gap: 8 } : null),
+        }}
+      >
         <div style={{ minWidth: 0 }}>
           <div
             style={{
@@ -390,7 +411,12 @@ function InvoiceCard({
             {invoice.description ? ` · ${invoice.description}` : ""}
           </div>
         </div>
-        <div style={{ textAlign: "right", whiteSpace: "nowrap" }}>
+        <div
+          style={{
+            textAlign: isMobile ? "left" : "right",
+            whiteSpace: "nowrap",
+          }}
+        >
           <div style={{ fontSize: 19, fontWeight: 700 }}>
             {fmtMoney(totals.total, cur)}
           </div>
@@ -417,21 +443,39 @@ function InvoiceCard({
       </div>
 
       <div style={s.actions}>
-        <button onClick={onToggle} style={s.ghostBtn}>
+        <button
+          onClick={onToggle}
+          style={{ ...s.ghostBtn, ...(isMobile ? s.touchBtn : null) }}
+        >
           {expanded
             ? "Ocultar abonos"
             : `Abonos (${invoice.invoice_payments.length})`}
         </button>
         {/* Un solo botón: el diálogo nativo ya permite ver, guardar como PDF
             e imprimir, sin abrir otra pestaña. */}
-        <InvoicePrintButton token={invoice.public_token} style={s.viewBtn} />
-        <button onClick={onSend} style={s.sendBtn}>
+        <InvoicePrintButton
+          token={invoice.public_token}
+          style={{ ...s.viewBtn, ...(isMobile ? s.touchBtn : null) }}
+        />
+        <button
+          onClick={onSend}
+          style={{ ...s.sendBtn, ...(isMobile ? s.touchBtn : null) }}
+        >
           Enviar por correo
         </button>
-        <button onClick={onEdit} style={s.ghostBtn}>
+        <button
+          onClick={onEdit}
+          style={{ ...s.ghostBtn, ...(isMobile ? s.touchBtn : null) }}
+        >
           Editar
         </button>
-        <button onClick={onDelete} style={s.dangerBtn}>
+        <button
+          onClick={onDelete}
+          style={{
+            ...s.dangerBtn,
+            ...(isMobile ? { ...s.touchBtn, marginLeft: 0 } : null),
+          }}
+        >
           Eliminar
         </button>
       </div>
@@ -442,6 +486,7 @@ function InvoiceCard({
           balance={totals.balance}
           supabase={supabase}
           onChanged={onChanged}
+          isMobile={isMobile}
         />
       )}
     </div>
@@ -455,11 +500,13 @@ function Payments({
   balance,
   supabase,
   onChanged,
+  isMobile,
 }: {
   invoice: FullInvoice;
   balance: number;
   supabase: Supabase;
   onChanged: () => void;
+  isMobile: boolean;
 }) {
   const [method, setMethod] = useState(PAYMENT_METHODS[0]);
   const [amount, setAmount] = useState("");
@@ -508,7 +555,15 @@ function Payments({
       ) : (
         <div style={{ marginBottom: 16 }}>
           {invoice.invoice_payments.map((p) => (
-            <div key={p.id} style={s.payRow}>
+            <div
+              key={p.id}
+              style={{
+                ...s.payRow,
+                ...(isMobile
+                  ? { gridTemplateColumns: "1fr auto 28px", rowGap: 2 }
+                  : null),
+              }}
+            >
               <span style={{ color: "#ddd" }}>{p.method}</span>
               <span style={{ color: "#888" }}>{fmtDateTime(p.paid_at)}</span>
               <span style={{ color: "#00e5a0", fontWeight: 600 }}>
@@ -526,7 +581,10 @@ function Payments({
         <select
           value={method}
           onChange={(e) => setMethod(e.target.value)}
-          style={s.select}
+          style={{
+            ...s.select,
+            ...(isMobile ? { ...s.touchInput, width: "100%" } : null),
+          }}
         >
           {PAYMENT_METHODS.map((m) => (
             <option key={m} value={m}>
@@ -538,7 +596,7 @@ function Payments({
           type="datetime-local"
           value={paidAt}
           onChange={(e) => setPaidAt(e.target.value)}
-          style={s.input}
+          style={{ ...s.input, ...(isMobile ? s.touchInput : null) }}
         />
         <input
           type="number"
@@ -547,9 +605,16 @@ function Payments({
           placeholder={`Monto (falta ${balance})`}
           value={amount}
           onChange={(e) => setAmount(e.target.value)}
-          style={s.input}
+          style={{ ...s.input, ...(isMobile ? s.touchInput : null) }}
         />
-        <button onClick={addPayment} disabled={saving} style={s.primaryBtnSm}>
+        <button
+          onClick={addPayment}
+          disabled={saving}
+          style={{
+            ...s.primaryBtnSm,
+            ...(isMobile ? { ...s.touchBtn, width: "100%" } : null),
+          }}
+        >
           {saving ? "Guardando…" : "Registrar abono"}
         </button>
       </div>
@@ -609,14 +674,15 @@ function InvoiceEditor({
   const [initialMethod, setInitialMethod] = useState(PAYMENT_METHODS[0]);
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const isMobile = useIsMobile();
+  const inp = isMobile ? { ...s.input, ...s.touchInput } : s.input;
+  const gbtn = isMobile ? { ...s.ghostBtn, ...s.touchBtn } : s.ghostBtn;
 
   // Los clientes archivados no se ofrecen, pero el de una factura ya emitida sí
   // sigue en la lista: si no, editarla vaciaría el destinatario.
   const options =
     partyType === "client"
-      ? clients.filter(
-          (c) => c.active !== false || c.id === invoice?.client_id,
-        )
+      ? clients.filter((c) => c.active !== false || c.id === invoice?.client_id)
       : team;
 
   const preview = computeTotals(
@@ -741,7 +807,17 @@ function InvoiceEditor({
 
   return (
     <div style={s.overlay} onClick={onClose}>
-      <div style={s.drawer} onClick={(e) => e.stopPropagation()}>
+      <div
+        style={{
+          ...s.drawer,
+          // En teléfono el panel ocupa toda la pantalla: el cuerpo lleva su
+          // propio scroll y la cabecera con la ✕ nunca se pierde de vista.
+          ...(isMobile
+            ? { width: "100%", borderLeft: "none", height: "100dvh" }
+            : null),
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
         <div style={s.drawerHeader}>
           <h2 style={{ margin: 0, fontSize: 20 }}>
             {invoice ? `Editar factura #${invoice.number}` : "Nueva factura"}
@@ -751,13 +827,15 @@ function InvoiceEditor({
           </button>
         </div>
 
-        <div style={s.drawerBody}>
+        <div
+          style={{ ...s.drawerBody, ...(isMobile ? { padding: 16 } : null) }}
+        >
           {err && <p style={s.errorBox}>{err}</p>}
 
           {/* Destinatario */}
           <div style={s.field}>
             <span style={s.label}>Facturar a</span>
-            <div style={{ display: "flex", gap: 8 }}>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               {(["client", "team"] as InvoiceParty[]).map((p) => (
                 <button
                   key={p}
@@ -768,6 +846,7 @@ function InvoiceEditor({
                   }}
                   style={{
                     ...s.toggle,
+                    ...(isMobile ? s.touchBtn : null),
                     background: partyType === p ? "#fff" : "#1a1a1a",
                     color: partyType === p ? "#000" : "#999",
                   }}
@@ -785,7 +864,7 @@ function InvoiceEditor({
             <select
               value={partyId}
               onChange={(e) => setPartyId(e.target.value)}
-              style={s.input}
+              style={inp}
             >
               <option value="">Selecciona…</option>
               {options.map((o) => (
@@ -797,22 +876,28 @@ function InvoiceEditor({
             </select>
           </label>
 
-          <div style={{ display: "flex", gap: 12 }}>
+          <div
+            style={{
+              display: "flex",
+              gap: 12,
+              flexDirection: isMobile ? "column" : "row",
+            }}
+          >
             <label style={{ ...s.field, flex: 1 }}>
               <span style={s.label}>Fecha de emisión</span>
               <input
                 type="datetime-local"
                 value={issuedAt}
                 onChange={(e) => setIssuedAt(e.target.value)}
-                style={s.input}
+                style={inp}
               />
             </label>
-            <label style={{ ...s.field, width: 140 }}>
+            <label style={{ ...s.field, width: isMobile ? "100%" : 140 }}>
               <span style={s.label}>Moneda</span>
               <select
                 value={currency}
                 onChange={(e) => setCurrency(e.target.value as InvoiceCurrency)}
-                style={s.input}
+                style={inp}
               >
                 <option value="DOP">RD$ (DOP)</option>
                 <option value="USD">US$ (USD)</option>
@@ -824,12 +909,18 @@ function InvoiceEditor({
           <div style={s.field}>
             <span style={s.label}>Conceptos</span>
             {items.map((it, idx) => (
-              <div key={idx} style={s.itemRow}>
+              <div
+                key={idx}
+                style={{
+                  ...s.itemRow,
+                  ...(isMobile ? { flexWrap: "wrap" } : null),
+                }}
+              >
                 <input
                   placeholder="Concepto"
                   value={it.concept}
                   onChange={(e) => setItem(idx, { concept: e.target.value })}
-                  style={{ ...s.input, flex: 2 }}
+                  style={{ ...inp, flex: isMobile ? "1 1 100%" : 2 }}
                 />
                 <input
                   type="number"
@@ -840,7 +931,11 @@ function InvoiceEditor({
                   onChange={(e) =>
                     setItem(idx, { unit_price: Number(e.target.value) })
                   }
-                  style={{ ...s.input, width: 110 }}
+                  style={{
+                    ...inp,
+                    width: isMobile ? 100 : 110,
+                    flex: isMobile ? "1 1 30%" : undefined,
+                  }}
                 />
                 <input
                   type="number"
@@ -851,15 +946,30 @@ function InvoiceEditor({
                   onChange={(e) =>
                     setItem(idx, { quantity: Number(e.target.value) })
                   }
-                  style={{ ...s.input, width: 80 }}
+                  style={{
+                    ...inp,
+                    width: 80,
+                    flex: isMobile ? "1 1 25%" : undefined,
+                  }}
                 />
                 <input
                   placeholder="UNIT"
                   value={it.unit}
                   onChange={(e) => setItem(idx, { unit: e.target.value })}
-                  style={{ ...s.input, width: 80 }}
+                  style={{
+                    ...inp,
+                    width: 80,
+                    flex: isMobile ? "1 1 25%" : undefined,
+                  }}
                 />
-                <span style={s.itemTotal}>
+                <span
+                  style={{
+                    ...s.itemTotal,
+                    ...(isMobile
+                      ? { minWidth: 0, flex: 1, textAlign: "left" }
+                      : null),
+                  }}
+                >
                   {fmtMoney(itemTotal(it), currency)}
                 </span>
                 {items.length > 1 && (
@@ -878,14 +988,21 @@ function InvoiceEditor({
             <button
               type="button"
               onClick={() => setItems((p) => [...p, emptyItem()])}
-              style={{ ...s.ghostBtn, alignSelf: "flex-start", marginTop: 8 }}
+              style={{ ...gbtn, alignSelf: "flex-start", marginTop: 8 }}
             >
               + Agregar concepto
             </button>
           </div>
 
           {/* Descuento e impuesto */}
-          <div style={{ display: "flex", gap: 12, alignItems: "flex-end" }}>
+          <div
+            style={{
+              display: "flex",
+              gap: 12,
+              alignItems: isMobile ? "stretch" : "flex-end",
+              flexDirection: isMobile ? "column" : "row",
+            }}
+          >
             <label style={{ ...s.field, flex: 1 }}>
               <span style={s.label}>Descuento</span>
               <input
@@ -894,7 +1011,7 @@ function InvoiceEditor({
                 step="0.01"
                 value={discount}
                 onChange={(e) => setDiscount(e.target.value)}
-                style={s.input}
+                style={inp}
               />
             </label>
             <button
@@ -902,6 +1019,7 @@ function InvoiceEditor({
               onClick={() => setWithTax((v) => !v)}
               style={{
                 ...s.toggle,
+                ...(isMobile ? s.touchBtn : null),
                 marginBottom: 1,
                 background: withTax ? "#fff" : "#1a1a1a",
                 color: withTax ? "#000" : "#999",
@@ -938,11 +1056,17 @@ function InvoiceEditor({
           {!invoice && (
             <div style={s.field}>
               <span style={s.label}>Abono inicial (opcional)</span>
-              <div style={{ display: "flex", gap: 8 }}>
+              <div
+                style={{
+                  display: "flex",
+                  gap: 8,
+                  flexDirection: isMobile ? "column" : "row",
+                }}
+              >
                 <select
                   value={initialMethod}
                   onChange={(e) => setInitialMethod(e.target.value)}
-                  style={{ ...s.input, width: 150 }}
+                  style={{ ...inp, width: isMobile ? "100%" : 150 }}
                 >
                   {PAYMENT_METHODS.map((m) => (
                     <option key={m} value={m}>
@@ -957,7 +1081,7 @@ function InvoiceEditor({
                   placeholder="0.00"
                   value={initialAmount}
                   onChange={(e) => setInitialAmount(e.target.value)}
-                  style={s.input}
+                  style={inp}
                 />
               </div>
               <span style={s.help}>
@@ -972,7 +1096,7 @@ function InvoiceEditor({
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              style={{ ...s.input, minHeight: 70, resize: "vertical" }}
+              style={{ ...inp, minHeight: 70, resize: "vertical" }}
             />
           </label>
 
@@ -981,19 +1105,23 @@ function InvoiceEditor({
             <textarea
               value={note}
               onChange={(e) => setNote(e.target.value)}
-              style={{ ...s.input, minHeight: 50, resize: "vertical" }}
+              style={{ ...inp, minHeight: 50, resize: "vertical" }}
             />
           </label>
         </div>
 
         <div style={s.drawerFooter}>
-          <button onClick={onClose} style={s.ghostBtn}>
+          <button onClick={onClose} style={gbtn}>
             Cancelar
           </button>
           <button
             onClick={save}
             disabled={saving}
-            style={{ ...s.primaryBtn, opacity: saving ? 0.6 : 1 }}
+            style={{
+              ...s.primaryBtn,
+              ...(isMobile ? { ...s.touchBtn, marginLeft: 0 } : null),
+              opacity: saving ? 0.6 : 1,
+            }}
           >
             {saving
               ? "Guardando…"
@@ -1071,6 +1199,11 @@ const s: Record<string, CSSProperties> = {
     cursor: "pointer",
   },
   chipActive: { background: "#1e1e1e", color: "#fff", borderColor: "#3a3a3a" },
+  // Variantes táctiles para teléfono: 16px evita el zoom de iOS al enfocar un
+  // campo, y 40px de alto es el mínimo cómodo para el dedo.
+  touchInput: { fontSize: 16, minHeight: 40 },
+  touchBtn: { minHeight: 40, fontSize: 14 },
+  touchChip: { minHeight: 40, padding: "9px 14px" },
   dot: { width: 8, height: 8, borderRadius: "50%", display: "inline-block" },
   list: { display: "flex", flexDirection: "column", gap: 14, marginTop: 8 },
   card: {

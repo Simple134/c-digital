@@ -23,11 +23,11 @@ const PRIORITY_COLOR: Record<string, string> = {
 };
 
 /**
- * Ordena las tarjetas de una columna para la vista del cliente.
+ * Ordena las tarjetas dentro de una fase para la vista del cliente.
  *
  * TODO(josue): define el criterio. Las tarjetas llegan ya ordenadas por
  * `sort_order` (el orden interno del equipo). Decide si las que esperan al
- * cliente (`assigned_to_client`) suben al principio de su columna o si el orden
+ * cliente (`assigned_to_client`) suben al principio de su fase o si el orden
  * del tablero se respeta tal cual y el resaltado visual basta.
  */
 function sortCardsForClient(cards: KanbanCard[]): KanbanCard[] {
@@ -59,9 +59,6 @@ export default async function PublicKanbanPage({
   const { token } = await params;
   const supabase = createAdminClient();
 
-  // Solo lo que esta página necesita. Con `*` la service role key traería
-  // también `notes`, `tax_id` y el resto de la ficha interna a un render que el
-  // cliente puede ver: no hay razón para que ese dato salga de la base.
   const { data: client } = await supabase
     .from("clients")
     .select("id, name")
@@ -88,6 +85,17 @@ export default async function PublicKanbanPage({
   const allCards = (cards as KanbanCard[]) ?? [];
   const members = (team as TeamMember[]) ?? [];
 
+  // Cada columna del tablero es una fase del roadmap: ya vienen ordenadas por
+  // `sort_order` y marcadas con `is_done`, así que no hace falta nada nuevo en
+  // la base para contar avance.
+  const phases = cols.map((col) => ({
+    col,
+    cards: sortCardsForClient(allCards.filter((c) => c.column_id === col.id)),
+  }));
+  const done = allCards.filter((c) => c.completed_at).length;
+  // La fase actual es la primera sin terminar que tenga trabajo dentro.
+  const currentId = phases.find((p) => !p.col.is_done && p.cards.length)?.col.id;
+
   return (
     <div style={styles.page}>
       <Header dark minimal />
@@ -96,27 +104,49 @@ export default async function PublicKanbanPage({
         <h1 style={styles.introTitle}>
           {(client as Pick<Client, "id" | "name">).name}
         </h1>
+        <div style={styles.progressRow}>
+          <div style={styles.progressTrack}>
+            <div
+              style={{
+                ...styles.progressFill,
+                width: allCards.length
+                  ? `${(done / allCards.length) * 100}%`
+                  : 0,
+              }}
+            />
+          </div>
+          <span style={styles.progressText}>
+            {done} de {allCards.length} completadas
+          </span>
+        </div>
       </header>
-      <div style={styles.board}>
-        {cols.map((col) => {
-          const colCards = sortCardsForClient(
-            allCards.filter((c) => c.column_id === col.id),
-          );
+      <div style={styles.roadmap}>
+        {phases.map(({ col, cards: phaseCards }, i) => {
+          const isCurrent = col.id === currentId;
           return (
-            <div key={col.id} style={styles.column}>
-              <div style={styles.columnHeader}>
-                <span>{col.title}</span>
-                <span style={styles.count}>{colCards.length}</span>
+            <section key={col.id} style={styles.phase}>
+              <div style={styles.phaseHeader}>
+                <span
+                  style={{
+                    ...styles.phaseDot,
+                    ...(col.is_done ? styles.phaseDotDone : null),
+                    ...(isCurrent ? styles.phaseDotCurrent : null),
+                  }}
+                />
+                <span style={styles.phaseIndex}>Fase {i + 1}</span>
+                <h2 style={styles.phaseTitle}>{col.title}</h2>
+                {isCurrent && <span style={styles.currentTag}>En curso</span>}
+                <span style={styles.count}>{phaseCards.length}</span>
               </div>
-              <div style={styles.columnBody}>
-                {colCards.length === 0 && (
-                  <p style={styles.empty}>Sin tarjetas</p>
+              <div style={styles.phaseBody}>
+                {phaseCards.length === 0 && (
+                  <p style={styles.empty}>Nada por aquí todavía</p>
                 )}
-                {colCards.map((card) => (
+                {phaseCards.map((card) => (
                   <Card key={card.id} card={card} members={members} />
                 ))}
               </div>
-            </div>
+            </section>
           );
         })}
       </div>
@@ -147,7 +177,12 @@ function Card({ card, members }: { card: KanbanCard; members: TeamMember[] }) {
       {waitingOnClient && (
         <span style={styles.waitingTag}>Pendiente de ti</span>
       )}
-      <span style={styles.cardTitle}>{card.title}</span>
+      <span style={styles.cardTitle}>
+        <span aria-hidden style={styles.cardMark}>
+          {card.completed_at ? "✓" : "○"}
+        </span>
+        {card.title}
+      </span>
       {card.image_url && (
         // Se enlaza al original para que el cliente pueda ampliarla.
         <a href={card.image_url} target="_blank" rel="noopener noreferrer">
@@ -218,31 +253,87 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 600,
     letterSpacing: -0.5,
   },
-  board: {
-    maxWidth: 1200,
-    margin: "0 auto",
+  progressRow: {
     display: "flex",
-    gap: 16,
-    overflowX: "auto",
-    paddingBottom: 12,
+    alignItems: "center",
+    gap: 12,
+    marginTop: 16,
   },
-  column: {
-    background: "#121212",
-    border: "1px solid #1e1e1e",
-    borderRadius: 12,
-    minWidth: 280,
-    flex: "0 0 280px",
+  progressTrack: {
+    flex: 1,
+    height: 6,
+    background: "#1e1e1e",
+    borderRadius: 20,
+    overflow: "hidden",
+  },
+  progressFill: {
+    height: "100%",
+    background: "#5aa9ff",
+    borderRadius: 20,
+  },
+  progressText: {
+    fontSize: 11,
+    color: "#888",
+    whiteSpace: "nowrap",
+  },
+  roadmap: {
+    maxWidth: 720,
+    margin: "0 auto",
     display: "flex",
     flexDirection: "column",
   },
-  columnHeader: {
+  phase: {
+    // Sin `gap`: la separación vive en el padding inferior para que el borde
+    // izquierdo salga como una línea continua y no troceada por fase.
+    // `paddingTop: 0` anula el `section { padding-top: var(--section-pad-y) }`
+    // global de globals.css, pensado para las secciones de la web pública.
+    borderLeft: "1px solid #1e1e1e",
+    paddingLeft: 20,
+    paddingTop: 0,
+    paddingBottom: 18,
+  },
+  phaseHeader: {
     display: "flex",
     alignItems: "center",
-    justifyContent: "space-between",
-    padding: "12px 14px",
-    fontSize: 14,
+    gap: 10,
+    marginBottom: 12,
+  },
+  phaseDot: {
+    // Se monta sobre la línea del borde izquierdo (padding 20 + mitad del punto).
+    marginLeft: -27,
+    flex: "0 0 auto",
+    width: 9,
+    height: 9,
+    borderRadius: "50%",
+    background: "#2a2a2a",
+    border: "2px solid #0a0a0a",
+    boxSizing: "content-box",
+  },
+  phaseDotDone: { background: "#5aa9ff" },
+  phaseDotCurrent: { background: "#e6b800" },
+  phaseIndex: {
+    fontSize: 10,
+    textTransform: "uppercase",
+    letterSpacing: 1.5,
+    color: "#777",
+  },
+  phaseTitle: {
+    margin: 0,
+    fontSize: 16,
     fontWeight: 600,
-    borderBottom: "1px solid #1e1e1e",
+    // Los h2 globales son display (uppercase, tracking -2px): ilegible a 16px.
+    textTransform: "none",
+    letterSpacing: -0.2,
+  },
+  currentTag: {
+    fontSize: 10,
+    fontWeight: 700,
+    textTransform: "uppercase",
+    letterSpacing: 1,
+    color: "#0a0a0a",
+    background: "#e6b800",
+    borderRadius: 5,
+    padding: "2px 7px",
   },
   count: {
     fontSize: 12,
@@ -250,18 +341,17 @@ const styles: Record<string, React.CSSProperties> = {
     background: "#1e1e1e",
     borderRadius: 20,
     padding: "2px 9px",
+    marginLeft: "auto",
   },
-  columnBody: {
+  phaseBody: {
     display: "flex",
     flexDirection: "column",
     gap: 10,
-    padding: 12,
   },
   empty: {
     color: "#555",
     fontSize: 12,
-    textAlign: "center",
-    padding: "12px 0",
+    margin: 0,
   },
   card: {
     background: "#1a1a1a",
@@ -287,7 +377,14 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: 5,
     padding: "2px 7px",
   },
-  cardTitle: { fontWeight: 600, fontSize: 14 },
+  cardTitle: {
+    fontWeight: 600,
+    fontSize: 14,
+    display: "flex",
+    alignItems: "baseline",
+    gap: 8,
+  },
+  cardMark: { color: "#5aa9ff", fontSize: 12 },
   cardDesc: { color: "#999", fontSize: 12, margin: 0, lineHeight: 1.4 },
   createdAt: { fontSize: 10, color: "#666", letterSpacing: 0.3 },
   cardImage: {

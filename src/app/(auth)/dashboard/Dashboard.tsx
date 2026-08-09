@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { siteOrigin } from "@/lib/site";
+import useIsMobile from "./useIsMobile";
 import Clientes from "./Clientes";
 import KanbanBoard from "./KanbanBoard";
 import Solicitudes from "./Solicitudes";
@@ -13,9 +15,37 @@ type View = "resource" | "clientes" | "kanban" | "solicitudes" | "facturacion";
 
 type Row = Record<string, unknown> & { id?: string };
 
+// Un item del sidebar: o abre un recurso del CRUD genérico, o una vista propia.
+type NavItem =
+  | { key: string; label: string; resource: Resource }
+  | { key: string; label: string; view: Exclude<View, "resource"> };
+
+// Agrupación declarativa del sidebar: contenido del sitio vs. gestión interna.
+const NAV_GROUPS: { id: string; label: string; items: NavItem[] }[] = [
+  {
+    id: "web",
+    label: "Página web",
+    items: RESOURCES.map((r) => ({ key: r.table, label: r.label, resource: r })),
+  },
+  {
+    id: "ops",
+    label: "Operaciones",
+    items: [
+      { key: "clientes", label: "Clientes", view: "clientes" },
+      { key: "kanban", label: "Kanban", view: "kanban" },
+      { key: "solicitudes", label: "Solicitudes", view: "solicitudes" },
+      { key: "facturacion", label: "Facturación", view: "facturacion" },
+    ],
+  },
+];
+
 export default function Dashboard({ userEmail }: { userEmail: string }) {
   const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
+
+  const isMobile = useIsMobile();
+  // En teléfono la navegación arranca plegada para no empujar el contenido.
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const [view, setView] = useState<View>("resource");
   const [active, setActive] = useState<Resource>(RESOURCES[0]);
@@ -28,6 +58,47 @@ export default function Dashboard({ userEmail }: { userEmail: string }) {
   const [handoffClientId, setHandoffClientId] = useState<string | null>(null);
   // Tarjeta concreta que el Kanban debe abrir al recibir el salto.
   const [handoffCardId, setHandoffCardId] = useState<string | null>(null);
+
+  // Acordeones del sidebar; se abre el que contiene el item activo al entrar.
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() => {
+    const base = Object.fromEntries(
+      NAV_GROUPS.map((g) => [g.id, g.items.some((i) => "resource" in i)]),
+    );
+    if (typeof window === "undefined") return base;
+    try {
+      const saved = localStorage.getItem("dashboard:navGroups");
+      return saved ? { ...base, ...JSON.parse(saved) } : base;
+    } catch {
+      return base;
+    }
+  });
+
+  function toggleGroup(id: string) {
+    setOpenGroups((prev) => {
+      const next = { ...prev, [id]: !prev[id] };
+      try {
+        localStorage.setItem("dashboard:navGroups", JSON.stringify(next));
+      } catch {}
+      return next;
+    });
+  }
+
+  function isSelected(item: NavItem) {
+    return "resource" in item
+      ? view === "resource" && item.resource.table === active.table
+      : view === item.view;
+  }
+
+  function selectItem(item: NavItem) {
+    setEditing(null);
+    setMenuOpen(false);
+    if ("resource" in item) {
+      setView("resource");
+      setActive(item.resource);
+    } else {
+      setView(item.view);
+    }
+  }
 
   const handoff = useCallback(
     (view: View, clientId: string, cardId?: string) => {
@@ -120,94 +191,110 @@ export default function Dashboard({ userEmail }: { userEmail: string }) {
   }
 
   return (
-    <main style={styles.shell}>
-      {/* Sidebar */}
-      <aside style={styles.sidebar}>
-        <div style={{ marginBottom: 32 }}>
-          <div style={styles.brandTag}>Panel</div>
-          <div style={{ fontSize: 22, fontWeight: 700 }}>C Digital</div>
+    <main
+      style={{
+        ...styles.shell,
+        flexDirection: isMobile ? "column" : "row",
+      }}
+    >
+      {/* Sidebar; en teléfono es una barra superior con menú desplegable. */}
+      <aside
+        style={{
+          ...styles.sidebar,
+          ...(isMobile
+            ? {
+                width: "100%",
+                height: "auto",
+                position: "static",
+                borderRight: "none",
+                borderBottom: "1px solid #1e1e1e",
+                padding: "16px 18px",
+              }
+            : null),
+        }}
+      >
+        <div
+          style={
+            isMobile
+              ? {
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                }
+              : { marginBottom: 32 }
+          }
+        >
+          <div>
+            <div style={styles.brandTag}>Panel</div>
+            <div style={{ fontSize: isMobile ? 18 : 22, fontWeight: 700 }}>
+              C Digital
+            </div>
+          </div>
+          {isMobile && (
+            <button
+              onClick={() => setMenuOpen((o) => !o)}
+              style={{ ...styles.ghostBtn, minHeight: 40 }}
+              aria-expanded={menuOpen}
+            >
+              {menuOpen ? "✕ Cerrar" : "☰ Menú"}
+            </button>
+          )}
         </div>
 
-        <nav style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-          {RESOURCES.map((r) => {
-            const selected = view === "resource" && r.table === active.table;
+        <nav
+          style={{
+            display: isMobile && !menuOpen ? "none" : "flex",
+            flexDirection: "column",
+            gap: 10,
+            marginTop: isMobile ? 14 : 0,
+          }}
+        >
+          {NAV_GROUPS.map((group) => {
+            const open = openGroups[group.id] ?? false;
             return (
-              <button
-                key={r.table}
-                onClick={() => {
-                  setView("resource");
-                  setActive(r);
-                  setEditing(null);
-                }}
-                style={{
-                  ...styles.navItem,
-                  background: selected ? "#1e1e1e" : "transparent",
-                  color: selected ? "#fff" : "#999",
-                }}
-              >
-                {r.label}
-              </button>
+              <div key={group.id}>
+                <button
+                  onClick={() => toggleGroup(group.id)}
+                  style={styles.navGroupHeader}
+                >
+                  <span>{group.label}</span>
+                  <span style={{ color: "#555" }}>{open ? "▾" : "▸"}</span>
+                </button>
+
+                {open && (
+                  <div
+                    style={{ display: "flex", flexDirection: "column", gap: 4 }}
+                  >
+                    {group.items.map((item) => {
+                      const selected = isSelected(item);
+                      return (
+                        <button
+                          key={item.key}
+                          onClick={() => selectItem(item)}
+                          style={{
+                            ...styles.navItem,
+                            background: selected ? "#1e1e1e" : "transparent",
+                            color: selected ? "#fff" : "#999",
+                          }}
+                        >
+                          {item.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             );
           })}
-
-          <button
-            onClick={() => {
-              setView("clientes");
-              setEditing(null);
-            }}
-            style={{
-              ...styles.navItem,
-              background: view === "clientes" ? "#1e1e1e" : "transparent",
-              color: view === "clientes" ? "#fff" : "#999",
-            }}
-          >
-            Clientes
-          </button>
-
-          <button
-            onClick={() => {
-              setView("kanban");
-              setEditing(null);
-            }}
-            style={{
-              ...styles.navItem,
-              background: view === "kanban" ? "#1e1e1e" : "transparent",
-              color: view === "kanban" ? "#fff" : "#999",
-            }}
-          >
-            Kanban
-          </button>
-
-          <button
-            onClick={() => {
-              setView("solicitudes");
-              setEditing(null);
-            }}
-            style={{
-              ...styles.navItem,
-              background: view === "solicitudes" ? "#1e1e1e" : "transparent",
-              color: view === "solicitudes" ? "#fff" : "#999",
-            }}
-          >
-            Solicitudes
-          </button>
-
-          <button
-            onClick={() => {
-              setView("facturacion");
-              setEditing(null);
-            }}
-            style={{
-              ...styles.navItem,
-              background: view === "facturacion" ? "#1e1e1e" : "transparent",
-              color: view === "facturacion" ? "#fff" : "#999",
-            }}
-          >
-            Facturación
-          </button>
         </nav>
 
-        <div style={{ marginTop: "auto", paddingTop: 24 }}>
+        <div
+          style={{
+            display: isMobile && !menuOpen ? "none" : "block",
+            marginTop: "auto",
+            paddingTop: isMobile ? 16 : 24,
+          }}
+        >
           <div style={{ fontSize: 12, color: "#666", marginBottom: 10 }}>
             {userEmail}
           </div>
@@ -221,6 +308,8 @@ export default function Dashboard({ userEmail }: { userEmail: string }) {
       <section
         style={{
           ...styles.content,
+          padding: isMobile ? "20px 16px" : "36px 44px",
+          minWidth: 0,
           maxWidth:
             view === "kanban"
               ? "none"
@@ -406,6 +495,7 @@ function Editor({
 }) {
   const [form, setForm] = useState<Row>({ ...record });
   const [saving, setSaving] = useState(false);
+  const isMobile = useIsMobile();
 
   function set(key: string, value: unknown) {
     setForm((f) => ({ ...f, [key]: value }));
@@ -420,7 +510,16 @@ function Editor({
 
   return (
     <div style={styles.overlay} onClick={onClose}>
-      <div style={styles.drawer} onClick={(e) => e.stopPropagation()}>
+      <div
+        style={{
+          ...styles.drawer,
+          // En teléfono el editor ocupa la pantalla completa.
+          ...(isMobile
+            ? { width: "100%", height: "100dvh", borderLeft: "none" }
+            : null),
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
         <div style={styles.drawerHeader}>
           <h2 style={{ margin: 0, fontSize: 20 }}>
             {record.id ? "Editar" : "Nuevo"} {resource.singular}
@@ -557,7 +656,37 @@ function FieldInput({
       )}
 
       {field.help && <span style={styles.help}>{field.help}</span>}
+
+      {field.copyPath && <CopyPathButton path={field.copyPath} />}
     </label>
+  );
+}
+
+function CopyPathButton({ path }: { path: string }) {
+  const [copied, setCopied] = useState(false);
+  const url = `${siteOrigin()}${path}`;
+
+  async function copy(e: React.MouseEvent) {
+    // El botón vive dentro del <label>; sin esto el click reenfoca el input.
+    e.preventDefault();
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      window.prompt("Copia el enlace:", url);
+    }
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={copy}
+      style={{ ...styles.ghostBtn, alignSelf: "flex-start", marginTop: 6 }}
+      title={url}
+    >
+      {copied ? "✓ Link copiado" : "Copiar link de registro"}
+    </button>
   );
 }
 
@@ -691,6 +820,23 @@ const styles: Record<string, React.CSSProperties> = {
     cursor: "pointer",
     transition: "background .15s",
   },
+  navGroupHeader: {
+    width: "100%",
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: "8px 14px",
+    marginBottom: 2,
+    background: "transparent",
+    border: "none",
+    borderRadius: 8,
+    color: "#666",
+    fontSize: 10,
+    fontWeight: 600,
+    textTransform: "uppercase",
+    letterSpacing: 2,
+    cursor: "pointer",
+  },
   logout: {
     width: "100%",
     padding: "10px",
@@ -706,6 +852,8 @@ const styles: Record<string, React.CSSProperties> = {
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
+    flexWrap: "wrap",
+    gap: 12,
     marginBottom: 28,
   },
   primaryBtn: {
@@ -820,11 +968,12 @@ const styles: Record<string, React.CSSProperties> = {
   },
   input: {
     padding: "11px 13px",
+    // 16px evita que iOS haga zoom al enfocar el campo.
+    fontSize: 16,
     background: "#161616",
     border: "1px solid #2a2a2a",
     borderRadius: 8,
     color: "#fff",
-    fontSize: 14,
     outline: "none",
     width: "100%",
     boxSizing: "border-box",

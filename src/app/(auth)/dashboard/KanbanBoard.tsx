@@ -19,6 +19,7 @@ import type {
   KanbanColumn,
   TeamMember,
 } from "@/lib/supabase/types";
+import useIsMobile from "./useIsMobile";
 
 type Supabase = ReturnType<typeof createClient>;
 
@@ -164,6 +165,7 @@ export default function KanbanBoard({
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [editingCard, setEditingCard] = useState<BoardItem | null>(null);
   const [editingColumn, setEditingColumn] = useState<BoardItem | null>(null);
+  const isMobile = useIsMobile();
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -774,9 +776,19 @@ export default function KanbanBoard({
       className="cdg-kanban"
       style={{ display: "flex", flexDirection: "column", height: "100%" }}
     >
-      <div style={styles.toolbar}>
+      <div
+        style={{
+          ...styles.toolbar,
+          ...(isMobile ? { flexWrap: "wrap", gap: 8 } : null),
+        }}
+      >
         <select
-          style={styles.clientPicker}
+          style={{
+            ...styles.clientPicker,
+            ...(isMobile
+              ? { flex: "1 1 100%", minWidth: 0, fontSize: 16, minHeight: 40 }
+              : null),
+          }}
           value={selectedClientId}
           onChange={(e) => setSelectedClientId(e.target.value)}
         >
@@ -794,7 +806,12 @@ export default function KanbanBoard({
           ))}
         </select>
         <select
-          style={styles.clientPicker}
+          style={{
+            ...styles.clientPicker,
+            ...(isMobile
+              ? { flex: "1 1 100%", minWidth: 0, fontSize: 16, minHeight: 40 }
+              : null),
+          }}
           value={selectedMemberId}
           onChange={(e) => setSelectedMemberId(e.target.value)}
         >
@@ -807,14 +824,17 @@ export default function KanbanBoard({
           ))}
         </select>
         <button
-          style={styles.ghostBtn}
+          style={{ ...styles.ghostBtn, ...(isMobile ? styles.touchBtn : null) }}
           onClick={() => setClientModalOpen(true)}
         >
           + Nuevo cliente
         </button>
         {selectedClient && (
           <button
-            style={styles.ghostBtn}
+            style={{
+              ...styles.ghostBtn,
+              ...(isMobile ? styles.touchBtn : null),
+            }}
             onClick={() => setEditingClient(selectedClient)}
             title={
               selectedClient.email
@@ -826,12 +846,18 @@ export default function KanbanBoard({
           </button>
         )}
         {selectedClient && (
-          <button style={styles.ghostBtn} onClick={copyPublicLink}>
+          <button
+            style={{
+              ...styles.ghostBtn,
+              ...(isMobile ? styles.touchBtn : null),
+            }}
+            onClick={copyPublicLink}
+          >
             {linkCopied ? "¡Link copiado!" : "Copiar link público"}
           </button>
         )}
         <button
-          style={styles.ghostBtn}
+          style={{ ...styles.ghostBtn, ...(isMobile ? styles.touchBtn : null) }}
           onClick={() => setShowStats((v) => !v)}
           aria-expanded={showStats}
         >
@@ -856,7 +882,13 @@ export default function KanbanBoard({
 
       <div
         className="cdg-kanban-board"
-        style={{ flex: 1, minHeight: 0, height: "calc(100vh - 220px)" }}
+        // En teléfono la barra de filtros se apila y hay que descontar más
+        // alto; las columnas siguen recorriéndose de lado como en escritorio.
+        style={{
+          flex: 1,
+          minHeight: isMobile ? 420 : 0,
+          height: isMobile ? "calc(100dvh - 300px)" : "calc(100vh - 220px)",
+        }}
       >
         <Kanban
           dataSource={visibleData}
@@ -1263,9 +1295,28 @@ function Modal({
   onClose: () => void;
   children: React.ReactNode;
 }) {
+  const isMobile = useIsMobile();
   return (
-    <div style={styles.overlay} onClick={onClose}>
-      <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
+    <div
+      style={{ ...styles.overlay, ...(isMobile ? { padding: 0 } : null) }}
+      onClick={onClose}
+    >
+      <div
+        // En teléfono el modal ocupa la pantalla entera: el cuerpo lleva su
+        // propio scroll y la cabecera con la ✕ queda siempre a la vista.
+        style={{
+          ...styles.modal,
+          ...(isMobile
+            ? {
+                width: "100%",
+                height: "100dvh",
+                maxHeight: "100dvh",
+                borderRadius: 0,
+              }
+            : null),
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
         <div style={styles.modalHeader}>
           <h2 style={{ margin: 0, fontSize: 18 }}>{title}</h2>
           <button onClick={onClose} style={styles.closeBtn}>
@@ -1324,12 +1375,13 @@ function DueDateField({
   value: string;
   onChange: (next: string) => void;
 }) {
+  const isMobile = useIsMobile();
   return (
     <label style={styles.field}>
       <span style={styles.label}>Fecha límite</span>
       <input
         type="date"
-        style={styles.input}
+        style={{ ...styles.input, ...(isMobile ? styles.touchInput : null) }}
         value={value}
         onChange={(e) => onChange(e.target.value)}
       />
@@ -1552,13 +1604,26 @@ function CardModal({
     setSaving(false);
   }
 
+  const isMobile = useIsMobile();
+  const inp = isMobile
+    ? { ...styles.input, ...styles.touchInput }
+    : styles.input;
+  const body = isMobile
+    ? { ...styles.modalBody, padding: 16 }
+    : styles.modalBody;
+  const gbtn = isMobile
+    ? { ...styles.ghostBtn, ...styles.touchBtn }
+    : styles.ghostBtn;
+  const pbtn = isMobile
+    ? { ...styles.primaryBtn, ...styles.touchBtn }
+    : styles.primaryBtn;
   return (
     <Modal title={`Nueva tarjeta · ${columnTitle}`} onClose={onClose}>
-      <div style={styles.modalBody}>
+      <div style={body}>
         <label style={styles.field}>
           <span style={styles.label}>Título</span>
           <input
-            style={styles.input}
+            style={inp}
             value={title}
             autoFocus
             onChange={(e) => setTitle(e.target.value)}
@@ -1568,7 +1633,7 @@ function CardModal({
         <label style={styles.field}>
           <span style={styles.label}>Descripción</span>
           <textarea
-            style={{ ...styles.input, minHeight: 90, resize: "vertical" }}
+            style={{ ...inp, minHeight: 90, resize: "vertical" }}
             value={description}
             onChange={(e) => setDescription(e.target.value)}
           />
@@ -1577,7 +1642,7 @@ function CardModal({
         <label style={styles.field}>
           <span style={styles.label}>Prioridad</span>
           <select
-            style={styles.input}
+            style={inp}
             value={priority}
             onChange={(e) => setPriority(e.target.value)}
           >
@@ -1593,7 +1658,7 @@ function CardModal({
         <label style={styles.field}>
           <span style={styles.label}>Asignar a</span>
           <select
-            style={styles.input}
+            style={inp}
             value={assigneeId}
             onChange={(e) => setAssigneeId(e.target.value)}
           >
@@ -1620,7 +1685,7 @@ function CardModal({
           <label style={styles.field}>
             <span style={styles.label}>Cliente</span>
             <select
-              style={styles.input}
+              style={inp}
               value={clientId}
               onChange={(e) => {
                 setClientId(e.target.value);
@@ -1646,14 +1711,14 @@ function CardModal({
       </div>
 
       <div style={styles.modalFooter}>
-        <button onClick={onClose} style={styles.ghostBtn}>
+        <button onClick={onClose} style={gbtn}>
           Cancelar
         </button>
         <button
           onClick={submit}
           disabled={saving || !title.trim()}
           style={{
-            ...styles.primaryBtn,
+            ...pbtn,
             opacity: saving || !title.trim() ? 0.5 : 1,
           }}
         >
@@ -1729,13 +1794,26 @@ function EditCardModal({
     setSaving(false);
   }
 
+  const isMobile = useIsMobile();
+  const inp = isMobile
+    ? { ...styles.input, ...styles.touchInput }
+    : styles.input;
+  const body = isMobile
+    ? { ...styles.modalBody, padding: 16 }
+    : styles.modalBody;
+  const gbtn = isMobile
+    ? { ...styles.ghostBtn, ...styles.touchBtn }
+    : styles.ghostBtn;
+  const pbtn = isMobile
+    ? { ...styles.primaryBtn, ...styles.touchBtn }
+    : styles.primaryBtn;
   return (
     <Modal title="Editar tarjeta" onClose={onClose}>
-      <div style={styles.modalBody}>
+      <div style={body}>
         <label style={styles.field}>
           <span style={styles.label}>Título</span>
           <input
-            style={styles.input}
+            style={inp}
             value={title}
             autoFocus
             onChange={(e) => setTitle(e.target.value)}
@@ -1745,7 +1823,7 @@ function EditCardModal({
         <label style={styles.field}>
           <span style={styles.label}>Descripción</span>
           <textarea
-            style={{ ...styles.input, minHeight: 90, resize: "vertical" }}
+            style={{ ...inp, minHeight: 90, resize: "vertical" }}
             value={description}
             onChange={(e) => setDescription(e.target.value)}
           />
@@ -1754,7 +1832,7 @@ function EditCardModal({
         <label style={styles.field}>
           <span style={styles.label}>Prioridad</span>
           <select
-            style={styles.input}
+            style={inp}
             value={priority}
             onChange={(e) => setPriority(e.target.value)}
           >
@@ -1770,7 +1848,7 @@ function EditCardModal({
         <label style={styles.field}>
           <span style={styles.label}>Asignar a</span>
           <select
-            style={styles.input}
+            style={inp}
             value={assigneeId}
             onChange={(e) => setAssigneeId(e.target.value)}
           >
@@ -1789,7 +1867,7 @@ function EditCardModal({
         <label style={styles.field}>
           <span style={styles.label}>Cliente</span>
           <select
-            style={styles.input}
+            style={inp}
             value={clientId}
             onChange={(e) => {
               setClientId(e.target.value);
@@ -1836,14 +1914,14 @@ function EditCardModal({
       </div>
 
       <div style={styles.modalFooter}>
-        <button onClick={onClose} style={styles.ghostBtn}>
+        <button onClick={onClose} style={gbtn}>
           Cancelar
         </button>
         <button
           onClick={submit}
           disabled={saving || !title.trim()}
           style={{
-            ...styles.primaryBtn,
+            ...pbtn,
             opacity: saving || !title.trim() ? 0.5 : 1,
           }}
         >
@@ -1882,13 +1960,26 @@ function ColumnModal({
     setSaving(false);
   }
 
+  const isMobile = useIsMobile();
+  const inp = isMobile
+    ? { ...styles.input, ...styles.touchInput }
+    : styles.input;
+  const body = isMobile
+    ? { ...styles.modalBody, padding: 16 }
+    : styles.modalBody;
+  const gbtn = isMobile
+    ? { ...styles.ghostBtn, ...styles.touchBtn }
+    : styles.ghostBtn;
+  const pbtn = isMobile
+    ? { ...styles.primaryBtn, ...styles.touchBtn }
+    : styles.primaryBtn;
   return (
     <Modal title={modalTitle} onClose={onClose}>
-      <div style={styles.modalBody}>
+      <div style={body}>
         <label style={styles.field}>
           <span style={styles.label}>Título</span>
           <input
-            style={styles.input}
+            style={inp}
             value={title}
             autoFocus
             onChange={(e) => setTitle(e.target.value)}
@@ -1910,14 +2001,14 @@ function ColumnModal({
         </div>
       </div>
       <div style={styles.modalFooter}>
-        <button onClick={onClose} style={styles.ghostBtn}>
+        <button onClick={onClose} style={gbtn}>
           Cancelar
         </button>
         <button
           onClick={submit}
           disabled={saving || !title.trim()}
           style={{
-            ...styles.primaryBtn,
+            ...pbtn,
             opacity: saving || !title.trim() ? 0.5 : 1,
           }}
         >
@@ -1955,13 +2046,26 @@ function ClientModal({
     setSaving(false);
   }
 
+  const isMobile = useIsMobile();
+  const inp = isMobile
+    ? { ...styles.input, ...styles.touchInput }
+    : styles.input;
+  const body = isMobile
+    ? { ...styles.modalBody, padding: 16 }
+    : styles.modalBody;
+  const gbtn = isMobile
+    ? { ...styles.ghostBtn, ...styles.touchBtn }
+    : styles.ghostBtn;
+  const pbtn = isMobile
+    ? { ...styles.primaryBtn, ...styles.touchBtn }
+    : styles.primaryBtn;
   return (
     <Modal title={title} onClose={onClose}>
-      <div style={styles.modalBody}>
+      <div style={body}>
         <label style={styles.field}>
           <span style={styles.label}>Nombre del cliente</span>
           <input
-            style={styles.input}
+            style={inp}
             value={name}
             autoFocus
             onChange={(e) => setName(e.target.value)}
@@ -1977,7 +2081,7 @@ function ClientModal({
           <span style={styles.label}>Correo</span>
           <input
             type="email"
-            style={styles.input}
+            style={inp}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && submit()}
@@ -1989,14 +2093,14 @@ function ClientModal({
         </label>
       </div>
       <div style={styles.modalFooter}>
-        <button onClick={onClose} style={styles.ghostBtn}>
+        <button onClick={onClose} style={gbtn}>
           Cancelar
         </button>
         <button
           onClick={submit}
           disabled={saving || !name.trim()}
           style={{
-            ...styles.primaryBtn,
+            ...pbtn,
             opacity: saving || !name.trim() ? 0.5 : 1,
           }}
         >
@@ -2380,6 +2484,8 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: 13,
     cursor: "pointer",
   },
+  touchBtn: { minHeight: 40, fontSize: 14 },
+  touchInput: { fontSize: 16, minHeight: 40 },
   primaryBtn: {
     padding: "10px 18px",
     background: "#fff",

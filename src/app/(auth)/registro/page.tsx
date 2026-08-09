@@ -53,12 +53,12 @@ export default function RegistroPage() {
         justifyContent: "center",
         background: "#0a0a0a",
         color: "#fff",
-        padding: "24px",
+        padding: "24px 18px",
         fontFamily: "inherit",
       }}
     >
       <div style={{ width: "100%", maxWidth: "400px" }}>
-        <div style={{ marginBottom: "40px", textAlign: "center" }}>
+        <div style={{ marginBottom: "32px", textAlign: "center" }}>
           <span
             style={{
               fontSize: "11px",
@@ -131,6 +131,7 @@ export default function RegistroPage() {
             style={{
               marginTop: "8px",
               padding: "14px",
+              minHeight: "48px",
               background: loading ? "#333" : "#fff",
               color: loading ? "#999" : "#0a0a0a",
               border: "none",
@@ -174,6 +175,9 @@ const inputStyle: React.CSSProperties = {
   border: "1px solid #2a2a2a",
   borderRadius: "8px",
   color: "#fff",
-  fontSize: "15px",
+  // 16px: por debajo de eso iOS hace zoom al enfocar el campo.
+  fontSize: "16px",
   outline: "none",
+  width: "100%",
+  boxSizing: "border-box",
 };

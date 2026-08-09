@@ -23,6 +23,7 @@ import type {
   InvoicePayment,
   KanbanCard,
 } from "@/lib/supabase/types";
+import useIsMobile from "./useIsMobile";
 
 type Supabase = ReturnType<typeof createClient>;
 
@@ -181,6 +182,7 @@ export default function Clientes({
     null,
   );
   const [sending, setSending] = useState(false);
+  const isMobile = useIsMobile();
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -397,20 +399,37 @@ export default function Clientes({
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Buscar por nombre, correo, RNC…"
-          style={{ ...s.input, flex: 1, minWidth: 200 }}
+          style={{
+            ...s.input,
+            flex: 1,
+            minWidth: isMobile ? 0 : 200,
+            ...(isMobile ? s.touchInput : null),
+          }}
         />
         <button
           onClick={() => setShowArchived((v) => !v)}
-          style={{ ...s.chip, ...(showArchived ? s.chipActive : {}) }}
+          style={{
+            ...s.chip,
+            ...(isMobile ? s.touchChip : null),
+            ...(showArchived ? s.chipActive : {}),
+          }}
         >
           {showArchived ? "Ocultar archivados" : "Ver archivados"}
         </button>
-        <button onClick={() => setEditing("new")} style={s.primaryBtn}>
+        <button
+          onClick={() => setEditing("new")}
+          style={{ ...s.primaryBtn, ...(isMobile ? s.touchBtn : null) }}
+        >
           + Nuevo cliente
         </button>
       </div>
 
-      <div style={s.layout}>
+      <div
+        style={{
+          ...s.layout,
+          ...(isMobile ? { gridTemplateColumns: "1fr", gap: 14 } : null),
+        }}
+      >
         {/* Lista */}
         <div style={s.list}>
           {visible.length === 0 && (
@@ -516,7 +535,7 @@ export default function Clientes({
         </div>
 
         {/* Ficha */}
-        <div style={s.detail}>
+        <div style={{ ...s.detail, ...(isMobile ? { padding: 14 } : null) }}>
           {!selected ? (
             <p style={{ color: "#666", fontSize: 13 }}>
               Elige un cliente para ver su ficha, o crea uno nuevo.
@@ -587,6 +606,7 @@ function ClientDetail({
   onRemind: () => void;
   onOpenTask: (cardId: string) => void;
 }) {
+  const isMobile = useIsMobile();
   const openCards = cards.filter((c) => !c.completed_at);
   // Las que el recordatorio incluiría: solo lo que espera al cliente.
   const waitingOnClient = openCards.filter((c) => c.assigned_to_client);
@@ -618,15 +638,25 @@ function ClientDetail({
           )}
         </div>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          <button onClick={onEdit} style={s.ghostBtn}>
+          <button
+            onClick={onEdit}
+            style={{ ...s.ghostBtn, ...(isMobile ? s.touchBtn : null) }}
+          >
             ✎ Editar
           </button>
-          <button onClick={onArchive} style={s.ghostBtn}>
+          <button
+            onClick={onArchive}
+            style={{ ...s.ghostBtn, ...(isMobile ? s.touchBtn : null) }}
+          >
             {client.active === false ? "Reactivar" : "Archivar"}
           </button>
           <button
             onClick={onDelete}
-            style={{ ...s.ghostBtn, color: "#ff8080" }}
+            style={{
+              ...s.ghostBtn,
+              ...(isMobile ? s.touchBtn : null),
+              color: "#ff8080",
+            }}
           >
             Eliminar
           </button>
@@ -639,10 +669,16 @@ function ClientDetail({
 
       {/* Atajos: es el objetivo de la sección — usar la ficha, no rellenar dos veces */}
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 16 }}>
-        <button onClick={onCreateInvoice} style={s.primaryBtn}>
+        <button
+          onClick={onCreateInvoice}
+          style={{ ...s.primaryBtn, ...(isMobile ? s.touchBtn : null) }}
+        >
           Crear factura
         </button>
-        <button onClick={onAssignTask} style={s.secondaryBtn}>
+        <button
+          onClick={onAssignTask}
+          style={{ ...s.secondaryBtn, ...(isMobile ? s.touchBtn : null) }}
+        >
           Asignar tarea
         </button>
         <button
@@ -650,6 +686,7 @@ function ClientDetail({
           disabled={sending || waitingOnClient.length === 0 || !client.email}
           style={{
             ...s.ghostBtn,
+            ...(isMobile ? s.touchBtn : null),
             // Sin correo o sin pendientes no hay nada que mandar: el botón se
             // apaga en vez de dejar que el servidor lo rechace.
             opacity:
@@ -671,7 +708,10 @@ function ClientDetail({
                 waitingOnClient.length ? ` (${waitingOnClient.length})` : ""
               }`}
         </button>
-        <button onClick={onCopyLink} style={s.ghostBtn}>
+        <button
+          onClick={onCopyLink}
+          style={{ ...s.ghostBtn, ...(isMobile ? s.touchBtn : null) }}
+        >
           {copied ? "✓ Link copiado" : "Copiar link del tablero"}
         </button>
       </div>
@@ -741,7 +781,10 @@ function ClientDetail({
               inv.invoice_payments,
             );
             return (
-              <div key={inv.id} style={s.row}>
+              <div
+                key={inv.id}
+                style={{ ...s.row, ...(isMobile ? s.rowMobile : null) }}
+              >
                 <span style={{ fontWeight: 600 }}>#{inv.number}</span>
                 <span style={{ color: "#888" }}>
                   {fmtDateTime(inv.issued_at)}
@@ -766,7 +809,11 @@ function ClientDetail({
             <button
               key={card.id}
               onClick={() => onOpenTask(card.id)}
-              style={{ ...s.row, ...s.rowButton }}
+              style={{
+                ...s.row,
+                ...s.rowButton,
+                ...(isMobile ? s.rowMobile : null),
+              }}
               title="Abrir esta tarea en el Kanban"
             >
               <span style={{ gridColumn: "1 / span 2", textAlign: "left" }}>
@@ -817,6 +864,9 @@ function ClientEditor({
   const [draft, setDraft] = useState<Draft>(initial);
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const isMobile = useIsMobile();
+  const inp = isMobile ? { ...s.input, ...s.touchInput } : s.input;
+  const gbtn = isMobile ? { ...s.ghostBtn, ...s.touchBtn } : s.ghostBtn;
 
   const set = (patch: Partial<Draft>) =>
     setDraft((prev) => ({ ...prev, ...patch }));
@@ -864,7 +914,15 @@ function ClientEditor({
 
   return (
     <div style={s.overlay} onClick={onClose}>
-      <div style={s.drawer} onClick={(e) => e.stopPropagation()}>
+      <div
+        style={{
+          ...s.drawer,
+          // En teléfono el panel ocupa la pantalla entera; el cuerpo lleva su
+          // propio scroll y la cabecera con la ✕ queda siempre visible.
+          ...(isMobile ? { width: "100%", borderLeft: "none" } : null),
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
         <div style={s.drawerHeader}>
           <h2 style={{ margin: 0, fontSize: 20 }}>{title}</h2>
           <button onClick={onClose} style={s.closeBtn}>
@@ -872,7 +930,9 @@ function ClientEditor({
           </button>
         </div>
 
-        <div style={s.drawerBody}>
+        <div
+          style={{ ...s.drawerBody, ...(isMobile ? { padding: 14 } : null) }}
+        >
           {err && <p style={s.errorBox}>{err}</p>}
 
           <label style={s.field}>
@@ -880,7 +940,7 @@ function ClientEditor({
             <input
               value={draft.name}
               onChange={(e) => set({ name: e.target.value })}
-              style={s.input}
+              style={inp}
               placeholder="Con el que lo llamas en el panel"
             />
           </label>
@@ -890,18 +950,23 @@ function ClientEditor({
             <input
               value={draft.company}
               onChange={(e) => set({ company: e.target.value })}
-              style={s.input}
+              style={inp}
               placeholder="Nombre fiscal que sale impreso en la factura"
             />
           </label>
 
-          <div style={s.pair}>
+          <div
+            style={{
+              ...s.pair,
+              ...(isMobile ? { flexDirection: "column", gap: 0 } : null),
+            }}
+          >
             <label style={{ ...s.field, flex: 1 }}>
               <span style={s.label}>Persona de contacto</span>
               <input
                 value={draft.contact_name}
                 onChange={(e) => set({ contact_name: e.target.value })}
-                style={s.input}
+                style={inp}
               />
             </label>
             <label style={{ ...s.field, flex: 1 }}>
@@ -909,19 +974,24 @@ function ClientEditor({
               <input
                 value={draft.tax_id}
                 onChange={(e) => set({ tax_id: e.target.value })}
-                style={s.input}
+                style={inp}
               />
             </label>
           </div>
 
-          <div style={s.pair}>
+          <div
+            style={{
+              ...s.pair,
+              ...(isMobile ? { flexDirection: "column", gap: 0 } : null),
+            }}
+          >
             <label style={{ ...s.field, flex: 1 }}>
               <span style={s.label}>Correo</span>
               <input
                 type="email"
                 value={draft.email}
                 onChange={(e) => set({ email: e.target.value })}
-                style={s.input}
+                style={inp}
                 placeholder="Recibe avisos de tareas y facturas"
               />
             </label>
@@ -930,7 +1000,7 @@ function ClientEditor({
               <input
                 value={draft.phone}
                 onChange={(e) => set({ phone: e.target.value })}
-                style={s.input}
+                style={inp}
               />
             </label>
           </div>
@@ -940,7 +1010,7 @@ function ClientEditor({
             <textarea
               value={draft.address}
               onChange={(e) => set({ address: e.target.value })}
-              style={{ ...s.input, minHeight: 64, resize: "vertical" }}
+              style={{ ...inp, minHeight: 64, resize: "vertical" }}
             />
           </label>
 
@@ -950,7 +1020,7 @@ function ClientEditor({
               type="url"
               value={draft.website}
               onChange={(e) => set({ website: e.target.value })}
-              style={s.input}
+              style={inp}
               placeholder="cliente.com — el https:// se agrega solo"
             />
           </label>
@@ -961,7 +1031,7 @@ function ClientEditor({
               type="date"
               value={draft.birth_date}
               onChange={(e) => set({ birth_date: e.target.value })}
-              style={s.input}
+              style={inp}
             />
           </label>
 
@@ -975,23 +1045,31 @@ function ClientEditor({
               </p>
             )}
             {draft.custom.map((row, idx) => (
-              <div key={idx} style={{ display: "flex", gap: 6, marginTop: 6 }}>
+              <div
+                key={idx}
+                style={{
+                  display: "flex",
+                  gap: 6,
+                  marginTop: 6,
+                  flexWrap: isMobile ? "wrap" : "nowrap",
+                }}
+              >
                 <input
                   value={row.key}
                   onChange={(e) => setCustom(idx, { key: e.target.value })}
-                  style={{ ...s.input, flex: "0 0 38%" }}
+                  style={{ ...inp, flex: isMobile ? "1 1 100%" : "0 0 38%" }}
                   placeholder="Etiqueta"
                 />
                 <input
                   value={row.value}
                   onChange={(e) => setCustom(idx, { value: e.target.value })}
-                  style={{ ...s.input, flex: 1 }}
+                  style={{ ...inp, flex: 1 }}
                   placeholder="Valor"
                 />
                 <button
                   type="button"
                   onClick={() => removeCustom(idx)}
-                  style={{ ...s.ghostBtn, padding: "8px 11px" }}
+                  style={{ ...gbtn, padding: "8px 11px" }}
                   title="Quitar este campo"
                 >
                   ✕
@@ -1001,7 +1079,7 @@ function ClientEditor({
             <button
               type="button"
               onClick={addCustom}
-              style={{ ...s.ghostBtn, marginTop: 8, alignSelf: "flex-start" }}
+              style={{ ...gbtn, marginTop: 8, alignSelf: "flex-start" }}
             >
               + Agregar campo
             </button>
@@ -1018,7 +1096,7 @@ function ClientEditor({
             <textarea
               value={draft.notes}
               onChange={(e) => set({ notes: e.target.value })}
-              style={{ ...s.input, minHeight: 90, resize: "vertical" }}
+              style={{ ...inp, minHeight: 90, resize: "vertical" }}
               placeholder="No se le muestra al cliente."
             />
           </label>
@@ -1043,10 +1121,14 @@ function ClientEditor({
         </div>
 
         <div style={s.drawerFooter}>
-          <button onClick={onClose} style={s.ghostBtn}>
+          <button onClick={onClose} style={gbtn}>
             Cancelar
           </button>
-          <button onClick={submit} disabled={saving} style={s.primaryBtn}>
+          <button
+            onClick={submit}
+            disabled={saving}
+            style={{ ...s.primaryBtn, ...(isMobile ? s.touchBtn : null) }}
+          >
             {saving ? "Guardando…" : "Guardar"}
           </button>
         </div>
@@ -1203,6 +1285,12 @@ const s: Record<string, CSSProperties> = {
     cursor: "pointer",
   },
   chipActive: { borderColor: "#fff", color: "#fff" },
+  // Variantes táctiles para teléfono: 16px evita el zoom de iOS al enfocar un
+  // campo, y 40px de alto es el mínimo cómodo para el dedo.
+  touchInput: { fontSize: 16, minHeight: 40 },
+  touchBtn: { minHeight: 40, fontSize: 14 },
+  touchChip: { minHeight: 40, padding: "9px 14px", fontSize: 13 },
+  rowMobile: { gridTemplateColumns: "1fr auto", rowGap: 2 },
   errorBox: {
     background: "#2a0f0f",
     border: "1px solid #5c1f1f",
