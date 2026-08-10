@@ -228,6 +228,14 @@ export interface Invoice {
   description: string | null;
   note: string | null;
   public_token: string;
+  // Espejo en Gestiono, necesario para cobrar con Stripe: Gestiono solo genera
+  // links de pago sobre facturas suyas. Nulo mientras no se haya pedido el link.
+  // `gestiono_link_amount` se congela porque el link cobra el saldo del momento
+  // en que se generó, no el saldo actual.
+  gestiono_pending_record_id: number | null;
+  gestiono_share_url: string | null;
+  gestiono_link_amount: number | null;
+  gestiono_linked_at: string | null;
   created_at: string;
   updated_at: string;
 }

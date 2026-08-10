@@ -148,6 +148,46 @@ export default function Facturacion({
     setInvoices((prev) => prev.filter((i) => i.id !== inv.id));
   }
 
+  // Id de la factura cuyo link se está generando: la llamada espeja la factura
+  // en Gestiono y puede tardar, así que el botón tiene que quedar bloqueado o el
+  // doble clic crearía dos facturas en la contabilidad.
+  const [linking, setLinking] = useState<string | null>(null);
+
+  // Link generado, para mostrarlo en el modal. Se guarda el monto y la moneda
+  // junto al link porque el modal debe decir por cuánto cobra: el saldo de la
+  // factura puede cambiar después y ya no coincidiría con lo que el link cobra.
+  const [linkModal, setLinkModal] = useState<{
+    url: string;
+    amount: number;
+    currency: string;
+    reused: boolean;
+  } | null>(null);
+
+  async function paymentLink(inv: FullInvoice) {
+    if (linking) return;
+    setLinking(inv.id);
+    try {
+      const res = await fetch("/api/invoice-payment-link", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ invoiceId: inv.id }),
+      });
+      const data = await res.json();
+      if (!res.ok) return alert(data.error ?? "No se pudo generar el link.");
+
+      setLinkModal({
+        url: data.shareUrl,
+        amount: Number(data.amount),
+        currency: inv.currency,
+        reused: Boolean(data.reused),
+      });
+      // Refresca para que la tarjeta muestre el link ya guardado.
+      if (!data.reused) load();
+    } finally {
+      setLinking(null);
+    }
+  }
+
   async function sendEmail(inv: FullInvoice) {
     const to = prompt("Enviar la factura a:", inv.party_email ?? "");
     if (to === null) return;
@@ -304,6 +344,8 @@ export default function Facturacion({
               onEdit={() => setEditing(inv)}
               onDelete={() => removeInvoice(inv)}
               onSend={() => sendEmail(inv)}
+              onPaymentLink={() => paymentLink(inv)}
+              linking={linking === inv.id}
               onChanged={load}
               isMobile={isMobile}
             />
@@ -329,6 +371,14 @@ export default function Facturacion({
           }}
         />
       )}
+
+      {linkModal && (
+        <PaymentLinkModal
+          {...linkModal}
+          isMobile={isMobile}
+          onClose={() => setLinkModal(null)}
+        />
+      )}
     </div>
   );
 }
@@ -344,6 +394,8 @@ function InvoiceCard({
   onEdit,
   onDelete,
   onSend,
+  onPaymentLink,
+  linking,
   onChanged,
   isMobile,
 }: {
@@ -355,6 +407,8 @@ function InvoiceCard({
   onEdit: () => void;
   onDelete: () => void;
   onSend: () => void;
+  onPaymentLink: () => void;
+  linking: boolean;
   onChanged: () => void;
   isMobile: boolean;
 }) {
@@ -463,6 +517,25 @@ function InvoiceCard({
         >
           Enviar por correo
         </button>
+        {/* Solo a clientes: a un colaborador se le paga, no se le cobra. Y sin
+            saldo no hay nada que cobrar. */}
+        {invoice.party_type === "client" && totals.balance > 0 && (
+          <button
+            onClick={onPaymentLink}
+            disabled={linking}
+            style={{
+              ...s.sendBtn,
+              ...(isMobile ? s.touchBtn : null),
+              ...(linking ? { opacity: 0.6, cursor: "wait" } : null),
+            }}
+          >
+            {linking
+              ? "Generando…"
+              : invoice.gestiono_share_url
+                ? "Copiar link de pago"
+                : "Generar link de pago"}
+          </button>
+        )}
         <button
           onClick={onEdit}
           style={{ ...s.ghostBtn, ...(isMobile ? s.touchBtn : null) }}
@@ -1163,6 +1236,119 @@ function Row({
 
 /* ---------------- Estilos ---------------- */
 
+/* ---------------- Modal del link de pago ---------------- */
+
+function PaymentLinkModal({
+  url,
+  amount,
+  currency,
+  reused,
+  isMobile,
+  onClose,
+}: {
+  url: string;
+  amount: number;
+  currency: string;
+  reused: boolean;
+  isMobile: boolean;
+  onClose: () => void;
+}) {
+  // "copiado" se apaga solo: un check permanente no distingue entre "acabo de
+  // copiar" y "copié hace un minuto", que es justo la duda del que va a pegar.
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    if (!copied) return;
+    const t = setTimeout(() => setCopied(false), 2000);
+    return () => clearTimeout(t);
+  }, [copied]);
+
+  // Cerrar con Escape: el modal tapa la lista y quedarse sin salida de teclado
+  // obliga a apuntar con el mouse a la ✕.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+    } catch {
+      // Sin permiso de portapapeles (o sin HTTPS) queda el input para copiar a
+      // mano, así que no hay nada que avisar.
+    }
+  }
+
+  return (
+    <div style={s.centerOverlay} onClick={onClose}>
+      <div
+        style={{
+          ...s.modal,
+          ...(isMobile ? { width: "100%", padding: 20 } : null),
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div style={s.modalHeader}>
+          <strong style={{ fontSize: 15 }}>
+            {reused ? "Link de pago existente" : "Link de pago generado"}
+          </strong>
+          <button onClick={onClose} style={s.closeBtn} aria-label="Cerrar">
+            ✕
+          </button>
+        </div>
+
+        <p style={s.modalAmount}>{fmtMoney(amount, currency)}</p>
+        <p style={s.help}>
+          El cliente paga con tarjeta en esta página. Cobra el monto de arriba,
+          aunque después cambie el saldo de la factura.
+        </p>
+
+        <div style={s.linkRow}>
+          {/* readOnly y no disabled: así se puede seleccionar y copiar a mano
+              si el portapapeles del navegador está bloqueado. */}
+          <input
+            readOnly
+            value={url}
+            onFocus={(e) => e.currentTarget.select()}
+            style={{ ...s.input, ...(isMobile ? s.touchInput : null), flex: 1 }}
+          />
+          <button
+            onClick={copy}
+            style={{
+              ...s.primaryBtnSm,
+              ...(isMobile ? s.touchBtn : null),
+              ...(copied ? { background: "#00e5a0", color: "#062" } : null),
+            }}
+          >
+            {copied ? "¡Copiado!" : "Copiar"}
+          </button>
+        </div>
+
+        <div style={s.modalFooter}>
+          <a
+            href={url}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ ...s.ghostBtn, textDecoration: "none" }}
+          >
+            Abrir
+          </a>
+          <button
+            onClick={onClose}
+            style={{ ...s.ghostBtn, ...(isMobile ? s.touchBtn : null) }}
+          >
+            Cerrar
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 const s: Record<string, CSSProperties> = {
   summaryRow: {
     display: "flex",
@@ -1351,6 +1537,41 @@ const s: Record<string, CSSProperties> = {
     display: "flex",
     justifyContent: "flex-end",
     zIndex: 50,
+  },
+  // El editor entra como panel lateral; el link de pago es un aviso puntual, así
+  // que va centrado. zIndex mayor para que pueda abrirse sobre el editor.
+  centerOverlay: {
+    position: "fixed",
+    inset: 0,
+    background: "rgba(0,0,0,.7)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 16,
+    zIndex: 60,
+  },
+  modal: {
+    width: "min(560px, 100%)",
+    background: "#0e0e0e",
+    border: "1px solid #1e1e1e",
+    borderRadius: 14,
+    padding: 24,
+    display: "flex",
+    flexDirection: "column",
+    gap: 12,
+  },
+  modalHeader: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  modalAmount: { fontSize: 26, fontWeight: 700, margin: 0 },
+  linkRow: { display: "flex", gap: 8, alignItems: "center" },
+  modalFooter: {
+    display: "flex",
+    justifyContent: "flex-end",
+    gap: 10,
+    marginTop: 4,
   },
   drawer: {
     width: "min(680px, 100%)",
