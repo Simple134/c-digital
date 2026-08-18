@@ -7,5 +7,10 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   // Corre en login/registro/dashboard; excluye estáticos, imágenes y favicon.
-  matcher: ["/login/:path*", "/registro/:path*", "/dashboard/:path*"],
+  matcher: [
+    "/login/:path*",
+    "/registro/:path*",
+    "/dashboard/:path*",
+    "/panel/:path*",
+  ],
 };

@@ -116,6 +116,9 @@ export interface Client {
   // (Instagram, número de contrato, contacto secundario…). Mapa plano por
   // CHECK en la base de datos: nada de anidamiento.
   custom_fields: Record<string, string>;
+  // Cuenta de auth del cliente para entrar a /panel. Null = aún no se registra.
+  // Se sella en /panel/registro (solo si su correo ya existe en esta tabla).
+  auth_user_id: string | null;
   // false = archivado. Desaparece de los selectores de factura y de tareas pero
   // conserva su historial, que es justo lo que borrarlo destruiría.
   active: boolean;
@@ -176,10 +179,62 @@ export interface MeetingRequest {
   meeting_start: string | null;
   meet_link: string | null;
   calendar_event_id: string | null;
+  // Cliente del panel que la solicitó (null en solicitudes del sitio público).
+  client_id: string | null;
+  // Resumen de lo hablado, visible para el cliente en su panel. `admin_notes`
+  // sigue siendo interno.
+  summary: string | null;
   status: MeetingRequestStatus;
   admin_notes: string | null;
   created_at: string;
   updated_at: string;
+}
+
+/* ---------------- Panel de clientes ---------------- */
+
+export type ClientFileKind = "credencial" | "contrato" | "documento" | "link";
+
+// Recurso que el equipo comparte con el cliente en su panel. Un link vive en
+// `url`; un archivo vive en `file_path` (bucket privado `client-files`, se
+// sirve con URL firmada desde el servidor).
+export interface ClientFile {
+  id: string;
+  client_id: string;
+  kind: ClientFileKind;
+  title: string;
+  url: string | null;
+  file_path: string | null;
+  note: string | null;
+  created_at: string;
+}
+
+// Propuesta comercial en HTML que se comparte con un link público protegido
+// por contraseña (/propuestas/{client_slug}/{slug}). El HTML vive en el bucket
+// privado `proposals`; `password_hash` es scrypt "salt:hash" y nunca sale al
+// cliente. `first_viewed_at`/`view_count` dicen si el cliente ya la abrió.
+export interface Proposal {
+  id: string;
+  client_id: string;
+  client_slug: string;
+  slug: string;
+  title: string;
+  file_path: string;
+  password_hash: string;
+  is_active: boolean;
+  view_count: number;
+  first_viewed_at: string | null;
+  last_viewed_at: string | null;
+  created_at: string;
+}
+
+// Volante/comprobante de pago que el cliente sube sobre una factura.
+export interface InvoiceReceipt {
+  id: string;
+  invoice_id: string;
+  client_id: string;
+  file_path: string;
+  note: string | null;
+  created_at: string;
 }
 
 export type TableName =

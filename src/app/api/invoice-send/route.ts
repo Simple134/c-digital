@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { isTeamMember } from "@/lib/supabase/guards";
 import { fmtDateTime } from "@/lib/format";
 import {
   computeTotals,
@@ -131,6 +132,10 @@ export async function POST(request: NextRequest) {
   } = await supabase.auth.getUser();
   if (!user) {
     return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+  }
+  // Los clientes del panel tambien tienen sesion: esto es solo para el equipo.
+  if (!(await isTeamMember())) {
+    return NextResponse.json({ error: "No autorizado" }, { status: 403 });
   }
 
   let body: { invoiceId?: string; to?: string };

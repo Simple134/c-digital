@@ -25,7 +25,11 @@ const NAV_GROUPS: { id: string; label: string; items: NavItem[] }[] = [
   {
     id: "web",
     label: "Página web",
-    items: RESOURCES.map((r) => ({ key: r.table, label: r.label, resource: r })),
+    items: RESOURCES.map((r) => ({
+      key: r.table,
+      label: r.label,
+      resource: r,
+    })),
   },
   {
     id: "ops",

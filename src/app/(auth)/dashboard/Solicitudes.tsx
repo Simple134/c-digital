@@ -129,6 +129,23 @@ export default function Solicitudes({ supabase }: { supabase: Supabase }) {
     return true;
   }
 
+  // Resumen visible para el cliente en su panel (solo reuniones). Aparte de
+  // `admin_notes`, que sigue siendo interno.
+  async function saveSummary(row: Row, summary: string) {
+    const { error } = await supabase
+      .from("meeting_requests")
+      .update({ summary, updated_at: new Date().toISOString() })
+      .eq("id", row.id);
+    if (error) {
+      alert("Error al guardar el resumen: " + error.message);
+      return false;
+    }
+    setRows((prev) =>
+      prev.map((r) => (r.id === row.id ? { ...r, summary } : r)),
+    );
+    return true;
+  }
+
   async function remove(row: Row) {
     if (!confirm("¿Eliminar este registro? Esta acción no se puede deshacer."))
       return;
@@ -225,6 +242,7 @@ export default function Solicitudes({ supabase }: { supabase: Supabase }) {
               }
               onStatus={(s) => updateStatus(row, s)}
               onSaveNotes={(n) => saveNotes(row, n)}
+              onSaveSummary={(n) => saveSummary(row, n)}
               onDelete={() => remove(row)}
               isMobile={isMobile}
             />
@@ -243,6 +261,7 @@ function RequestCard({
   onToggle,
   onStatus,
   onSaveNotes,
+  onSaveSummary,
   onDelete,
   isMobile,
 }: {
@@ -251,12 +270,27 @@ function RequestCard({
   onToggle: () => void;
   onStatus: (s: FormSubmissionStatus) => void;
   onSaveNotes: (n: string) => Promise<boolean>;
+  onSaveSummary: (n: string) => Promise<boolean>;
   onDelete: () => void;
   isMobile: boolean;
 }) {
   const [noteDraft, setNoteDraft] = useState(row.admin_notes ?? "");
   const [savingNote, setSavingNote] = useState(false);
   const [noteSaved, setNoteSaved] = useState(false);
+  const rowSummary = row.kind === "meeting" ? (row.summary ?? "") : "";
+  const [summaryDraft, setSummaryDraft] = useState(rowSummary);
+  const [savingSummary, setSavingSummary] = useState(false);
+  const [summarySaved, setSummarySaved] = useState(false);
+
+  async function handleSaveSummary() {
+    setSavingSummary(true);
+    const ok = await onSaveSummary(summaryDraft);
+    setSavingSummary(false);
+    if (ok) {
+      setSummarySaved(true);
+      setTimeout(() => setSummarySaved(false), 2000);
+    }
+  }
 
   const statusMeta =
     STATUSES.find((s) => s.value === row.status) ?? STATUSES[0];
@@ -484,6 +518,44 @@ function RequestCard({
           )}
         </div>
       </div>
+
+      {/* Resumen para el cliente: solo reuniones; él lo ve en su panel. */}
+      {row.kind === "meeting" && (
+        <div style={{ marginTop: 12 }}>
+          <textarea
+            value={summaryDraft}
+            onChange={(e) => setSummaryDraft(e.target.value)}
+            placeholder="Resumen de lo hablado (visible para el cliente en su panel)…"
+            style={{
+              ...styles.noteInput,
+              borderColor: "#2b3f6b",
+              ...(isMobile ? { fontSize: 16 } : null),
+            }}
+          />
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+              marginTop: 6,
+            }}
+          >
+            <button
+              onClick={handleSaveSummary}
+              disabled={savingSummary || summaryDraft === rowSummary}
+              style={{
+                ...styles.saveNoteBtn,
+                opacity: savingSummary || summaryDraft === rowSummary ? 0.5 : 1,
+              }}
+            >
+              {savingSummary ? "Guardando…" : "Guardar resumen"}
+            </button>
+            {summarySaved && (
+              <span style={{ color: "#00e5a0", fontSize: 12 }}>✓ Guardado</span>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Detalle expandible */}
       {expanded && row.kind === "meeting" && (

@@ -94,7 +94,8 @@ export default async function PublicKanbanPage({
   }));
   const done = allCards.filter((c) => c.completed_at).length;
   // La fase actual es la primera sin terminar que tenga trabajo dentro.
-  const currentId = phases.find((p) => !p.col.is_done && p.cards.length)?.col.id;
+  const currentId = phases.find((p) => !p.col.is_done && p.cards.length)?.col
+    .id;
 
   return (
     <div style={styles.page}>

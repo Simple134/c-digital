@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { isTeamMember } from "@/lib/supabase/guards";
 import {
   GestionoAPI,
   type GestionoCurrency,
@@ -93,6 +94,10 @@ export async function POST(request: NextRequest) {
   if (!user) {
     return NextResponse.json({ error: "No autorizado" }, { status: 401 });
   }
+  // Los clientes del panel tambien tienen sesion: esto es solo para el equipo.
+  if (!(await isTeamMember())) {
+    return NextResponse.json({ error: "No autorizado" }, { status: 403 });
+  }
 
   try {
     const body = (await request.json()) as PaymentLinkBody;
@@ -128,13 +133,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const publicKey =
-      process.env.NEXT_PUBLIC_GESTIONO_PUBLIC_KEY;
+    const publicKey = process.env.NEXT_PUBLIC_GESTIONO_PUBLIC_KEY;
     // Sin fallback a NEXT_PUBLIC_*: firma cada petición y no debe poder
     // terminar en el bundle del navegador.
     const privateKey = process.env.NEXT_PUBLIC_GESTIONO_SECRET_KEY;
-    const organizationId =
-      process.env.NEXT_PUBLIC_GESTIONO_ORGANIZATION_ID;
+    const organizationId = process.env.NEXT_PUBLIC_GESTIONO_ORGANIZATION_ID;
     const divisionId = process.env.GESTIONO_DIVISION_ID;
 
     if (!publicKey || !privateKey || !organizationId || !divisionId) {

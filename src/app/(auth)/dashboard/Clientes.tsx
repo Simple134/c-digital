@@ -18,6 +18,9 @@ import { siteOrigin } from "@/lib/site";
 import type { createClient } from "@/lib/supabase/client";
 import type {
   Client,
+  ClientFile,
+  ClientFileKind,
+  Proposal,
   Invoice,
   InvoiceItem,
   InvoicePayment,
@@ -168,6 +171,8 @@ export default function Clientes({
   const [clients, setClients] = useState<Client[]>([]);
   const [invoices, setInvoices] = useState<ClientInvoice[]>([]);
   const [cards, setCards] = useState<KanbanCard[]>([]);
+  const [files, setFiles] = useState<ClientFile[]>([]);
+  const [proposals, setProposals] = useState<Proposal[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -187,7 +192,7 @@ export default function Clientes({
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
-    const [cli, inv, kanban] = await Promise.all([
+    const [cli, inv, kanban, cf, props] = await Promise.all([
       supabase.from("clients").select("*").order("name"),
       supabase
         .from("invoices")
@@ -195,6 +200,14 @@ export default function Clientes({
         .eq("party_type", "client")
         .order("issued_at", { ascending: false }),
       supabase.from("kanban_cards").select("*"),
+      supabase
+        .from("client_files")
+        .select("*")
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("proposals")
+        .select("*")
+        .order("created_at", { ascending: false }),
     ]);
     if (cli.error || inv.error || kanban.error) {
       setError(
@@ -206,6 +219,8 @@ export default function Clientes({
     setClients((cli.data as Client[]) ?? []);
     setInvoices((inv.data as ClientInvoice[]) ?? []);
     setCards((kanban.data as KanbanCard[]) ?? []);
+    setFiles((cf.data as ClientFile[]) ?? []);
+    setProposals((props.data as Proposal[]) ?? []);
     setLoading(false);
   }, [supabase]);
 
@@ -354,6 +369,32 @@ export default function Clientes({
     load();
   }
 
+  async function sendPanelInvite(client: Client) {
+    setSending(true);
+    setNotice(null);
+    try {
+      const res = await fetch("/api/panel-invite", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ clientId: client.id }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setNotice({ text: data.error ?? "No se pudo enviar.", ok: false });
+      } else if (data.sent) {
+        setNotice({
+          text: `Invitación al panel enviada a ${client.name}.`,
+          ok: true,
+        });
+      } else {
+        setNotice({ text: data.reason ?? "No se envió.", ok: false });
+      }
+    } catch {
+      setNotice({ text: "Fallo de red: el correo no salió.", ok: false });
+    }
+    setSending(false);
+  }
+
   async function sendReminder(client: Client) {
     setSending(true);
     setNotice(null);
@@ -431,7 +472,12 @@ export default function Clientes({
         }}
       >
         {/* Lista */}
-        <div style={s.list}>
+        <div
+          style={{
+            ...s.list,
+            ...(isMobile ? { gridTemplateColumns: "1fr" } : null),
+          }}
+        >
           {visible.length === 0 && (
             <p style={{ color: "#666", fontSize: 13 }}>
               {search
@@ -454,7 +500,7 @@ export default function Clientes({
                 style={{
                   ...s.listItem,
                   borderColor: selectedId === c.id ? "#00e5a0" : "#222",
-                  background: selectedId === c.id ? "#101010" : "transparent",
+                  background: selectedId === c.id ? "#0f1a15" : "#0e0e0e",
                   opacity: c.active === false ? 0.5 : 1,
                 }}
               >
@@ -467,6 +513,25 @@ export default function Clientes({
                 {(c.company || c.email) && (
                   <div style={s.listMeta}>{c.company || c.email}</div>
                 )}
+                {/* Acceso al panel: se muestra siempre, incluso en clientes
+                    nuevos, porque invitar es un paso pendiente por hacer. */}
+                <div style={{ marginTop: 6 }}>
+                  {c.auth_user_id ? (
+                    <span
+                      style={{
+                        ...s.tag,
+                        color: "#00e5a0",
+                        borderColor: "#1f5c48",
+                      }}
+                    >
+                      ✓ Registrado
+                    </span>
+                  ) : (
+                    <span style={{ ...s.tag, color: "#777" }}>
+                      Sin registrar
+                    </span>
+                  )}
+                </div>
                 {/* Sin facturas ni tareas no se pinta la fila de badges: un
                     cliente nuevo se ve limpio en vez de lleno de "sin nada". */}
                 <div
@@ -533,33 +598,49 @@ export default function Clientes({
             );
           })}
         </div>
+      </div>
 
-        {/* Ficha */}
-        <div style={{ ...s.detail, ...(isMobile ? { padding: 14 } : null) }}>
-          {!selected ? (
-            <p style={{ color: "#666", fontSize: 13 }}>
-              Elige un cliente para ver su ficha, o crea uno nuevo.
-            </p>
-          ) : (
+      {/* Ficha del cliente seleccionado, en modal. "Editar" cierra el modal
+          antes de abrir el editor lateral: dos capas a la vez se pelean. */}
+      {selected && (
+        <div style={s.modalOverlay} onClick={() => setSelectedId(null)}>
+          <div
+            style={{ ...s.modal, ...(isMobile ? { padding: 14 } : null) }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setSelectedId(null)}
+              style={s.modalClose}
+              aria-label="Cerrar"
+            >
+              ✕
+            </button>
             <ClientDetail
               client={selected}
               invoices={invoices.filter((i) => i.client_id === selected.id)}
               cards={cards.filter((c) => c.client_id === selected.id)}
+              files={files.filter((f) => f.client_id === selected.id)}
+              proposals={proposals.filter((p) => p.client_id === selected.id)}
+              onFilesChanged={load}
               copied={copied}
               notice={notice}
               sending={sending}
-              onEdit={() => setEditing(selected)}
+              onEdit={() => {
+                setSelectedId(null);
+                setEditing(selected);
+              }}
               onArchive={() => archive(selected)}
               onDelete={() => remove(selected)}
               onCopyLink={() => copyPublicLink(selected)}
               onCreateInvoice={() => onCreateInvoice(selected.id)}
               onAssignTask={() => onAssignTask(selected.id)}
               onRemind={() => sendReminder(selected)}
+              onInvite={() => sendPanelInvite(selected)}
               onOpenTask={(cardId) => onOpenTask(selected.id, cardId)}
             />
-          )}
+          </div>
         </div>
-      </div>
+      )}
 
       {editing && (
         <ClientEditor
@@ -575,10 +656,75 @@ export default function Clientes({
 
 /* ---------------- Ficha ---------------- */
 
+// Iconos SVG en línea (trazo estilo Lucide) para las acciones de la cabecera:
+// un emoji rendea distinto en cada sistema; un SVG se ve igual en todos.
+function IconPencil() {
+  return (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+      <path d="m15 5 4 4" />
+    </svg>
+  );
+}
+
+function IconTrash() {
+  return (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M3 6h18" />
+      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
+      <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+      <path d="M10 11v6" />
+      <path d="M14 11v6" />
+    </svg>
+  );
+}
+
+function IconRestore() {
+  return (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M3 12a9 9 0 1 0 3-6.7" />
+      <path d="M3 4v5h5" />
+    </svg>
+  );
+}
+
 function ClientDetail({
   client,
   invoices,
   cards,
+  files,
+  proposals,
+  onFilesChanged,
   copied,
   notice,
   sending,
@@ -589,11 +735,15 @@ function ClientDetail({
   onCreateInvoice,
   onAssignTask,
   onRemind,
+  onInvite,
   onOpenTask,
 }: {
   client: Client;
   invoices: ClientInvoice[];
   cards: KanbanCard[];
+  files: ClientFile[];
+  proposals: Proposal[];
+  onFilesChanged: () => void;
   copied: boolean;
   notice: { text: string; ok: boolean } | null;
   sending: boolean;
@@ -604,6 +754,7 @@ function ClientDetail({
   onCreateInvoice: () => void;
   onAssignTask: () => void;
   onRemind: () => void;
+  onInvite: () => void;
   onOpenTask: (cardId: string) => void;
 }) {
   const isMobile = useIsMobile();
@@ -628,38 +779,77 @@ function ClientDetail({
 
   return (
     <div>
-      <div style={s.detailHead}>
+      {/* Cabecera: identidad con editar/eliminar como iconos al lado del
+          nombre — lo que más se usa no debe requerir scroll. El confirm() de
+          eliminar es la salvaguarda contra el clic accidental. */}
+      <div style={{ ...s.detailHead, paddingRight: 28 }}>
         <div style={{ minWidth: 0 }}>
-          <h2 style={{ margin: 0, fontSize: 22 }}>{client.name}</h2>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+              flexWrap: "wrap",
+            }}
+          >
+            <h2 style={{ margin: 0, fontSize: 22 }}>{client.name}</h2>
+            <button
+              onClick={onEdit}
+              style={s.iconBtn}
+              title="Editar cliente"
+              aria-label="Editar"
+            >
+              <IconPencil />
+            </button>
+            {client.active === false && (
+              <button
+                onClick={onArchive}
+                style={s.iconBtn}
+                title="Reactivar cliente"
+                aria-label="Reactivar"
+              >
+                <IconRestore />
+              </button>
+            )}
+            <button
+              onClick={onDelete}
+              style={{ ...s.iconBtn, color: "#ff8080", borderColor: "#5c1f1f" }}
+              title="Eliminar cliente"
+              aria-label="Eliminar"
+            >
+              <IconTrash />
+            </button>
+          </div>
           {client.company && (
             <div style={{ color: "#888", fontSize: 13, marginTop: 4 }}>
               {client.company}
             </div>
           )}
-        </div>
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          <button
-            onClick={onEdit}
-            style={{ ...s.ghostBtn, ...(isMobile ? s.touchBtn : null) }}
-          >
-            ✎ Editar
-          </button>
-          <button
-            onClick={onArchive}
-            style={{ ...s.ghostBtn, ...(isMobile ? s.touchBtn : null) }}
-          >
-            {client.active === false ? "Reactivar" : "Archivar"}
-          </button>
-          <button
-            onClick={onDelete}
+          <div
             style={{
-              ...s.ghostBtn,
-              ...(isMobile ? s.touchBtn : null),
-              color: "#ff8080",
+              display: "flex",
+              gap: 6,
+              marginTop: 8,
+              alignItems: "center",
+              flexWrap: "wrap",
             }}
           >
-            Eliminar
-          </button>
+            {client.auth_user_id ? (
+              <span
+                style={{ ...s.tag, color: "#00e5a0", borderColor: "#1f5c48" }}
+              >
+                ✓ Acceso al panel
+              </span>
+            ) : (
+              <span style={{ ...s.tag, color: "#777" }}>Sin registrar</span>
+            )}
+            {client.active === false && (
+              <span style={s.archivedTag}>archivado</span>
+            )}
+            <span style={{ fontSize: 11, color: "#666" }}>
+              Cliente desde {fmtDateTime(client.created_at)}
+            </span>
+          </div>
         </div>
       </div>
 
@@ -667,7 +857,43 @@ function ClientDetail({
         <p style={s.warnBox}>Ficha incompleta: {gaps.join("; ")}.</p>
       )}
 
-      {/* Atajos: es el objetivo de la sección — usar la ficha, no rellenar dos veces */}
+      {/* Lo primero que se pregunta de un cliente, de un vistazo. */}
+      <div style={{ ...s.detailStats, marginTop: 14 }}>
+        <div style={s.detailStat}>
+          <span style={s.detailStatLabel}>Cobro pendiente</span>
+          <span
+            style={{
+              ...s.detailStatValue,
+              color: Object.keys(owed).length ? "#ff8080" : "#00e5a0",
+            }}
+          >
+            {Object.keys(owed).length
+              ? Object.entries(owed)
+                  .map(([cur, amount]) => fmtMoney(amount, cur))
+                  .join(" + ")
+              : "Al día"}
+          </span>
+        </div>
+        <div style={s.detailStat}>
+          <span style={s.detailStatLabel}>Tareas abiertas</span>
+          <span style={s.detailStatValue}>
+            {openCards.length}
+            {waitingOnClient.length > 0 && (
+              <span style={{ color: "#e6b800", fontSize: 12, fontWeight: 400 }}>
+                {" "}
+                · {waitingOnClient.length} esperando por él
+              </span>
+            )}
+          </span>
+        </div>
+        <div style={s.detailStat}>
+          <span style={s.detailStatLabel}>Facturas</span>
+          <span style={s.detailStatValue}>{invoices.length}</span>
+        </div>
+      </div>
+
+      {/* Acciones: las dos principales siempre; las contextuales solo cuando
+          son accionables — un botón apagado es ruido, no información. */}
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 16 }}>
         <button
           onClick={onCreateInvoice}
@@ -681,33 +907,36 @@ function ClientDetail({
         >
           Asignar tarea
         </button>
-        <button
-          onClick={onRemind}
-          disabled={sending || waitingOnClient.length === 0 || !client.email}
-          style={{
-            ...s.ghostBtn,
-            ...(isMobile ? s.touchBtn : null),
-            // Sin correo o sin pendientes no hay nada que mandar: el botón se
-            // apaga en vez de dejar que el servidor lo rechace.
-            opacity:
-              sending || waitingOnClient.length === 0 || !client.email
-                ? 0.45
-                : 1,
-          }}
-          title={
-            !client.email
-              ? "Sin correo configurado"
-              : waitingOnClient.length === 0
-                ? "No hay tareas esperando por el cliente"
-                : `Le recuerda ${waitingOnClient.length} tarea(s)`
-          }
-        >
-          {sending
-            ? "Enviando…"
-            : `✉ Recordar pendientes${
-                waitingOnClient.length ? ` (${waitingOnClient.length})` : ""
-              }`}
-        </button>
+        {waitingOnClient.length > 0 && client.email && (
+          <button
+            onClick={onRemind}
+            disabled={sending}
+            style={{
+              ...s.ghostBtn,
+              ...(isMobile ? s.touchBtn : null),
+              opacity: sending ? 0.45 : 1,
+            }}
+            title={`Le recuerda ${waitingOnClient.length} tarea(s)`}
+          >
+            {sending
+              ? "Enviando…"
+              : `✉ Recordar pendientes (${waitingOnClient.length})`}
+          </button>
+        )}
+        {!client.auth_user_id && client.email && (
+          <button
+            onClick={onInvite}
+            disabled={sending}
+            style={{
+              ...s.ghostBtn,
+              ...(isMobile ? s.touchBtn : null),
+              opacity: sending ? 0.45 : 1,
+            }}
+            title="Le envía el enlace para crear su cuenta del panel"
+          >
+            {sending ? "Enviando…" : "Invitar al panel"}
+          </button>
+        )}
         <button
           onClick={onCopyLink}
           style={{ ...s.ghostBtn, ...(isMobile ? s.touchBtn : null) }}
@@ -718,118 +947,569 @@ function ClientDetail({
 
       {notice && <p style={notice.ok ? s.okBox : s.warnBox}>{notice.text}</p>}
 
-      <dl style={s.dataGrid}>
-        <Datum label="Contacto" value={client.contact_name} />
-        <Datum label="Correo" value={client.email} />
-        <Datum label="Teléfono" value={client.phone} />
-        <Datum label="RNC/Cédula" value={client.tax_id} />
-        <Datum label="Dirección" value={client.address} />
-        <Datum
-          label="Cumpleaños"
-          value={client.birth_date ? fmtBirthday(client.birth_date) : null}
-        />
-        <Datum label="Cliente desde" value={fmtDateTime(client.created_at)} />
-        {client.website && (
-          <div>
-            <dt style={s.dt}>Sitio web</dt>
-            <dd style={{ ...s.dd }}>
-              <a
-                href={client.website}
-                target="_blank"
-                rel="noopener noreferrer"
-                style={s.link}
-              >
-                {/* Se muestra sin el esquema: es ruido en una ficha. */}
-                {client.website.replace(/^https?:\/\//, "").replace(/\/$/, "")}
-              </a>
-            </dd>
-          </div>
-        )}
-        {/* Campos adicionales: se listan igual que los fijos, en el orden en que
-            se guardaron, para que la ficha se lea como una sola cosa. */}
-        {custom.map(([label, value]) => (
-          <Datum key={label} label={label} value={value || null} />
-        ))}
-      </dl>
+      {/* Cuerpo en dos columnas: identidad/contacto a la izquierda, actividad
+          (facturas y tareas) a la derecha. En móvil colapsa a una. */}
+      <div
+        style={{
+          ...s.detailCols,
+          ...(isMobile ? { gridTemplateColumns: "1fr" } : null),
+        }}
+      >
+        <div style={s.detailCol}>
+          <section style={s.sectionCard}>
+            <h3 style={s.h3}>Contacto</h3>
+            <dl style={{ ...s.dataGrid, marginTop: 0 }}>
+              <Datum label="Contacto" value={client.contact_name} />
+              <Datum label="Correo" value={client.email} />
+              <Datum label="Teléfono" value={client.phone} />
+              <Datum label="RNC/Cédula" value={client.tax_id} />
+              <Datum label="Dirección" value={client.address} />
+              <Datum
+                label="Cumpleaños"
+                value={
+                  client.birth_date ? fmtBirthday(client.birth_date) : null
+                }
+              />
+              {client.website && (
+                <div>
+                  <dt style={s.dt}>Sitio web</dt>
+                  <dd style={{ ...s.dd }}>
+                    <a
+                      href={client.website}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={s.link}
+                    >
+                      {/* Se muestra sin el esquema: es ruido en una ficha. */}
+                      {client.website
+                        .replace(/^https?:\/\//, "")
+                        .replace(/\/$/, "")}
+                    </a>
+                  </dd>
+                </div>
+              )}
+              {/* Campos adicionales: se listan igual que los fijos, en el orden
+                  en que se guardaron, para que la ficha se lea como una sola
+                  cosa. */}
+              {custom.map(([label, value]) => (
+                <Datum key={label} label={label} value={value || null} />
+              ))}
+            </dl>
+          </section>
 
-      {client.notes && (
-        <section style={{ marginTop: 20 }}>
-          <h3 style={s.h3}>Notas</h3>
-          <p style={{ ...s.body, whiteSpace: "pre-wrap" }}>{client.notes}</p>
-        </section>
-      )}
+          {client.notes && (
+            <section style={s.sectionCard}>
+              <h3 style={s.h3}>Notas</h3>
+              <p style={{ ...s.body, whiteSpace: "pre-wrap" }}>
+                {client.notes}
+              </p>
+            </section>
+          )}
+        </div>
 
-      {/* Facturas y tareas solo existen si hay algo que listar: una sección que
-          únicamente dice "no hay nada" es ruido, no información. */}
-      {invoices.length > 0 && (
-        <section style={{ marginTop: 24 }}>
-          <h3 style={s.h3}>
-            Facturas ({invoices.length})
-            {Object.keys(owed).length > 0 && (
-              <span style={{ color: "#ff8080", fontWeight: 400, fontSize: 13 }}>
-                {" · pendiente "}
-                {Object.entries(owed)
-                  .map(([cur, amount]) => fmtMoney(amount, cur))
-                  .join(" + ")}
-              </span>
-            )}
-          </h3>
-          {invoices.map((inv) => {
-            const t = computeTotals(
-              inv,
-              inv.invoice_items,
-              inv.invoice_payments,
-            );
-            return (
-              <div
-                key={inv.id}
-                style={{ ...s.row, ...(isMobile ? s.rowMobile : null) }}
-              >
-                <span style={{ fontWeight: 600 }}>#{inv.number}</span>
-                <span style={{ color: "#888" }}>
-                  {fmtDateTime(inv.issued_at)}
-                </span>
-                <span>{fmtMoney(t.total, inv.currency)}</span>
-                <span style={{ color: STATUS_COLOR[t.status], fontSize: 12 }}>
-                  {STATUS_LABEL[t.status]}
-                </span>
-              </div>
-            );
-          })}
-        </section>
-      )}
+        <div style={s.detailCol}>
+          {/* Facturas y tareas solo existen si hay algo que listar: una sección
+              que únicamente dice "no hay nada" es ruido, no información. */}
+          {invoices.length > 0 && (
+            <section style={s.sectionCard}>
+              <h3 style={s.h3}>
+                Facturas ({invoices.length})
+                {Object.keys(owed).length > 0 && (
+                  <span
+                    style={{ color: "#ff8080", fontWeight: 400, fontSize: 13 }}
+                  >
+                    {" · pendiente "}
+                    {Object.entries(owed)
+                      .map(([cur, amount]) => fmtMoney(amount, cur))
+                      .join(" + ")}
+                  </span>
+                )}
+              </h3>
+              {invoices.map((inv) => {
+                const t = computeTotals(
+                  inv,
+                  inv.invoice_items,
+                  inv.invoice_payments,
+                );
+                return (
+                  <div
+                    key={inv.id}
+                    style={{ ...s.row, ...(isMobile ? s.rowMobile : null) }}
+                  >
+                    <span style={{ fontWeight: 600 }}>#{inv.number}</span>
+                    <span style={{ color: "#888" }}>
+                      {fmtDateTime(inv.issued_at)}
+                    </span>
+                    <span>{fmtMoney(t.total, inv.currency)}</span>
+                    <span
+                      style={{ color: STATUS_COLOR[t.status], fontSize: 12 }}
+                    >
+                      {STATUS_LABEL[t.status]}
+                    </span>
+                  </div>
+                );
+              })}
+            </section>
+          )}
 
-      {openCards.length > 0 && (
-        <section style={{ marginTop: 24 }}>
-          <h3 style={s.h3}>
-            Tareas abiertas ({openCards.length}
-            {cards.length > openCards.length ? ` de ${cards.length}` : ""})
-          </h3>
-          {openCards.map((card) => (
-            <button
-              key={card.id}
-              onClick={() => onOpenTask(card.id)}
-              style={{
-                ...s.row,
-                ...s.rowButton,
-                ...(isMobile ? s.rowMobile : null),
-              }}
-              title="Abrir esta tarea en el Kanban"
-            >
-              <span style={{ gridColumn: "1 / span 2", textAlign: "left" }}>
-                {card.title}
-              </span>
-              <span style={{ color: "#888", fontSize: 12 }}>
-                {card.due_date ? `vence ${card.due_date}` : "sin fecha"}
-              </span>
-              <span style={{ fontSize: 12, color: "#e6b800" }}>
-                {card.assigned_to_client ? "⏳ pendiente del cliente" : ""}
-              </span>
-            </button>
-          ))}
-        </section>
-      )}
+          {openCards.length > 0 && (
+            <section style={s.sectionCard}>
+              <h3 style={s.h3}>
+                Tareas abiertas ({openCards.length}
+                {cards.length > openCards.length ? ` de ${cards.length}` : ""})
+              </h3>
+              {openCards.map((card) => (
+                <button
+                  key={card.id}
+                  onClick={() => onOpenTask(card.id)}
+                  style={{
+                    ...s.row,
+                    ...s.rowButton,
+                    ...(isMobile ? s.rowMobile : null),
+                  }}
+                  title="Abrir esta tarea en el Kanban"
+                >
+                  <span style={{ gridColumn: "1 / span 2", textAlign: "left" }}>
+                    {card.title}
+                  </span>
+                  <span style={{ color: "#888", fontSize: 12 }}>
+                    {card.due_date ? `vence ${card.due_date}` : "sin fecha"}
+                  </span>
+                  <span style={{ fontSize: 12, color: "#e6b800" }}>
+                    {card.assigned_to_client ? "⏳ pendiente del cliente" : ""}
+                  </span>
+                </button>
+              ))}
+            </section>
+          )}
+
+          {/* Lo que el cliente ve en la sección Archivos de su panel. */}
+          <ClientFilesSection
+            clientId={client.id}
+            files={files}
+            onChanged={onFilesChanged}
+          />
+
+          {/* Propuestas HTML con link público + contraseña. */}
+          <ClientProposalsSection
+            clientId={client.id}
+            proposals={proposals}
+            onChanged={onFilesChanged}
+          />
+        </div>
+      </div>
     </div>
+  );
+}
+
+// Selector de archivo con el look del dashboard: el input nativo queda
+// invisible encima del label (así conserva la validación `required` y el
+// click), y lo que se ve es el botón estilizado con el nombre elegido.
+function FilePicker({
+  inputKey,
+  file,
+  onSelect,
+  accept,
+  placeholder,
+  style,
+}: {
+  inputKey: number;
+  file: File | null;
+  onSelect: (f: File | null) => void;
+  accept?: string;
+  placeholder: string;
+  style?: CSSProperties;
+}) {
+  return (
+    <label
+      title={file?.name ?? placeholder}
+      style={{
+        ...s.filePicker,
+        ...(file ? { borderStyle: "solid", color: "#eee" } : null),
+        ...style,
+      }}
+    >
+      <svg
+        width="13"
+        height="13"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden
+        style={{ flexShrink: 0 }}
+      >
+        <path d="M12 3v12" />
+        <path d="m7 8 5-5 5 5" />
+        <path d="M4 21h16" />
+      </svg>
+      <span
+        style={{
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+          whiteSpace: "nowrap",
+        }}
+      >
+        {file ? file.name : placeholder}
+      </span>
+      <input
+        key={inputKey}
+        type="file"
+        required
+        accept={accept}
+        onChange={(e) => onSelect(e.target.files?.[0] ?? null)}
+        style={s.filePickerInput}
+      />
+    </label>
+  );
+}
+
+const FILE_KIND_LABEL: Record<ClientFileKind, string> = {
+  credencial: "Credencial",
+  contrato: "Contrato",
+  documento: "Documento",
+  link: "Link",
+};
+
+/**
+ * Archivos que el cliente ve en su panel (credenciales, contratos, documentos
+ * y links). Todo pasa por /api/panel-files: el bucket es privado y solo el
+ * servidor firma o borra objetos.
+ */
+function ClientFilesSection({
+  clientId,
+  files,
+  onChanged,
+}: {
+  clientId: string;
+  files: ClientFile[];
+  onChanged: () => void;
+}) {
+  const [kind, setKind] = useState<ClientFileKind>("documento");
+  const [title, setTitle] = useState("");
+  const [url, setUrl] = useState("");
+  const [note, setNote] = useState("");
+  const [file, setFile] = useState<File | null>(null);
+  // Remonta el <input type="file"> tras guardar: no hay forma de vaciarlo por valor.
+  const [fileInputKey, setFileInputKey] = useState(0);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function add(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    setError(null);
+    const form = new FormData();
+    form.set("clientId", clientId);
+    form.set("kind", kind);
+    form.set("title", title);
+    form.set("note", note);
+    if (kind === "link") form.set("url", url);
+    else if (file) form.set("file", file);
+    try {
+      const res = await fetch("/api/panel-files", {
+        method: "POST",
+        body: form,
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error ?? "No se pudo guardar.");
+      } else {
+        setTitle("");
+        setUrl("");
+        setNote("");
+        setFile(null);
+        setFileInputKey((k) => k + 1);
+        onChanged();
+      }
+    } catch {
+      setError("Fallo de red: no se guardó.");
+    }
+    setBusy(false);
+  }
+
+  async function removeFile(id: string) {
+    if (!confirm("¿Quitar este archivo del panel del cliente?")) return;
+    const res = await fetch("/api/panel-files", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id }),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      setError(data.error ?? "No se pudo eliminar.");
+      return;
+    }
+    onChanged();
+  }
+
+  return (
+    <section style={s.sectionCard}>
+      <h3 style={s.h3}>
+        Archivos del panel {files.length ? `(${files.length})` : ""}
+      </h3>
+      {files.map((f) => (
+        <div key={f.id} style={s.row}>
+          <span style={{ color: "#888", fontSize: 12 }}>
+            {FILE_KIND_LABEL[f.kind]}
+          </span>
+          <span style={{ fontWeight: 600, overflowWrap: "anywhere" }}>
+            {f.title}
+          </span>
+          <span style={{ color: "#888", fontSize: 12 }}>
+            {fmtDateTime(f.created_at)}
+          </span>
+          <button
+            onClick={() => removeFile(f.id)}
+            style={{
+              background: "transparent",
+              border: "none",
+              color: "#ff8080",
+              fontSize: 12,
+              cursor: "pointer",
+              justifySelf: "end",
+            }}
+          >
+            Quitar
+          </button>
+        </div>
+      ))}
+
+      <form
+        onSubmit={add}
+        style={{
+          display: "flex",
+          gap: 8,
+          flexWrap: "wrap",
+          alignItems: "center",
+          marginTop: 10,
+        }}
+      >
+        <select
+          value={kind}
+          onChange={(e) => setKind(e.target.value as ClientFileKind)}
+          style={{ ...s.input, width: "auto" }}
+        >
+          {Object.entries(FILE_KIND_LABEL).map(([k, label]) => (
+            <option key={k} value={k}>
+              {label}
+            </option>
+          ))}
+        </select>
+        <input
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          required
+          placeholder="Título"
+          style={{ ...s.input, flex: 1, minWidth: 140 }}
+        />
+        {kind === "link" ? (
+          <input
+            value={url}
+            onChange={(e) => setUrl(e.target.value)}
+            required
+            type="url"
+            placeholder="https://…"
+            style={{ ...s.input, flex: 1, minWidth: 160 }}
+          />
+        ) : (
+          <FilePicker
+            inputKey={fileInputKey}
+            file={file}
+            onSelect={setFile}
+            placeholder="Elegir archivo…"
+            style={{ flex: 1, minWidth: 160 }}
+          />
+        )}
+        <input
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+          placeholder="Nota (opcional)"
+          style={{ ...s.input, flex: 1, minWidth: 120 }}
+        />
+        <button
+          type="submit"
+          disabled={busy}
+          style={{ ...s.secondaryBtn, opacity: busy ? 0.5 : 1 }}
+        >
+          {busy ? "Guardando…" : "+ Compartir"}
+        </button>
+      </form>
+      {error && <p style={s.warnBox}>{error}</p>}
+    </section>
+  );
+}
+
+/**
+ * Propuestas comerciales en HTML. Se sube el archivo con una contraseña; el
+ * link público (/propuestas/{cliente}/{slug}) muestra la propuesta en un
+ * iframe tras ingresarla. `first_viewed_at`/`view_count` dicen si el cliente
+ * ya la abrió. Todo pasa por /api/proposals: el bucket es privado.
+ */
+function ClientProposalsSection({
+  clientId,
+  proposals,
+  onChanged,
+}: {
+  clientId: string;
+  proposals: Proposal[];
+  onChanged: () => void;
+}) {
+  const [title, setTitle] = useState("");
+  const [password, setPassword] = useState("");
+  const [file, setFile] = useState<File | null>(null);
+  // Remonta el <input type="file"> tras guardar: no hay forma de vaciarlo por valor.
+  const [fileInputKey, setFileInputKey] = useState(0);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  async function add(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    setError(null);
+    const form = new FormData();
+    form.set("clientId", clientId);
+    form.set("title", title);
+    form.set("password", password);
+    if (file) form.set("file", file);
+    try {
+      const res = await fetch("/api/proposals", { method: "POST", body: form });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error ?? "No se pudo guardar.");
+      } else {
+        setTitle("");
+        setPassword("");
+        setFile(null);
+        setFileInputKey((k) => k + 1);
+        onChanged();
+      }
+    } catch {
+      setError("Fallo de red: no se guardó.");
+    }
+    setBusy(false);
+  }
+
+  async function removeProposal(id: string) {
+    if (!confirm("¿Eliminar esta propuesta? El link dejará de funcionar."))
+      return;
+    const res = await fetch("/api/proposals", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id }),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      setError(data.error ?? "No se pudo eliminar.");
+      return;
+    }
+    onChanged();
+  }
+
+  function copyLink(p: Proposal) {
+    const url = `${window.location.origin}/propuestas/${p.client_slug}/${p.slug}`;
+    navigator.clipboard.writeText(url);
+    setCopiedId(p.id);
+    setTimeout(() => setCopiedId(null), 1500);
+  }
+
+  return (
+    <section style={s.sectionCard}>
+      <h3 style={s.h3}>
+        Propuestas {proposals.length ? `(${proposals.length})` : ""}
+      </h3>
+      {proposals.map((p) => (
+        <div key={p.id} style={s.row}>
+          <span style={{ fontWeight: 600, overflowWrap: "anywhere" }}>
+            {p.title}
+          </span>
+          <span
+            style={{
+              fontSize: 12,
+              color: p.first_viewed_at ? "#7dcc7d" : "#888",
+            }}
+            title={
+              p.first_viewed_at
+                ? `Vista por primera vez: ${fmtDateTime(p.first_viewed_at)}`
+                : "El cliente aún no la abre"
+            }
+          >
+            {p.first_viewed_at ? `✓ vista ${p.view_count}×` : "sin abrir"}
+          </span>
+          <button
+            onClick={() => copyLink(p)}
+            style={{
+              background: "transparent",
+              border: "none",
+              color: "#5aa9ff",
+              fontSize: 12,
+              cursor: "pointer",
+            }}
+          >
+            {copiedId === p.id ? "¡Copiado!" : "Copiar link"}
+          </button>
+          <button
+            onClick={() => removeProposal(p.id)}
+            style={{
+              background: "transparent",
+              border: "none",
+              color: "#ff8080",
+              fontSize: 12,
+              cursor: "pointer",
+              justifySelf: "end",
+            }}
+          >
+            Quitar
+          </button>
+        </div>
+      ))}
+
+      <form
+        onSubmit={add}
+        style={{
+          display: "flex",
+          gap: 8,
+          flexWrap: "wrap",
+          alignItems: "center",
+          marginTop: 10,
+        }}
+      >
+        <input
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          required
+          placeholder="Título de la propuesta"
+          style={{ ...s.input, flex: 1, minWidth: 140 }}
+        />
+        <FilePicker
+          inputKey={fileInputKey}
+          file={file}
+          onSelect={setFile}
+          accept=".html,.htm,text/html"
+          placeholder="Elegir HTML…"
+          style={{ flex: 1, minWidth: 160 }}
+        />
+        <input
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+          minLength={4}
+          placeholder="Contraseña para el cliente"
+          style={{ ...s.input, flex: 1, minWidth: 140 }}
+        />
+        <button
+          type="submit"
+          disabled={busy}
+          style={{ ...s.secondaryBtn, opacity: busy ? 0.5 : 1 }}
+        >
+          {busy ? "Subiendo…" : "+ Publicar"}
+        </button>
+      </form>
+      {error && <p style={s.warnBox}>{error}</p>}
+    </section>
   );
 }
 
@@ -1145,20 +1825,30 @@ const s: Record<string, CSSProperties> = {
     flexWrap: "wrap",
     marginBottom: 20,
   },
+  // Cards arriba (máximo 4 por fila) y la ficha del seleccionado debajo.
   layout: {
     display: "grid",
-    gridTemplateColumns: "minmax(220px, 300px) 1fr",
+    gridTemplateColumns: "1fr",
     gap: 20,
     alignItems: "start",
   },
-  list: { display: "flex", flexDirection: "column", gap: 6 },
+  list: {
+    display: "grid",
+    gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
+    gap: 10,
+  },
   listItem: {
     textAlign: "left",
     border: "1px solid #222",
-    borderRadius: 10,
-    padding: "10px 12px",
+    borderRadius: 12,
+    padding: "14px",
     cursor: "pointer",
     color: "#eee",
+    background: "#0e0e0e",
+    minWidth: 0,
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "flex-start",
   },
   listMeta: { fontSize: 12, color: "#888", marginTop: 3 },
   listStats: {
@@ -1197,6 +1887,61 @@ const s: Record<string, CSSProperties> = {
     alignItems: "flex-start",
     gap: 12,
     flexWrap: "wrap",
+  },
+  detailStats: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
+    gap: 10,
+    marginTop: 18,
+  },
+  detailStat: {
+    background: "#111",
+    border: "1px solid #1e1e1e",
+    borderRadius: 10,
+    padding: "12px 14px",
+    display: "flex",
+    flexDirection: "column",
+    gap: 5,
+    minWidth: 0,
+  },
+  detailStatLabel: {
+    fontSize: 10,
+    textTransform: "uppercase",
+    letterSpacing: 1.2,
+    color: "#777",
+  },
+  detailStatValue: { fontSize: 17, fontWeight: 600, letterSpacing: -0.2 },
+  // Cuerpo de la ficha: dos columnas de tarjetas (contacto/notas | actividad).
+  detailCols: {
+    display: "grid",
+    gridTemplateColumns: "1fr 1fr",
+    gap: 14,
+    alignItems: "start",
+    marginTop: 16,
+  },
+  detailCol: { display: "grid", gap: 14, alignContent: "start", minWidth: 0 },
+  sectionCard: {
+    background: "#101010",
+    border: "1px solid #1c1c1c",
+    borderRadius: 10,
+    padding: "14px 16px",
+    minWidth: 0,
+  },
+  // Acción de la cabecera (editar/eliminar) como icono compacto junto al nombre.
+  iconBtn: {
+    background: "#141414",
+    border: "1px solid #2a2a2a",
+    borderRadius: 8,
+    color: "#ccc",
+    width: 30,
+    height: 30,
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontSize: 14,
+    cursor: "pointer",
+    flexShrink: 0,
+    padding: 0,
   },
   dataGrid: {
     display: "grid",
@@ -1242,6 +1987,33 @@ const s: Record<string, CSSProperties> = {
     fontFamily: "inherit",
     width: "100%",
     boxSizing: "border-box",
+  },
+  // Look del FilePicker: como un input del dashboard pero con borde
+  // discontinuo (señal de "suelta/elige un archivo") hasta que hay archivo.
+  filePicker: {
+    position: "relative",
+    display: "flex",
+    alignItems: "center",
+    gap: 8,
+    background: "#111",
+    border: "1px dashed #333",
+    borderRadius: 8,
+    color: "#999",
+    padding: "9px 11px",
+    fontSize: 13,
+    cursor: "pointer",
+    overflow: "hidden",
+    boxSizing: "border-box",
+  },
+  // El input real cubre todo el label, invisible: conserva click nativo,
+  // foco y la validación required.
+  filePickerInput: {
+    position: "absolute",
+    inset: 0,
+    opacity: 0,
+    cursor: "pointer",
+    width: "100%",
+    height: "100%",
   },
   field: { display: "flex", flexDirection: "column", gap: 6, marginBottom: 14 },
   pair: { display: "flex", gap: 12, flexWrap: "wrap" },
@@ -1316,6 +2088,37 @@ const s: Record<string, CSSProperties> = {
     borderRadius: 8,
     fontSize: 12,
     marginTop: 14,
+  },
+  modalOverlay: {
+    position: "fixed",
+    inset: 0,
+    background: "rgba(0,0,0,.65)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 16,
+    zIndex: 50,
+  },
+  modal: {
+    position: "relative",
+    background: "#0b0b0b",
+    border: "1px solid #222",
+    borderRadius: 14,
+    padding: 24,
+    // Ancho para dos columnas de la ficha; en pantallas chicas ocupa el 100%.
+    width: "min(980px, 100%)",
+    maxHeight: "88vh",
+    overflowY: "auto",
+  },
+  modalClose: {
+    position: "absolute",
+    top: 14,
+    right: 16,
+    background: "transparent",
+    border: "none",
+    color: "#888",
+    fontSize: 18,
+    cursor: "pointer",
   },
   overlay: {
     position: "fixed",

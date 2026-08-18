@@ -55,6 +55,23 @@ export async function updateSession(request: NextRequest) {
       return NextResponse.redirect(redirectUrl);
     }
 
+    // Panel de clientes: /panel/registro es pública, el resto exige sesión.
+    // El login es el mismo /login para equipo y clientes; cada página enruta
+    // según a quién pertenece la sesión (dashboard ⇄ panel).
+    const isPanelRegistro = pathname.startsWith("/panel/registro");
+
+    if (pathname.startsWith("/panel") && !isPanelRegistro && !user) {
+      const redirectUrl = request.nextUrl.clone();
+      redirectUrl.pathname = "/login";
+      return NextResponse.redirect(redirectUrl);
+    }
+
+    if (isPanelRegistro && user) {
+      const redirectUrl = request.nextUrl.clone();
+      redirectUrl.pathname = "/panel";
+      return NextResponse.redirect(redirectUrl);
+    }
+
     // Ya logueado no debería ver el login ni el registro
     if (
       (pathname.startsWith("/login") || pathname.startsWith("/registro")) &&

@@ -4,7 +4,12 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
-export default function LoginPage() {
+/**
+ * Registro de clientes para el panel. El login es el mismo /login del equipo;
+ * aquí solo se crea la cuenta, pasando por /api/panel-registro, que únicamente
+ * autoriza correos ya dados de alta en `clients`.
+ */
+export default function AuthForm() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -16,20 +21,31 @@ export default function LoginPage() {
     setError(null);
     setLoading(true);
 
+    const res = await fetch("/api/panel-registro", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    });
+    const body = await res.json();
+    if (!res.ok) {
+      setError(body.error ?? "No se pudo completar el registro.");
+      setLoading(false);
+      return;
+    }
+
     const supabase = createClient();
-    const { error } = await supabase.auth.signInWithPassword({
+    const { error: signInError } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
-
-    if (error) {
-      setError("Credenciales incorrectas. Verifica tu correo y contraseña.");
+    if (signInError) {
+      setError("Cuenta creada. Inicia sesión desde /login.");
       setLoading(false);
       return;
     }
 
     // refresh() re-evalúa el middleware con la sesión ya creada
-    router.replace("/dashboard");
+    router.replace("/panel");
     router.refresh();
   }
 
@@ -56,7 +72,7 @@ export default function LoginPage() {
               color: "#888",
             }}
           >
-            Acceso a tu panel
+            Panel de cliente
           </span>
           <h1
             style={{
@@ -97,7 +113,7 @@ export default function LoginPage() {
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              autoComplete="current-password"
+              autoComplete="new-password"
               style={inputStyle}
               placeholder="••••••••"
             />
@@ -126,9 +142,23 @@ export default function LoginPage() {
               transition: "opacity .2s",
             }}
           >
-            {loading ? "Entrando..." : "Iniciar sesión"}
+            {loading ? "Creando cuenta..." : "Crear cuenta"}
           </button>
         </form>
+
+        <p
+          style={{
+            marginTop: "22px",
+            fontSize: "13px",
+            color: "#888",
+            textAlign: "center",
+          }}
+        >
+          ¿Ya tienes cuenta?{" "}
+          <a href="/login" style={{ color: "#5aa9ff", textDecoration: "none" }}>
+            Inicia sesión
+          </a>
+        </p>
       </div>
     </main>
   );

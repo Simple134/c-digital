@@ -84,12 +84,18 @@ export async function getTeam() {
     .select("*")
     .order("sort_order", { ascending: true });
   if (error || !data || data.length === 0) return null;
-  return (data as TeamMember[]).map((m) => ({
-    name: m.name,
-    role: m.role ?? "",
-    bio: m.bio ?? "",
-    photo: m.photo ?? "",
-  }));
+  return (
+    (data as TeamMember[])
+      // Filas sin perfil (sin rol, foto ni bio) son cuentas de acceso, como
+      // "Admin": existen para el login del dashboard, no para el sitio.
+      .filter((m) => m.role || m.photo || m.bio)
+      .map((m) => ({
+        name: m.name,
+        role: m.role ?? "",
+        bio: m.bio ?? "",
+        photo: m.photo ?? "",
+      }))
+  );
 }
 
 export async function getBrands() {
