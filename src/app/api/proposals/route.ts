@@ -20,7 +20,9 @@ export async function POST(request: NextRequest) {
   const form = await request.formData();
   const clientId = String(form.get("clientId") ?? "");
   const title = String(form.get("title") ?? "").trim();
-  const password = String(form.get("password") ?? "");
+  // trim: un espacio invisible al pegar la contraseña la vuelve imposible de
+  // reproducir para el cliente.
+  const password = String(form.get("password") ?? "").trim();
   const file = form.get("file");
 
   if (!clientId || !title || !(file instanceof File)) {
@@ -103,6 +105,49 @@ export async function POST(request: NextRequest) {
     ok: true,
     url: `/propuestas/${p.client_slug}/${p.slug}`,
   });
+}
+
+/**
+ * Cambia la contraseña de una propuesta. Al actualizar el hash, todas las
+ * cookies de acceso emitidas con la contraseña anterior quedan invalidadas
+ * (la cookie es HMAC firmado con el propio password_hash).
+ */
+export async function PATCH(request: NextRequest) {
+  if (!(await isTeamMember())) {
+    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+  }
+
+  let body: { id?: string; password?: string };
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "JSON inválido" }, { status: 400 });
+  }
+  const password = String(body.password ?? "").trim();
+  if (!body.id) {
+    return NextResponse.json({ error: "Falta id" }, { status: 400 });
+  }
+  if (password.length < 4) {
+    return NextResponse.json(
+      { error: "La contraseña debe tener al menos 4 caracteres." },
+      { status: 400 },
+    );
+  }
+
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from("proposals")
+    .update({ password_hash: hashPassword(password) })
+    .eq("id", body.id)
+    .select("id")
+    .maybeSingle();
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+  if (!data) {
+    return NextResponse.json({ error: "No encontrada" }, { status: 404 });
+  }
+  return NextResponse.json({ ok: true });
 }
 
 export async function DELETE(request: NextRequest) {

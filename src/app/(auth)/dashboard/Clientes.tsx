@@ -1409,6 +1409,25 @@ function ClientProposalsSection({
     onChanged();
   }
 
+  async function changePassword(p: Proposal) {
+    const password = prompt(
+      `Nueva contraseña para "${p.title}" (mínimo 4 caracteres):`,
+    )?.trim();
+    if (!password) return;
+    const res = await fetch("/api/proposals", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: p.id, password }),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      setError(data.error ?? "No se pudo cambiar la contraseña.");
+      return;
+    }
+    setError(null);
+    alert("Contraseña actualizada. Los accesos anteriores quedan invalidados.");
+  }
+
   function copyLink(p: Proposal) {
     const url = `${window.location.origin}/propuestas/${p.client_slug}/${p.slug}`;
     navigator.clipboard.writeText(url);
@@ -1422,7 +1441,11 @@ function ClientProposalsSection({
         Propuestas {proposals.length ? `(${proposals.length})` : ""}
       </h3>
       {proposals.map((p) => (
-        <div key={p.id} style={s.row}>
+        <div
+          key={p.id}
+          // 5 columnas: s.row trae 4 y aquí se suma "Cambiar clave".
+          style={{ ...s.row, gridTemplateColumns: "auto 1fr auto auto auto" }}
+        >
           <span style={{ fontWeight: 600, overflowWrap: "anywhere" }}>
             {p.title}
           </span>
@@ -1450,6 +1473,18 @@ function ClientProposalsSection({
             }}
           >
             {copiedId === p.id ? "¡Copiado!" : "Copiar link"}
+          </button>
+          <button
+            onClick={() => changePassword(p)}
+            style={{
+              background: "transparent",
+              border: "none",
+              color: "#d9b36a",
+              fontSize: 12,
+              cursor: "pointer",
+            }}
+          >
+            Cambiar clave
           </button>
           <button
             onClick={() => removeProposal(p.id)}

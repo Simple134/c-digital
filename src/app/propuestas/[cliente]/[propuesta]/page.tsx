@@ -17,13 +17,19 @@ async function getProposal(cliente: string, propuesta: string) {
   const admin = createAdminClient();
   const { data } = await admin
     .from("proposals")
-    .select("id, title, client_slug, slug, password_hash, is_active")
+    .select("id, title, client_slug, slug, password_hash, is_active, file_path")
     .eq("client_slug", cliente)
     .eq("slug", propuesta)
     .maybeSingle();
   const p = data as Pick<
     Proposal,
-    "id" | "title" | "client_slug" | "slug" | "password_hash" | "is_active"
+    | "id"
+    | "title"
+    | "client_slug"
+    | "slug"
+    | "password_hash"
+    | "is_active"
+    | "file_path"
   > | null;
   return p && p.is_active ? p : null;
 }
@@ -58,9 +64,26 @@ export default async function ProposalPage({
     return <PasswordGate proposalId={p.id} title={p.title} />;
   }
 
+  // El HTML se descarga aquí en el servidor (donde la cookie ya fue validada)
+  // y se inyecta con srcDoc: un iframe sandboxeado sin allow-same-origin corre
+  // con origen opaco y el navegador no enviaría la cookie a /api/proposals/view.
+  const admin = createAdminClient();
+  const { data: file, error } = await admin.storage
+    .from("proposals")
+    .download(p.file_path);
+  if (error || !file) {
+    console.error("[proposals] Error al descargar:", error);
+    return (
+      <p style={{ padding: "2rem", color: "#fff" }}>
+        Error al cargar la propuesta.
+      </p>
+    );
+  }
+  const html = await file.text();
+
   return (
     <iframe
-      src={`/api/proposals/view/${p.id}`}
+      srcDoc={html}
       title={p.title}
       // Sin allow-same-origin: el HTML subido corre aislado y no puede leer
       // cookies ni storage del sitio.
