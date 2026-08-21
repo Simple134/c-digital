@@ -86,8 +86,10 @@ export default async function ProposalPage({
       srcDoc={html}
       title={p.title}
       // Sin allow-same-origin: el HTML subido corre aislado y no puede leer
-      // cookies ni storage del sitio.
-      sandbox="allow-scripts allow-popups"
+      // cookies ni storage del sitio. allow-popups-to-escape-sandbox: los links
+      // externos (ej. WhatsApp) abren en una pestaña sin sandbox — sitios como
+      // api.whatsapp.com rechazan cargarse en contextos sandboxeados.
+      sandbox="allow-scripts allow-popups allow-popups-to-escape-sandbox"
       style={{
         position: "fixed",
         inset: 0,

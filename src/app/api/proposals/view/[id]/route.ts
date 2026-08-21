@@ -48,7 +48,7 @@ export async function GET(
       // así no puede leer cookies ni storage del sitio. frame-ancestors:
       // solo nuestra propia página puede embeberla.
       "Content-Security-Policy":
-        "sandbox allow-scripts allow-popups; frame-ancestors 'self'",
+        "sandbox allow-scripts allow-popups allow-popups-to-escape-sandbox; frame-ancestors 'self'",
       "X-Content-Type-Options": "nosniff",
       "X-Robots-Tag": "noindex",
       "Cache-Control": "private, no-store",
