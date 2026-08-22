@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getPanelClient } from "@/lib/supabase/guards";
+import { getPanelAuth } from "@/lib/supabase/guards";
 
 /**
  * El cliente agrega una tarea desde su panel.
@@ -10,9 +10,23 @@ import { getPanelClient } from "@/lib/supabase/guards";
  * asigna al cliente: él la pide, el equipo la hace.
  */
 export async function POST(request: NextRequest) {
-  const client = await getPanelClient();
+  const { client, reason } = await getPanelAuth();
   if (!client) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+    // 401 = la sesión caducó y basta con volver a entrar (el frontend lo usa
+    // para mandar al login). 403 = la cuenta existe pero nadie la vinculó a un
+    // cliente: reloguear no arregla nada, hay que tocar la tabla `clients`.
+    return reason === "sin-sesion"
+      ? NextResponse.json(
+          { error: "Tu sesión expiró. Vuelve a iniciar sesión." },
+          { status: 401 },
+        )
+      : NextResponse.json(
+          {
+            error:
+              "Tu cuenta no está vinculada a ningún cliente. Escríbenos para activarla.",
+          },
+          { status: 403 },
+        );
   }
 
   let body: { title?: string; description?: string };
@@ -33,13 +47,21 @@ export async function POST(request: NextRequest) {
 
   const admin = createAdminClient();
 
-  const { data: firstCol } = await admin
+  // Las columnas pueden tener dueño (un cliente o un miembro del equipo), así
+  // que no vale coger la primera pendiente del tablero: la tarea de este
+  // cliente podría acabar en la columna privada de otro cliente o en la de una
+  // persona, donde no le corresponde estar y donde nadie la vería al filtrar.
+  // Se prefiere la primera columna pendiente de ESTE cliente y, si no tiene
+  // ninguna, la primera pendiente global (client_id e assignee_id nulos).
+  const { data: pendientes } = await admin
     .from("kanban_columns")
-    .select("id")
+    .select("id, client_id, assignee_id")
     .eq("is_done", false)
-    .order("sort_order", { ascending: true })
-    .limit(1)
-    .maybeSingle();
+    .or(`client_id.eq.${client.id},and(client_id.is.null,assignee_id.is.null)`)
+    .order("sort_order", { ascending: true });
+
+  const firstCol =
+    pendientes?.find((c) => c.client_id === client.id) ?? pendientes?.[0];
 
   if (!firstCol) {
     return NextResponse.json(

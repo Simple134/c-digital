@@ -322,6 +322,19 @@ function Bucket({
 
 /* ---------------- Tareas ---------------- */
 
+/**
+ * Una sesión caducada se manifiesta como 401 en cualquier acción del panel.
+ * Mostrar "no autorizado" y dejar al cliente ahí no le sirve de nada: se le
+ * lleva al login, que es lo único que lo desbloquea. El 403 (cuenta sin
+ * vincular) no se toca: ahí reloguear no arregla nada y el mensaje del
+ * servidor es la información útil.
+ */
+function sesionExpirada(res: Response): boolean {
+  if (res.status !== 401) return false;
+  window.location.href = "/login";
+  return true;
+}
+
 function TareasSection(props: Props) {
   const { cards, columns } = props;
   const router = useRouter();
@@ -345,6 +358,7 @@ function TareasSection(props: Props) {
       });
       const data = await res.json();
       if (!res.ok) {
+        if (sesionExpirada(res)) return;
         setError(data.error ?? "No se pudo crear la tarea.");
       } else {
         setAdding(false);
@@ -646,6 +660,7 @@ function FacturacionSection({ invoices, items, payments, receipts }: Props) {
       });
       const data = await res.json();
       if (!res.ok) {
+        if (sesionExpirada(res)) return;
         setError(data.error ?? "No se pudo subir el comprobante.");
       } else {
         setUploadFor(null);
@@ -842,6 +857,7 @@ function ReunionesSection({ meetings }: Props) {
       });
       const data = await res.json();
       if (!res.ok) {
+        if (sesionExpirada(res)) return;
         setError(data.error ?? "No se pudo enviar la solicitud.");
       } else {
         setRequesting(false);

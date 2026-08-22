@@ -64,6 +64,13 @@ export interface KanbanColumn {
   // sella su `completed_at`. Es un flag y no el título/orden porque las columnas
   // son editables: renombrar "Hecho" no debe romper el reporte de rendimiento.
   is_done: boolean;
+  // Dueño de la columna. Los dos en null = columna global: la ve todo el equipo
+  // y aparece con cualquier filtro. Con uno de los dos relleno la columna es de
+  // ese cliente o de ese miembro, y solo se muestra cuando no hay filtro (para
+  // que nada de trabajo quede oculto) o cuando se filtra justo por su dueño.
+  // El check `kanban_columns_un_solo_dueno` impide que ambos estén rellenos.
+  client_id: string | null;
+  assignee_id: string | null;
 }
 
 export interface KanbanCard {

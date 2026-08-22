@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getPanelClient } from "@/lib/supabase/guards";
+import { getPanelAuth } from "@/lib/supabase/guards";
 
 // Comprobantes razonables: fotos y PDF. 10 MB cubre cualquier volante real.
 const MAX_BYTES = 10 * 1024 * 1024;
@@ -17,12 +17,36 @@ const ALLOWED = new Set([
  * El archivo va al bucket privado `payment-receipts`; se sirve con URL firmada.
  */
 export async function POST(request: NextRequest) {
-  const client = await getPanelClient();
+  const { client, reason } = await getPanelAuth();
   if (!client) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+    // 401 = la sesión caducó y basta con volver a entrar (el frontend lo usa
+    // para mandar al login). 403 = la cuenta existe pero nadie la vinculó a un
+    // cliente: reloguear no arregla nada, hay que tocar la tabla `clients`.
+    return reason === "sin-sesion"
+      ? NextResponse.json(
+          { error: "Tu sesión expiró. Vuelve a iniciar sesión." },
+          { status: 401 },
+        )
+      : NextResponse.json(
+          {
+            error:
+              "Tu cuenta no está vinculada a ningún cliente. Escríbenos para activarla.",
+          },
+          { status: 403 },
+        );
   }
 
-  const form = await request.formData();
+  // Sin esto un cuerpo que no sea multipart/form-data revienta el handler con
+  // un 500 opaco en lugar de decir qué llegó mal.
+  let form: FormData;
+  try {
+    form = await request.formData();
+  } catch {
+    return NextResponse.json(
+      { error: "El comprobante debe enviarse como formulario con archivo." },
+      { status: 400 },
+    );
+  }
   const invoiceId = String(form.get("invoiceId") ?? "");
   const note = String(form.get("note") ?? "").trim() || null;
   const file = form.get("file");

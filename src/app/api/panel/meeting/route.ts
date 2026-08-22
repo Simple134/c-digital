@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getPanelClient } from "@/lib/supabase/guards";
+import { getPanelAuth } from "@/lib/supabase/guards";
 
 /**
  * El cliente solicita una reunión desde su panel.
@@ -10,9 +10,23 @@ import { getPanelClient } from "@/lib/supabase/guards";
  * El equipo coordina fecha y Meet desde ahí; esto solo registra el pedido.
  */
 export async function POST(request: NextRequest) {
-  const client = await getPanelClient();
+  const { client, reason } = await getPanelAuth();
   if (!client) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+    // 401 = la sesión caducó y basta con volver a entrar (el frontend lo usa
+    // para mandar al login). 403 = la cuenta existe pero nadie la vinculó a un
+    // cliente: reloguear no arregla nada, hay que tocar la tabla `clients`.
+    return reason === "sin-sesion"
+      ? NextResponse.json(
+          { error: "Tu sesión expiró. Vuelve a iniciar sesión." },
+          { status: 401 },
+        )
+      : NextResponse.json(
+          {
+            error:
+              "Tu cuenta no está vinculada a ningún cliente. Escríbenos para activarla.",
+          },
+          { status: 403 },
+        );
   }
 
   let body: { date?: string; time?: string; note?: string };

@@ -49,6 +49,38 @@ const ACCEPTED_IMAGE_TYPES = [
 // Valor especial del filtro de responsable: tareas que esperan al cliente.
 const CLIENT_FILTER = "__client__";
 
+/** Dueño de una columna. Los dos en null = columna global. */
+type ColumnOwner = { clientId: string | null; assigneeId: string | null };
+
+const COLUMNA_GLOBAL: ColumnOwner = { clientId: null, assigneeId: null };
+
+/**
+ * Traduce el dueño elegido a las dos columnas de la tabla.
+ *
+ * Se escriben SIEMPRE las dos, incluso la que va a null: el check
+ * `kanban_columns_un_solo_dueno` prohíbe tener cliente y miembro a la vez, así
+ * que al pasar una columna de un dueño al otro hay que limpiar el anterior en
+ * el mismo UPDATE.
+ */
+function ownerPatch(owner: ColumnOwner) {
+  return { client_id: owner.clientId, assignee_id: owner.assigneeId };
+}
+
+/** Valor del <select> de dueño: "" global, "c:<id>" cliente, "m:<id>" miembro. */
+function ownerToValue(owner: ColumnOwner) {
+  if (owner.clientId) return `c:${owner.clientId}`;
+  if (owner.assigneeId) return `m:${owner.assigneeId}`;
+  return "";
+}
+
+function valueToOwner(value: string): ColumnOwner {
+  if (value.startsWith("c:"))
+    return { clientId: value.slice(2), assigneeId: null };
+  if (value.startsWith("m:"))
+    return { clientId: null, assigneeId: value.slice(2) };
+  return COLUMNA_GLOBAL;
+}
+
 const PRIORITIES = [
   { value: "alta", label: "Alta" },
   { value: "media", label: "Media" },
@@ -246,13 +278,52 @@ export default function KanbanBoard({
     [columns],
   );
 
-  // Cuando se elige un cliente y/o un miembro del equipo, el tablero solo
-  // muestra las tarjetas que cumplen ambos filtros (las columnas siguen
-  // siendo las mismas para todos).
+  // Dueño de cada columna a mano. Las filas ya vienen en `columns` (load hace
+  // select("*")), así que no hace falta ninguna consulta extra para saber de
+  // quién es una columna ni para pintar su etiqueta.
+  const columnOwners = useMemo(
+    () =>
+      new Map(
+        columns.map((c) => [
+          c.id,
+          { clientId: c.client_id ?? null, assigneeId: c.assignee_id ?? null },
+        ]),
+      ),
+    [columns],
+  );
+
+  /**
+   * Decide si una columna se muestra con los filtros activos.
+   *
+   * Global (sin dueño) = siempre visible. Con dueño solo se muestra si el
+   * filtro apunta justo a él: así al ver un cliente no aparecen las columnas
+   * privadas de otro cliente ni las de un miembro. `CLIENT_FILTER` no es un
+   * miembro real (es "pendiente del cliente"), por eso no vale como dueño.
+   */
+  const isColumnVisible = useCallback(
+    (columnId: string) => {
+      const owner = columnOwners.get(columnId);
+      if (!owner || (!owner.clientId && !owner.assigneeId)) return true;
+      if (owner.clientId) return owner.clientId === selectedClientId;
+      return (
+        selectedMemberId !== CLIENT_FILTER &&
+        owner.assigneeId === selectedMemberId
+      );
+    },
+    [columnOwners, selectedClientId, selectedMemberId],
+  );
+
+  // Cuando se elige un cliente y/o un miembro del equipo, el tablero muestra
+  // solo las tarjetas que cumplen ambos filtros y solo las columnas globales
+  // más las del propio filtro. Sin filtro se ve todo (incluidas las columnas
+  // con dueño) para que nada de trabajo quede escondido.
   const visibleData = useMemo(() => {
     if (!data || (!selectedClientId && !selectedMemberId)) return data;
-    const next: BoardData = { root: data.root };
-    for (const colId of data.root.children) {
+    const visibleColumnIds = data.root.children.filter(isColumnVisible);
+    const next: BoardData = {
+      root: { ...data.root, children: visibleColumnIds },
+    };
+    for (const colId of visibleColumnIds) {
       const col = data[colId];
       const visibleChildren = col.children.filter((cardId) => {
         const content = data[cardId]?.content;
@@ -275,7 +346,7 @@ export default function KanbanBoard({
       for (const cardId of visibleChildren) next[cardId] = data[cardId];
     }
     return next;
-  }, [data, selectedClientId, selectedMemberId]);
+  }, [data, selectedClientId, selectedMemberId, isColumnVisible]);
 
   /**
    * Tarjetas aplanadas para el reporte. Respeta el filtro de cliente (permite
@@ -710,11 +781,18 @@ export default function KanbanBoard({
     );
   }
 
-  async function createColumn(title: string, isDone: boolean) {
+  async function createColumn(
+    title: string,
+    isDone: boolean,
+    owner: ColumnOwner,
+  ) {
     const count = data?.root.children.length ?? 0;
-    const { error } = await supabase
-      .from("kanban_columns")
-      .insert({ title, sort_order: count, is_done: isDone });
+    const { error } = await supabase.from("kanban_columns").insert({
+      title,
+      sort_order: count,
+      is_done: isDone,
+      ...ownerPatch(owner),
+    });
     if (error) {
       setError(error.message);
       return;
@@ -727,10 +805,11 @@ export default function KanbanBoard({
     columnId: string,
     title: string,
     isDone: boolean,
+    owner: ColumnOwner,
   ) {
     const { error } = await supabase
       .from("kanban_columns")
-      .update({ title, is_done: isDone })
+      .update({ title, is_done: isDone, ...ownerPatch(owner) })
       .eq("id", columnId);
     if (error) {
       setError(error.message);
@@ -739,7 +818,15 @@ export default function KanbanBoard({
     setEditingColumn(null);
     setColumns((current) =>
       current.map((c) =>
-        c.id === columnId ? { ...c, title, is_done: isDone } : c,
+        c.id === columnId
+          ? {
+              ...c,
+              title,
+              is_done: isDone,
+              client_id: owner.clientId,
+              assignee_id: owner.assigneeId,
+            }
+          : c,
       ),
     );
     setData((current) => {
@@ -752,6 +839,138 @@ export default function KanbanBoard({
         },
       };
     });
+  }
+
+  /**
+   * Elimina una columna del tablero conservando su trabajo.
+   *
+   * Autorización: esta ruta escribe con el cliente del navegador, igual que
+   * crear/renombrar/reordenar columnas, así que la protección real es la RLS de
+   * `kanban_columns` (policy "auth write kanban_columns" → `is_team_member()`,
+   * el equivalente en SQL de `isTeamMember()`). Un cliente del panel tiene
+   * sesión pero no fila en `team_members`, así que el DELETE le es denegado.
+   *
+   * Tarjetas: la FK `kanban_cards_column_id_fkey` es ON DELETE CASCADE, así que
+   * borrar la columna a secas se llevaría sus tarjetas por delante. Eso no es lo
+   * que se quiere al reorganizar un tablero: lo que sobra es la columna, no el
+   * trabajo. Por eso las tarjetas se mueven ANTES del delete y el cascade se
+   * queda sin nada que arrastrar. No se toca `completed_at`: una tarea terminada
+   * lo sigue estando aunque su columna deje de existir.
+   *
+   * No se permite borrar la última columna: el tablero quedaría inutilizable y
+   * /api/panel/task necesita que exista alguna columna con `is_done = false`.
+   */
+  async function deleteColumn(column: BoardItem) {
+    const columnIds = data?.root.children ?? [];
+    if (columnIds.length <= 1) {
+      setError(
+        "No se puede eliminar la única columna del tablero: crea otra antes de quitar esta.",
+      );
+      return;
+    }
+    // Las columnas pendientes (is_done = false) no son intercambiables con las
+    // terminales: /api/panel/task busca una pendiente para colocar ahí lo que
+    // pide el cliente, y sin ninguna responde 500. Solo cuentan las globales:
+    // una columna pendiente con dueño no sirve de destino para los demás.
+    const esGlobalColumna = (id: string) => {
+      const o = columnOwners.get(id);
+      return !o?.clientId && !o?.assigneeId;
+    };
+    if (!doneColumnIds.has(column.id) && esGlobalColumna(column.id)) {
+      const pendientes = columnIds.filter(
+        (id) => !doneColumnIds.has(id) && esGlobalColumna(id),
+      );
+      if (pendientes.length <= 1) {
+        setError(
+          "No se puede eliminar la última columna pendiente del equipo: es donde entran las tareas que piden los clientes.",
+        );
+        return;
+      }
+    }
+
+    /**
+     * Destino de las tarjetas. La columna vecina a secas no sirve: con columnas
+     * por dueño eso puede acabar metiendo el trabajo de un cliente en la
+     * columna privada de otro (o en la de un miembro), donde nadie lo vería al
+     * filtrar. Así que se busca una columna *compatible*, en este orden:
+     *   1) una del mismo dueño que la que se borra (el trabajo se queda en casa),
+     *   2) una global (la ve todo el equipo: nunca es un destino incorrecto).
+     * Dentro de cada grupo se prefiere la vecina anterior, y si no hay, la
+     * siguiente, para que el resultado sea predecible.
+     */
+    const cardIds = data?.[column.id]?.children ?? [];
+    const pos = columnIds.indexOf(column.id);
+    const owner = columnOwners.get(column.id);
+    // Vecinas ordenadas por cercanía: primero hacia atrás, luego hacia delante.
+    const candidatos = [
+      ...columnIds.slice(0, pos).reverse(),
+      ...columnIds.slice(pos + 1),
+    ];
+    const esDelMismoDueno = (id: string) => {
+      const o = columnOwners.get(id);
+      return (
+        (o?.clientId ?? null) === (owner?.clientId ?? null) &&
+        (o?.assigneeId ?? null) === (owner?.assigneeId ?? null)
+      );
+    };
+    const destinoId =
+      candidatos.find(esDelMismoDueno) ?? candidatos.find(esGlobalColumna);
+    const destino = destinoId ? data?.[destinoId] : undefined;
+
+    if (cardIds.length > 0 && !destino) {
+      setError(
+        `No hay otra columna compatible a la que mover las ${cardIds.length} tarjetas de «${column.title}», así que no se eliminó.`,
+      );
+      return;
+    }
+
+    // La confirmación dice el nombre de la columna, cuántas tarjetas tiene y a
+    // dónde se van: eso es exactamente lo que se está decidiendo.
+    const mensaje =
+      cardIds.length > 0
+        ? `¿Eliminar la columna «${column.title}»?\n\nSus ${cardIds.length} tarjeta${
+            cardIds.length === 1 ? "" : "s"
+          } se ${
+            cardIds.length === 1 ? "moverá" : "moverán"
+          } a «${destino!.title}»; no se pierde ningún trabajo.`
+        : `¿Eliminar la columna «${column.title}»?\n\nNo tiene ninguna tarjeta.`;
+    if (!window.confirm(mensaje)) return;
+
+    if (cardIds.length > 0) {
+      // Al final del destino, para no chocar con el orden que ya tiene.
+      const base = destino!.children.length;
+      const movimientos = await Promise.all(
+        cardIds.map((id, i) =>
+          supabase
+            .from("kanban_cards")
+            .update({ column_id: destinoId, sort_order: base + i })
+            .eq("id", id),
+        ),
+      );
+      const fallo = movimientos.find((m) => m.error);
+      if (fallo?.error) {
+        // Sin mover todas las tarjetas no se borra nada: el cascade se llevaría
+        // justo las que se quedaron atrás.
+        setError(
+          `No se pudieron mover las tarjetas, así que la columna «${column.title}» no se eliminó: ${fallo.error.message}`,
+        );
+        load();
+        return;
+      }
+    }
+
+    const { error } = await supabase
+      .from("kanban_columns")
+      .delete()
+      .eq("id", column.id);
+    if (error) {
+      setError(
+        `No se pudo eliminar la columna «${column.title}»: ${error.message}`,
+      );
+      load();
+      return;
+    }
+    load();
   }
 
   async function deleteCard(cardId: string) {
@@ -944,6 +1163,18 @@ export default function KanbanBoard({
                 >
                   ✎
                 </button>
+                <button
+                  type="button"
+                  style={styles.columnEditBtn}
+                  title="Eliminar columna"
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    void deleteColumn(column);
+                  }}
+                >
+                  ✕
+                </button>
                 <span style={styles.count}>{column.totalChildrenCount}</span>
               </span>
             </div>
@@ -991,6 +1222,8 @@ export default function KanbanBoard({
           title="Nueva columna"
           submitLabel="Crear columna"
           savingLabel="Creando…"
+          clients={activeClients}
+          members={members}
           onClose={() => setColumnModalOpen(false)}
           onCreate={createColumn}
         />
@@ -1003,9 +1236,12 @@ export default function KanbanBoard({
           savingLabel="Guardando…"
           initialTitle={editingColumn.title}
           initialIsDone={doneColumnIds.has(editingColumn.id)}
+          initialOwner={columnOwners.get(editingColumn.id) ?? COLUMNA_GLOBAL}
+          clients={activeClients}
+          members={members}
           onClose={() => setEditingColumn(null)}
-          onCreate={(title, isDone) =>
-            updateColumn(editingColumn.id, title, isDone)
+          onCreate={(title, isDone, owner) =>
+            updateColumn(editingColumn.id, title, isDone, owner)
           }
         />
       )}
@@ -1936,6 +2172,9 @@ function ColumnModal({
   title: modalTitle,
   initialTitle = "",
   initialIsDone = false,
+  initialOwner = COLUMNA_GLOBAL,
+  clients,
+  members,
   submitLabel,
   savingLabel,
   onClose,
@@ -1944,19 +2183,34 @@ function ColumnModal({
   title: string;
   initialTitle?: string;
   initialIsDone?: boolean;
+  initialOwner?: ColumnOwner;
+  clients: Client[];
+  members: TeamMember[];
   submitLabel: string;
   savingLabel: string;
   onClose: () => void;
-  onCreate: (title: string, isDone: boolean) => Promise<void>;
+  onCreate: (
+    title: string,
+    isDone: boolean,
+    owner: ColumnOwner,
+  ) => Promise<void>;
 }) {
   const [title, setTitle] = useState(initialTitle);
   const [isDone, setIsDone] = useState(initialIsDone);
+  const [ownerValue, setOwnerValue] = useState(ownerToValue(initialOwner));
   const [saving, setSaving] = useState(false);
+
+  const owner = valueToOwner(ownerValue);
+  const ownerName = owner.clientId
+    ? clients.find((c) => c.id === owner.clientId)?.name
+    : owner.assigneeId
+      ? members.find((m) => m.id === owner.assigneeId)?.name
+      : null;
 
   async function submit() {
     if (!title.trim()) return;
     setSaving(true);
-    await onCreate(title.trim(), isDone);
+    await onCreate(title.trim(), isDone, owner);
     setSaving(false);
   }
 
@@ -1985,6 +2239,32 @@ function ColumnModal({
             onChange={(e) => setTitle(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && submit()}
           />
+        </label>
+
+        <label style={styles.field}>
+          <span style={styles.label}>Dueño</span>
+          <select
+            style={inp}
+            value={ownerValue}
+            onChange={(e) => setOwnerValue(e.target.value)}
+          >
+            <option value="">Columna del tablero (todos)</option>
+            {clients.map((c) => (
+              <option key={c.id} value={`c:${c.id}`}>
+                Cliente — {c.name}
+              </option>
+            ))}
+            {members.map((m) => (
+              <option key={m.id} value={`m:${m.id}`}>
+                Equipo — {m.name}
+              </option>
+            ))}
+          </select>
+          <span style={styles.help}>
+            {ownerName
+              ? `Solo aparecerá al ver el tablero completo o al filtrar por ${ownerName}.`
+              : "Visible siempre, con cualquier filtro activo."}
+          </span>
         </label>
 
         <div style={styles.field}>
