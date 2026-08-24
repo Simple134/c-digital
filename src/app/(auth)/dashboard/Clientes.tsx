@@ -181,6 +181,7 @@ export default function Clientes({
   // `"new"` = ficha en blanco; un id = editando ese cliente.
   const [editing, setEditing] = useState<Client | "new" | null>(null);
   const [copied, setCopied] = useState(false);
+  const [registerLinkCopied, setRegisterLinkCopied] = useState(false);
   // Resultado del último recordatorio. `ok` separa el envío del fallo: pintar
   // los dos igual haría que un "no se pudo enviar" se leyera como enviado.
   const [notice, setNotice] = useState<{ text: string; ok: boolean } | null>(
@@ -429,6 +430,19 @@ export default function Clientes({
     });
   }
 
+  function copyPanelRegisterLink() {
+    const url = `${window.location.origin}/panel/registro`;
+    navigator.clipboard
+      .writeText(url)
+      .then(() => {
+        setRegisterLinkCopied(true);
+        setTimeout(() => setRegisterLinkCopied(false), 2000);
+      })
+      .catch(() => {
+        setError("No se pudo copiar el link. Intenta de nuevo.");
+      });
+  }
+
   if (loading) return <p style={{ color: "#888" }}>Cargando clientes…</p>;
 
   return (
@@ -456,6 +470,13 @@ export default function Clientes({
           }}
         >
           {showArchived ? "Ocultar archivados" : "Ver archivados"}
+        </button>
+        <button
+          onClick={copyPanelRegisterLink}
+          style={{ ...s.secondaryBtn, ...(isMobile ? s.touchBtn : null) }}
+          title="Copia el formulario público para que un cliente cree su acceso"
+        >
+          {registerLinkCopied ? "✓ Link copiado" : "Copiar link registro"}
         </button>
         <button
           onClick={() => setEditing("new")}

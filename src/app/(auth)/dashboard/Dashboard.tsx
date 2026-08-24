@@ -36,7 +36,7 @@ const NAV_GROUPS: { id: string; label: string; items: NavItem[] }[] = [
     label: "Operaciones",
     items: [
       { key: "clientes", label: "Clientes", view: "clientes" },
-      { key: "kanban", label: "Kanban", view: "kanban" },
+      { key: "kanban", label: "Tareas", view: "kanban" },
       { key: "solicitudes", label: "Solicitudes", view: "solicitudes" },
       { key: "facturacion", label: "Facturación", view: "facturacion" },
     ],

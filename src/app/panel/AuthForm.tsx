@@ -5,14 +5,23 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
 /**
- * Registro de clientes para el panel. El login es el mismo /login del equipo;
- * aquí solo se crea la cuenta, pasando por /api/panel-registro, que únicamente
- * autoriza correos ya dados de alta en `clients`.
+ * Registro de clientes para el panel. El mismo formulario sirve para el enlace
+ * público y para invitaciones; si llega un correo en la URL se deja integrado
+ * para que el cliente solo complete sus datos y contraseña.
  */
-export default function AuthForm() {
+export default function AuthForm({
+  initialEmail = "",
+}: {
+  initialEmail?: string;
+}) {
   const router = useRouter();
-  const [email, setEmail] = useState("");
+  const lockedEmail = initialEmail.trim().toLowerCase();
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState(lockedEmail);
   const [password, setPassword] = useState("");
+  const [passwordConfirm, setPasswordConfirm] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -24,7 +33,14 @@ export default function AuthForm() {
     const res = await fetch("/api/panel-registro", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({
+        firstName,
+        lastName,
+        phone,
+        email,
+        password,
+        passwordConfirm,
+      }),
     });
     const body = await res.json();
     if (!res.ok) {
@@ -35,7 +51,7 @@ export default function AuthForm() {
 
     const supabase = createClient();
     const { error: signInError } = await supabase.auth.signInWithPassword({
-      email,
+      email: email.trim().toLowerCase(),
       password,
     });
     if (signInError) {
@@ -62,7 +78,7 @@ export default function AuthForm() {
         fontFamily: "inherit",
       }}
     >
-      <div style={{ width: "100%", maxWidth: "400px" }}>
+      <div style={{ width: "100%", maxWidth: "520px" }}>
         <div style={{ marginBottom: "32px", textAlign: "center" }}>
           <span
             style={{
@@ -89,17 +105,67 @@ export default function AuthForm() {
           onSubmit={handleSubmit}
           style={{ display: "flex", flexDirection: "column", gap: "18px" }}
         >
+          <div style={rowStyle}>
+            <label style={fieldWrap}>
+              <span style={fieldLabel}>Nombre</span>
+              <input
+                type="text"
+                required
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                autoComplete="given-name"
+                style={inputStyle}
+                placeholder="Nombre"
+                maxLength={80}
+              />
+            </label>
+
+            <label style={fieldWrap}>
+              <span style={fieldLabel}>Apellido</span>
+              <input
+                type="text"
+                required
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+                autoComplete="family-name"
+                style={inputStyle}
+                placeholder="Apellido"
+                maxLength={80}
+              />
+            </label>
+          </div>
+
+          <label style={fieldWrap}>
+            <span style={fieldLabel}>Número de teléfono</span>
+            <input
+              type="tel"
+              required
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              autoComplete="tel"
+              style={inputStyle}
+              placeholder="809-000-0000"
+              maxLength={40}
+            />
+          </label>
+
           <label
             style={{ display: "flex", flexDirection: "column", gap: "8px" }}
           >
-            <span style={fieldLabel}>Correo</span>
+            <span style={fieldLabel}>Correo electrónico</span>
             <input
               type="email"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              readOnly={Boolean(lockedEmail)}
               autoComplete="email"
-              style={inputStyle}
+              style={{
+                ...inputStyle,
+                ...(lockedEmail
+                  ? { color: "#bdbdbd", background: "#101010" }
+                  : null),
+              }}
               placeholder="tu@correo.com"
             />
           </label>
@@ -116,6 +182,23 @@ export default function AuthForm() {
               autoComplete="new-password"
               style={inputStyle}
               placeholder="••••••••"
+              minLength={8}
+            />
+          </label>
+
+          <label
+            style={{ display: "flex", flexDirection: "column", gap: "8px" }}
+          >
+            <span style={fieldLabel}>Confirmar contraseña</span>
+            <input
+              type="password"
+              required
+              value={passwordConfirm}
+              onChange={(e) => setPasswordConfirm(e.target.value)}
+              autoComplete="new-password"
+              style={inputStyle}
+              placeholder="••••••••"
+              minLength={8}
             />
           </label>
 
@@ -169,6 +252,19 @@ const fieldLabel: React.CSSProperties = {
   textTransform: "uppercase",
   letterSpacing: "2px",
   color: "#888",
+};
+
+const fieldWrap: React.CSSProperties = {
+  display: "flex",
+  flexDirection: "column",
+  gap: "8px",
+  minWidth: 0,
+};
+
+const rowStyle: React.CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+  gap: "12px",
 };
 
 const inputStyle: React.CSSProperties = {

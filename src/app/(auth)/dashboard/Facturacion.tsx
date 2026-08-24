@@ -414,6 +414,19 @@ function InvoiceCard({
 }) {
   const cur = invoice.currency;
   const color = STATUS_COLOR[totals.status];
+  const [paying, setPaying] = useState(false);
+  const [copiedInvoiceLink, setCopiedInvoiceLink] = useState(false);
+
+  async function copyInvoiceLink() {
+    const url = `${window.location.origin}/factura/${invoice.public_token}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopiedInvoiceLink(true);
+      window.setTimeout(() => setCopiedInvoiceLink(false), 2000);
+    } catch {
+      window.open(url, "_blank", "noopener,noreferrer");
+    }
+  }
 
   return (
     <div style={{ ...s.card, ...(isMobile ? { padding: 14 } : null) }}>
@@ -497,13 +510,21 @@ function InvoiceCard({
       </div>
 
       <div style={s.actions}>
+        {totals.balance > 0 && (
+          <button
+            onClick={() => setPaying(true)}
+            style={{ ...s.primaryBtnSm, ...(isMobile ? s.touchBtn : null) }}
+          >
+            Pagar
+          </button>
+        )}
         <button
           onClick={onToggle}
           style={{ ...s.ghostBtn, ...(isMobile ? s.touchBtn : null) }}
         >
           {expanded
-            ? "Ocultar abonos"
-            : `Abonos (${invoice.invoice_payments.length})`}
+            ? "Ocultar pagos"
+            : `Ver pagos (${invoice.invoice_payments.length})`}
         </button>
         {/* Un solo botón: el diálogo nativo ya permite ver, guardar como PDF
             e imprimir, sin abrir otra pestaña. */}
@@ -511,6 +532,16 @@ function InvoiceCard({
           token={invoice.public_token}
           style={{ ...s.viewBtn, ...(isMobile ? s.touchBtn : null) }}
         />
+        <button
+          onClick={copyInvoiceLink}
+          style={{
+            ...s.ghostBtn,
+            ...(isMobile ? s.touchBtn : null),
+            ...(copiedInvoiceLink ? { color: "#00e5a0" } : null),
+          }}
+        >
+          {copiedInvoiceLink ? "Link copiado" : "Copiar link factura"}
+        </button>
         <button
           onClick={onSend}
           style={{ ...s.sendBtn, ...(isMobile ? s.touchBtn : null) }}
@@ -562,6 +593,20 @@ function InvoiceCard({
           isMobile={isMobile}
         />
       )}
+
+      {paying && (
+        <PaymentModal
+          invoice={invoice}
+          balance={totals.balance}
+          supabase={supabase}
+          isMobile={isMobile}
+          onClose={() => setPaying(false)}
+          onSaved={() => {
+            setPaying(false);
+            onChanged();
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -581,34 +626,6 @@ function Payments({
   onChanged: () => void;
   isMobile: boolean;
 }) {
-  const [method, setMethod] = useState(PAYMENT_METHODS[0]);
-  const [amount, setAmount] = useState("");
-  const [paidAt, setPaidAt] = useState(() =>
-    toLocalInput(new Date().toISOString()),
-  );
-  const [saving, setSaving] = useState(false);
-
-  async function addPayment() {
-    const value = Number(amount);
-    if (!Number.isFinite(value) || value <= 0) {
-      return alert("Escribe un monto mayor que cero.");
-    }
-    const warning = paymentWarning(value, balance);
-    if (warning && !confirm(warning)) return;
-
-    setSaving(true);
-    const { error } = await supabase.from("invoice_payments").insert({
-      invoice_id: invoice.id,
-      method,
-      amount: value,
-      paid_at: new Date(paidAt).toISOString(),
-    });
-    setSaving(false);
-    if (error) return alert("Error al registrar el abono: " + error.message);
-    setAmount("");
-    onChanged();
-  }
-
   async function removePayment(p: InvoicePayment) {
     if (!confirm("¿Eliminar este abono?")) return;
     const { error } = await supabase
@@ -628,68 +645,179 @@ function Payments({
       ) : (
         <div style={{ marginBottom: 16 }}>
           {invoice.invoice_payments.map((p) => (
-            <div
-              key={p.id}
-              style={{
-                ...s.payRow,
-                ...(isMobile
-                  ? { gridTemplateColumns: "1fr auto 28px", rowGap: 2 }
-                  : null),
-              }}
-            >
-              <span style={{ color: "#ddd" }}>{p.method}</span>
-              <span style={{ color: "#888" }}>{fmtDateTime(p.paid_at)}</span>
-              <span style={{ color: "#00e5a0", fontWeight: 600 }}>
-                {fmtMoney(Number(p.amount), invoice.currency)}
-              </span>
-              <button onClick={() => removePayment(p)} style={s.miniDanger}>
-                ✕
-              </button>
+            <div key={p.id} style={s.payItem}>
+              <div
+                style={{
+                  ...s.payRow,
+                  ...(isMobile
+                    ? { gridTemplateColumns: "1fr auto 28px", rowGap: 2 }
+                    : null),
+                }}
+              >
+                <span style={{ color: "#ddd" }}>{p.method}</span>
+                <span style={{ color: "#888" }}>{fmtDateTime(p.paid_at)}</span>
+                <span style={{ color: "#00e5a0", fontWeight: 600 }}>
+                  {fmtMoney(Number(p.amount), invoice.currency)}
+                </span>
+                <button onClick={() => removePayment(p)} style={s.miniDanger}>
+                  ✕
+                </button>
+              </div>
+              {p.note && <div style={s.payNote}>{p.note}</div>}
             </div>
           ))}
         </div>
       )}
 
-      <div style={s.payForm}>
-        <select
-          value={method}
-          onChange={(e) => setMethod(e.target.value)}
-          style={{
-            ...s.select,
-            ...(isMobile ? { ...s.touchInput, width: "100%" } : null),
-          }}
-        >
-          {PAYMENT_METHODS.map((m) => (
-            <option key={m} value={m}>
-              {m}
-            </option>
-          ))}
-        </select>
-        <input
-          type="datetime-local"
-          value={paidAt}
-          onChange={(e) => setPaidAt(e.target.value)}
-          style={{ ...s.input, ...(isMobile ? s.touchInput : null) }}
-        />
-        <input
-          type="number"
-          min="0"
-          step="0.01"
-          placeholder={`Monto (falta ${balance})`}
-          value={amount}
-          onChange={(e) => setAmount(e.target.value)}
-          style={{ ...s.input, ...(isMobile ? s.touchInput : null) }}
-        />
-        <button
-          onClick={addPayment}
-          disabled={saving}
-          style={{
-            ...s.primaryBtnSm,
-            ...(isMobile ? { ...s.touchBtn, width: "100%" } : null),
-          }}
-        >
-          {saving ? "Guardando…" : "Registrar abono"}
-        </button>
+      {balance > 0 && invoice.invoice_payments.length === 0 && (
+        <p style={{ color: "#777", fontSize: 12, margin: 0 }}>
+          Usa el botón Pagar de la tarjeta para registrar el primer pago.
+        </p>
+      )}
+    </div>
+  );
+}
+
+function PaymentModal({
+  invoice,
+  balance,
+  supabase,
+  isMobile,
+  onClose,
+  onSaved,
+}: {
+  invoice: FullInvoice;
+  balance: number;
+  supabase: Supabase;
+  isMobile: boolean;
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const [method, setMethod] = useState(PAYMENT_METHODS[0]);
+  const [amount, setAmount] = useState("");
+  const [paidAt, setPaidAt] = useState(() =>
+    toLocalInput(new Date().toISOString()),
+  );
+  const [note, setNote] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  async function addPayment() {
+    const value = Number(amount);
+    if (!Number.isFinite(value) || value <= 0) {
+      return alert("Escribe un monto mayor que cero.");
+    }
+    const warning = paymentWarning(value, balance);
+    if (warning && !confirm(warning)) return;
+
+    setSaving(true);
+    const { error } = await supabase.from("invoice_payments").insert({
+      invoice_id: invoice.id,
+      method,
+      amount: value,
+      paid_at: new Date(paidAt).toISOString(),
+      note: note.trim() || null,
+    });
+    setSaving(false);
+    if (error) return alert("Error al registrar el pago: " + error.message);
+    onSaved();
+  }
+
+  const inp = isMobile ? { ...s.input, ...s.touchInput } : s.input;
+
+  return (
+    <div style={s.centerOverlay} onClick={onClose}>
+      <div
+        style={{
+          ...s.modal,
+          ...(isMobile ? { width: "100%", padding: 20 } : null),
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div style={s.modalHeader}>
+          <strong style={{ fontSize: 15 }}>Registrar pago</strong>
+          <button onClick={onClose} style={s.closeBtn} aria-label="Cerrar">
+            ✕
+          </button>
+        </div>
+
+        <p style={s.modalAmount}>{fmtMoney(balance, invoice.currency)}</p>
+        <p style={s.help}>Saldo pendiente de la factura #{invoice.number}.</p>
+
+        <label style={s.field}>
+          <span style={s.label}>Método</span>
+          <select
+            value={method}
+            onChange={(e) => setMethod(e.target.value)}
+            style={inp}
+          >
+            {PAYMENT_METHODS.map((m) => (
+              <option key={m} value={m}>
+                {m}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label style={s.field}>
+          <span style={s.label}>Fecha del pago</span>
+          <input
+            type="datetime-local"
+            value={paidAt}
+            onChange={(e) => setPaidAt(e.target.value)}
+            style={inp}
+          />
+        </label>
+
+        <label style={s.field}>
+          <span style={s.label}>Monto</span>
+          <input
+            type="number"
+            min="0"
+            step="0.01"
+            placeholder={String(balance)}
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            style={inp}
+          />
+        </label>
+
+        <label style={s.field}>
+          <span style={s.label}>Nota del pago</span>
+          <textarea
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            placeholder="Ej.: transferencia, referencia, comentario interno"
+            style={{ ...inp, minHeight: 76, resize: "vertical" }}
+          />
+        </label>
+
+        <div style={s.modalFooter}>
+          <button
+            onClick={onClose}
+            style={{ ...s.ghostBtn, ...(isMobile ? s.touchBtn : null) }}
+          >
+            Cancelar
+          </button>
+          <button
+            onClick={addPayment}
+            disabled={saving}
+            style={{
+              ...s.primaryBtn,
+              ...(isMobile ? { ...s.touchBtn, marginLeft: 0 } : null),
+              opacity: saving ? 0.6 : 1,
+            }}
+          >
+            {saving ? "Guardando…" : "Guardar pago"}
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -1500,6 +1628,7 @@ const s: Record<string, CSSProperties> = {
     flexShrink: 0,
   },
   detail: { marginTop: 16, paddingTop: 16, borderTop: "1px solid #232323" },
+  payItem: { borderBottom: "1px solid #1e1e1e", padding: "2px 0 8px" },
   payRow: {
     display: "grid",
     gridTemplateColumns: "1fr 1.4fr auto 28px",
@@ -1508,7 +1637,13 @@ const s: Record<string, CSSProperties> = {
     fontSize: 13,
     padding: "6px 0",
   },
-  payForm: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" },
+  payNote: {
+    color: "#999",
+    fontSize: 12,
+    lineHeight: 1.45,
+    marginTop: 2,
+    paddingRight: 38,
+  },
   itemRow: { display: "flex", gap: 8, alignItems: "center", marginBottom: 8 },
   itemTotal: {
     fontSize: 12,

@@ -2,22 +2,46 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 interface RegistroPayload {
+  firstName: string;
+  lastName: string;
+  phone: string;
   email: string;
   password: string;
+  passwordConfirm: string;
 }
 
-// Registro de clientes para /panel. Mismo modelo que /api/registro-submit
-// (equipo): solo permite crear cuenta si el correo ya existe en `clients` y
-// aún no tiene auth vinculada. El equipo da de alta al cliente con su correo;
-// el cliente solo elige su contraseña. Sin signup abierto.
+// Registro de clientes para /panel. Soporta dos entradas:
+// - invitación: el correo ya existe en `clients` y solo se vincula la cuenta;
+// - enlace público: se crea una ficha mínima del cliente y su usuario Auth.
 export async function POST(request: NextRequest) {
-  const body = (await request.json()) as RegistroPayload;
+  let body: RegistroPayload;
+  try {
+    body = (await request.json()) as RegistroPayload;
+  } catch {
+    return NextResponse.json({ error: "JSON inválido." }, { status: 400 });
+  }
+
+  const firstName = cleanText(body.firstName, 80);
+  const lastName = cleanText(body.lastName, 80);
+  const phone = cleanText(body.phone, 40);
   const email = body.email?.trim().toLowerCase();
   const password = body.password;
+  const passwordConfirm = body.passwordConfirm;
+  const fullName = `${firstName} ${lastName}`.replace(/\s+/g, " ").trim();
 
-  if (!email || !password || password.length < 8) {
+  if (!firstName || !lastName || !phone || !email || !isEmail(email)) {
     return NextResponse.json(
-      { error: "Correo o contraseña inválidos (mínimo 8 caracteres)." },
+      { error: "Completa nombre, apellido, teléfono y correo válidos." },
+      { status: 400 },
+    );
+  }
+
+  if (!password || password.length < 8 || password !== passwordConfirm) {
+    return NextResponse.json(
+      {
+        error:
+          "La contraseña debe tener mínimo 8 caracteres y coincidir con la confirmación.",
+      },
       { status: 400 },
     );
   }
@@ -33,17 +57,52 @@ export async function POST(request: NextRequest) {
   if (clientError) {
     return NextResponse.json({ error: clientError.message }, { status: 500 });
   }
-  if (!client || !client.active) {
+  if (client && !client.active) {
     return NextResponse.json(
       { error: "Este correo no está autorizado. Contáctanos para activarlo." },
       { status: 403 },
     );
   }
-  if (client.auth_user_id) {
+  if (client?.auth_user_id) {
     return NextResponse.json(
       { error: "Este correo ya tiene una cuenta. Inicia sesión." },
       { status: 409 },
     );
+  }
+
+  let clientId = client?.id ?? null;
+  let fichaCreada = false;
+
+  if (!clientId) {
+    const { data: last } = await admin
+      .from("clients")
+      .select("sort_order")
+      .order("sort_order", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    const { data: createdClient, error: createClientError } = await admin
+      .from("clients")
+      .insert({
+        name: fullName,
+        contact_name: fullName,
+        phone,
+        email,
+        active: true,
+        custom_fields: {},
+        sort_order: (last?.sort_order ?? -1) + 1,
+      })
+      .select("id")
+      .single();
+
+    if (createClientError) {
+      return NextResponse.json(
+        { error: createClientError.message },
+        { status: 500 },
+      );
+    }
+    clientId = createdClient.id;
+    fichaCreada = true;
   }
 
   // El alta son dos escrituras en sistemas distintos (Auth y Postgres) y no hay
@@ -65,10 +124,16 @@ export async function POST(request: NextRequest) {
   if (created?.user) {
     userId = created.user.id;
   } else {
-    // ¿Existe ya una cuenta con este correo? Solo puede ser de este mismo
-    // cliente: para llegar hasta aquí su correo tiene que estar en `clients`,
-    // activo y sin `auth_user_id`. Se adopta y se le fija la contraseña
-    // elegida, que es exactamente lo que habría hecho el alta normal.
+    if (fichaCreada) {
+      await admin.from("clients").delete().eq("id", clientId);
+      return NextResponse.json(
+        { error: "Este correo ya tiene una cuenta. Inicia sesión." },
+        { status: 409 },
+      );
+    }
+
+    // En invitaciones puede existir una cuenta huérfana de un intento anterior.
+    // Se adopta porque el correo ya estaba autorizado por el equipo.
     const huerfana = await buscarUsuarioPorCorreo(admin, email);
     if (!huerfana) {
       return NextResponse.json(
@@ -89,8 +154,13 @@ export async function POST(request: NextRequest) {
 
   const { error: linkError } = await admin
     .from("clients")
-    .update({ auth_user_id: userId })
-    .eq("id", client.id);
+    .update({
+      auth_user_id: userId,
+      contact_name: fullName,
+      phone,
+      email,
+    })
+    .eq("id", clientId);
 
   if (linkError) {
     // Sin vínculo la cuenta no sirve para nada y bloquearía el próximo intento;
@@ -105,10 +175,24 @@ export async function POST(request: NextRequest) {
         );
       }
     }
+    if (fichaCreada) {
+      await admin.from("clients").delete().eq("id", clientId);
+    }
     return NextResponse.json({ error: linkError.message }, { status: 500 });
   }
 
   return NextResponse.json({ ok: true });
+}
+
+function cleanText(value: string | undefined, max: number): string {
+  return String(value ?? "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, max);
+}
+
+function isEmail(value: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 }
 
 /**

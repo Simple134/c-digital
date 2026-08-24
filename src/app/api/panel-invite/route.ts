@@ -9,8 +9,8 @@ import { siteOrigin } from "@/lib/site";
  * Invitación al panel de clientes (/panel).
  *
  * Se dispara a mano desde la ficha del cliente en el dashboard. Manda un
- * correo con el enlace a /panel/registro; el registro en sí ya valida que el
- * correo exista en `clients`, así que la invitación no crea nada: solo avisa.
+ * correo con el enlace a /panel/registro?email=...; el registro en sí valida
+ * que el correo exista en `clients`, así que la invitación no crea nada.
  *
  * Igual que /api/client-reminder, el body solo trae `clientId`; destinatario
  * y contenido se releen en el servidor para no ser un relay de correo.
@@ -42,7 +42,7 @@ function buildInviteHtml(opts: { clientName: string; registerUrl: string }) {
         <p style="margin:0 0 18px;font-size:14px;color:#555;line-height:1.5;">
           Te habilitamos un panel donde puedes seguir el avance de tu proyecto,
           ver tus facturas y saber qué está pendiente de tu parte.
-          Crea tu cuenta con este mismo correo y la contraseña que elijas:
+          Crea tu cuenta con este mismo correo, completando tus datos y la contraseña que elijas:
         </p>
         <div style="margin-top:8px;">
           <a href="${esc(registerUrl)}" style="display:inline-block;background:#0a0a0a;color:#00e5a0;padding:12px 20px;border-radius:8px;font-weight:700;font-size:14px;text-decoration:none;">Crear mi cuenta</a>
@@ -133,13 +133,16 @@ export async function POST(request: NextRequest) {
 
   try {
     const resend = new Resend(process.env.RESEND_API_KEY);
+    const registerUrl = `${siteOrigin()}/panel/registro?email=${encodeURIComponent(
+      client.email,
+    )}`;
     const { error: sendError } = await resend.emails.send({
       from,
       to: [client.email],
       subject: "Tu acceso al panel de C Digital",
       html: buildInviteHtml({
         clientName: client.name,
-        registerUrl: `${siteOrigin()}/panel/registro`,
+        registerUrl,
       }),
     });
     if (sendError) {
