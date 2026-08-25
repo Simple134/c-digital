@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
         );
   }
 
-  let body: { title?: string; description?: string };
+  let body: { title?: string; description?: string; projectId?: string | null };
   try {
     body = await request.json();
   } catch {
@@ -44,8 +44,24 @@ export async function POST(request: NextRequest) {
     );
   }
   const description = body.description?.trim().slice(0, 2000) || null;
+  const projectId = body.projectId?.trim() || null;
 
   const admin = createAdminClient();
+
+  if (projectId) {
+    const { data: project } = await admin
+      .from("projects")
+      .select("id")
+      .eq("id", projectId)
+      .eq("client_id", client.id)
+      .maybeSingle();
+    if (!project) {
+      return NextResponse.json(
+        { error: "El proyecto no pertenece a tu cuenta." },
+        { status: 403 },
+      );
+    }
+  }
 
   // Las columnas pueden tener dueño (un cliente o un miembro del equipo), así
   // que no vale coger la primera pendiente del tablero: la tarea de este
@@ -88,6 +104,7 @@ export async function POST(request: NextRequest) {
         ? `${description}\n\n— Solicitada por ${client.name} desde su panel.`
         : `— Solicitada por ${client.name} desde su panel.`,
       client_id: client.id,
+      project_id: projectId,
       assigned_to_client: false,
       sort_order: (last?.sort_order ?? 0) + 1,
     })

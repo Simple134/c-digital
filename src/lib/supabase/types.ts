@@ -81,6 +81,7 @@ export interface KanbanCard {
   priority: string | null;
   assignee_id: string | null;
   client_id: string | null;
+  project_id: string | null;
   // true = la tarea está pendiente del cliente, no del equipo. `assignee_id`
   // sigue indicando quién la supervisa por nuestro lado (puede ser null).
   assigned_to_client: boolean;
@@ -131,6 +132,25 @@ export interface Client {
   active: boolean;
   sort_order: number;
   created_at: string;
+}
+
+export type ProjectStatus = "activo" | "pausado" | "completado" | "archivado";
+
+// Proyecto operativo contratado por un cliente. El cliente sigue siendo la
+// identidad de acceso al panel; el proyecto agrupa tareas, facturas y archivos.
+export interface Project {
+  id: string;
+  client_id: string;
+  name: string;
+  slug: string | null;
+  status: ProjectStatus;
+  description: string | null;
+  started_at: string | null;
+  due_date: string | null;
+  completed_at: string | null;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
 }
 
 export type AuditLevel = "green" | "yellow" | "red";
@@ -188,6 +208,7 @@ export interface MeetingRequest {
   calendar_event_id: string | null;
   // Cliente del panel que la solicitó (null en solicitudes del sitio público).
   client_id: string | null;
+  project_id: string | null;
   // Resumen de lo hablado, visible para el cliente en su panel. `admin_notes`
   // sigue siendo interno.
   summary: string | null;
@@ -207,6 +228,7 @@ export type ClientFileKind = "credencial" | "contrato" | "documento" | "link";
 export interface ClientFile {
   id: string;
   client_id: string;
+  project_id: string | null;
   kind: ClientFileKind;
   title: string;
   url: string | null;
@@ -253,6 +275,7 @@ export type TableName =
   | "kanban_columns"
   | "kanban_cards"
   | "clients"
+  | "projects"
   | "form_submissions"
   | "meeting_requests"
   | "invoices"
@@ -272,6 +295,7 @@ export interface Invoice {
   number: string;
   party_type: InvoiceParty;
   client_id: string | null;
+  project_id: string | null;
   team_member_id: string | null;
   // Nombre y correo congelados al emitir: la factura ya enviada no debe cambiar
   // si después se renombra o se borra el cliente.

@@ -1,17 +1,24 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { siteOrigin } from "@/lib/site";
 import useIsMobile from "./useIsMobile";
 import Clientes from "./Clientes";
+import Proyectos from "./Proyectos";
 import KanbanBoard from "./KanbanBoard";
 import Solicitudes from "./Solicitudes";
 import Facturacion from "./Facturacion";
 import { RESOURCES, emptyRecord, type Field, type Resource } from "./resources";
 
-type View = "resource" | "clientes" | "kanban" | "solicitudes" | "facturacion";
+type View =
+  | "resource"
+  | "clientes"
+  | "proyectos"
+  | "kanban"
+  | "solicitudes"
+  | "facturacion";
 
 type Row = Record<string, unknown> & { id?: string };
 
@@ -36,6 +43,7 @@ const NAV_GROUPS: { id: string; label: string; items: NavItem[] }[] = [
     label: "Operaciones",
     items: [
       { key: "clientes", label: "Clientes", view: "clientes" },
+      { key: "proyectos", label: "Proyectos", view: "proyectos" },
       { key: "kanban", label: "Tareas", view: "kanban" },
       { key: "solicitudes", label: "Solicitudes", view: "solicitudes" },
       { key: "facturacion", label: "Facturación", view: "facturacion" },
@@ -43,15 +51,29 @@ const NAV_GROUPS: { id: string; label: string; items: NavItem[] }[] = [
   },
 ];
 
+function parseView(value: string | null): View {
+  return value === "clientes" ||
+    value === "proyectos" ||
+    value === "kanban" ||
+    value === "solicitudes" ||
+    value === "facturacion"
+    ? value
+    : "resource";
+}
+
 export default function Dashboard({ userEmail }: { userEmail: string }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const viewParam = searchParams.get("view");
+  const clientParam = searchParams.get("client");
   const supabase = useMemo(() => createClient(), []);
 
   const isMobile = useIsMobile();
   // En teléfono la navegación arranca plegada para no empujar el contenido.
   const [menuOpen, setMenuOpen] = useState(false);
 
-  const [view, setView] = useState<View>("resource");
+  const initialView = parseView(viewParam);
+  const [view, setView] = useState<View>(initialView);
   const [active, setActive] = useState<Resource>(RESOURCES[0]);
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
@@ -60,6 +82,7 @@ export default function Dashboard({ userEmail }: { userEmail: string }) {
   // Cliente que la ficha de Clientes manda a otra vista para trabajar con él
   // (facturarle o asignarle una tarea). La vista destino lo consume y lo limpia.
   const [handoffClientId, setHandoffClientId] = useState<string | null>(null);
+  const [handoffProjectId, setHandoffProjectId] = useState<string | null>(null);
   // Tarjeta concreta que el Kanban debe abrir al recibir el salto.
   const [handoffCardId, setHandoffCardId] = useState<string | null>(null);
 
@@ -93,21 +116,28 @@ export default function Dashboard({ userEmail }: { userEmail: string }) {
       : view === item.view;
   }
 
+  useEffect(() => {
+    setView(parseView(viewParam));
+  }, [viewParam]);
+
   function selectItem(item: NavItem) {
     setEditing(null);
     setMenuOpen(false);
     if ("resource" in item) {
       setView("resource");
       setActive(item.resource);
+      router.push("/dashboard");
     } else {
       setView(item.view);
+      router.push(`/dashboard?view=${item.view}`);
     }
   }
 
   const handoff = useCallback(
-    (view: View, clientId: string, cardId?: string) => {
+    (view: View, clientId: string, cardId?: string, projectId?: string) => {
       setEditing(null);
       setHandoffClientId(clientId);
+      setHandoffProjectId(projectId ?? null);
       setHandoffCardId(cardId ?? null);
       setView(view);
     },
@@ -116,6 +146,7 @@ export default function Dashboard({ userEmail }: { userEmail: string }) {
 
   const clearHandoff = useCallback(() => {
     setHandoffClientId(null);
+    setHandoffProjectId(null);
     setHandoffCardId(null);
   }, []);
 
@@ -317,27 +348,48 @@ export default function Dashboard({ userEmail }: { userEmail: string }) {
           maxWidth:
             view === "kanban"
               ? "none"
-              : view === "facturacion" || view === "clientes"
+              : view === "facturacion" ||
+                  view === "clientes" ||
+                  view === "proyectos"
                 ? 1200
                 : 1000,
         }}
       >
         {view === "clientes" ? (
           <>
-            <div style={styles.header}>
-              <div>
-                <h1 style={{ fontSize: 28, margin: 0 }}>Clientes</h1>
-                <p style={{ color: "#888", fontSize: 13, marginTop: 6 }}>
-                  Ficha, datos fiscales e historial: desde aquí se factura y se
-                  asignan tareas
-                </p>
+            {!clientParam && (
+              <div style={styles.header}>
+                <div>
+                  <h1 style={{ fontSize: 28, margin: 0 }}>Clientes</h1>
+                  <p style={{ color: "#888", fontSize: 13, marginTop: 6 }}>
+                    Ficha, datos fiscales e historial: desde aquí se factura y
+                    se asignan tareas
+                  </p>
+                </div>
               </div>
-            </div>
+            )}
             <Clientes
               supabase={supabase}
               onCreateInvoice={(id) => handoff("facturacion", id)}
               onAssignTask={(id) => handoff("kanban", id)}
               onOpenTask={(id, cardId) => handoff("kanban", id, cardId)}
+            />
+          </>
+        ) : view === "proyectos" ? (
+          <>
+            <div style={styles.header}>
+              <div>
+                <h1 style={{ fontSize: 28, margin: 0 }}>Proyectos</h1>
+                <p style={{ color: "#888", fontSize: 13, marginTop: 6 }}>
+                  Proyectos vinculados a clientes, con tareas y facturación
+                </p>
+              </div>
+            </div>
+            <Proyectos
+              supabase={supabase}
+              onOpenTasks={(clientId, projectId) =>
+                handoff("kanban", clientId, undefined, projectId)
+              }
             />
           </>
         ) : view === "kanban" ? (
@@ -348,6 +400,7 @@ export default function Dashboard({ userEmail }: { userEmail: string }) {
             <KanbanBoard
               supabase={supabase}
               prefillClientId={handoffClientId}
+              prefillProjectId={handoffProjectId}
               prefillCardId={handoffCardId}
               onPrefillUsed={clearHandoff}
             />
@@ -366,14 +419,6 @@ export default function Dashboard({ userEmail }: { userEmail: string }) {
           </>
         ) : view === "facturacion" ? (
           <>
-            <div style={styles.header}>
-              <div>
-                <h1 style={{ fontSize: 28, margin: 0 }}>Facturación</h1>
-                <p style={{ color: "#888", fontSize: 13, marginTop: 6 }}>
-                  Facturas a clientes y pagos al equipo, con abonos parciales
-                </p>
-              </div>
-            </div>
             <Facturacion
               supabase={supabase}
               prefillClientId={handoffClientId}

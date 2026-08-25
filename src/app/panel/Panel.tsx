@@ -26,6 +26,7 @@ import type {
   KanbanCard,
   KanbanColumn,
   MeetingRequest,
+  Project,
 } from "@/lib/supabase/types";
 import useIsMobile from "../(auth)/dashboard/useIsMobile";
 
@@ -60,6 +61,7 @@ const MEETING_STATUS_LABEL: Record<string, string> = {
 
 interface Props {
   client: Client;
+  projects: Project[];
   columns: KanbanColumn[];
   cards: KanbanCard[];
   invoices: Invoice[];
@@ -68,6 +70,7 @@ interface Props {
   files: PanelFile[];
   receipts: PanelReceipt[];
   meetings: MeetingRequest[];
+  selectedProjectId?: string;
 }
 
 /**
@@ -90,8 +93,11 @@ function bucketize(cards: KanbanCard[], columns: KanbanColumn[]) {
 }
 
 export default function Panel(props: Props) {
-  const { client, cards } = props;
+  const { client, cards, projects } = props;
   const [section, setSection] = useState<SectionId>("dashboard");
+  const [selectedProjectId, setSelectedProjectId] = useState<string>(
+    projects.find((p) => p.status !== "archivado")?.id ?? "",
+  );
   const isMobile = useIsMobile();
   const router = useRouter();
 
@@ -101,9 +107,25 @@ export default function Panel(props: Props) {
     router.refresh();
   }
 
-  const pendingOfClient = cards.filter(
+  const visibleCards = selectedProjectId
+    ? cards.filter((c) => c.project_id === selectedProjectId)
+    : cards;
+  const visibleInvoices = selectedProjectId
+    ? props.invoices.filter((i) => i.project_id === selectedProjectId)
+    : props.invoices;
+  const visibleFiles = selectedProjectId
+    ? props.files.filter((f) => f.project_id === selectedProjectId)
+    : props.files;
+  const pendingOfClient = visibleCards.filter(
     (c) => c.assigned_to_client && !c.completed_at,
   );
+  const scopedProps = {
+    ...props,
+    cards: visibleCards,
+    invoices: visibleInvoices,
+    files: visibleFiles,
+    selectedProjectId,
+  };
 
   return (
     <div
@@ -164,13 +186,32 @@ export default function Panel(props: Props) {
             <span style={styles.sideName}>{client.name}</span>
           </div>
         )}
-        {section === "dashboard" && (
-          <DashboardSection {...props} goTo={setSection} />
+        {projects.length > 0 && (
+          <label style={styles.projectPicker}>
+            <span style={styles.fieldLabel}>Proyecto</span>
+            <select
+              value={selectedProjectId}
+              onChange={(e) => setSelectedProjectId(e.target.value)}
+              style={styles.input}
+            >
+              <option value="">Todos los proyectos</option>
+              {projects
+                .filter((p) => p.status !== "archivado")
+                .map((project) => (
+                  <option key={project.id} value={project.id}>
+                    {project.name}
+                  </option>
+                ))}
+            </select>
+          </label>
         )}
-        {section === "tareas" && <TareasSection {...props} />}
-        {section === "archivos" && <ArchivosSection {...props} />}
-        {section === "facturacion" && <FacturacionSection {...props} />}
-        {section === "reuniones" && <ReunionesSection {...props} />}
+        {section === "dashboard" && (
+          <DashboardSection {...scopedProps} goTo={setSection} />
+        )}
+        {section === "tareas" && <TareasSection {...scopedProps} />}
+        {section === "archivos" && <ArchivosSection {...scopedProps} />}
+        {section === "facturacion" && <FacturacionSection {...scopedProps} />}
+        {section === "reuniones" && <ReunionesSection {...scopedProps} />}
         {section === "cuenta" && <CuentaSection client={client} />}
       </main>
     </div>
@@ -336,7 +377,7 @@ function sesionExpirada(res: Response): boolean {
 }
 
 function TareasSection(props: Props) {
-  const { cards, columns } = props;
+  const { cards, columns, selectedProjectId } = props;
   const router = useRouter();
   const { todo, doing, done } = bucketize(cards, columns);
   const [open, setOpen] = useState<KanbanCard | null>(null);
@@ -354,7 +395,11 @@ function TareasSection(props: Props) {
       const res = await fetch("/api/panel/task", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title, description: desc }),
+        body: JSON.stringify({
+          title,
+          description: desc,
+          projectId: selectedProjectId || null,
+        }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -1210,6 +1255,13 @@ const styles: Record<string, React.CSSProperties> = {
     padding: "0 12px 20px",
   },
   mobileHead: { display: "flex", flexDirection: "column", marginBottom: 18 },
+  projectPicker: {
+    display: "flex",
+    flexDirection: "column",
+    gap: 6,
+    maxWidth: 420,
+    marginBottom: 18,
+  },
   sideLabel: {
     fontSize: 10,
     textTransform: "uppercase",

@@ -82,7 +82,9 @@ export default function InvoiceDoc({
         <div key={it.id} style={{ marginTop: 18 }}>
           <div style={S.concept}>{it.concept}</div>
           <div className="invoice-items-row" style={S.itemsRow}>
-            <span data-label="Precio">{fmtMoney(Number(it.unit_price), cur)}</span>
+            <span data-label="Precio">
+              {fmtMoney(Number(it.unit_price), cur)}
+            </span>
             <span data-label="Cantidad">
               {Number(it.quantity)} {it.unit}
             </span>

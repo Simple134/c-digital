@@ -12,6 +12,7 @@ import type {
   KanbanCard,
   KanbanColumn,
   MeetingRequest,
+  Project,
 } from "@/lib/supabase/types";
 import Panel, { type PanelFile, type PanelReceipt } from "./Panel";
 
@@ -75,6 +76,7 @@ export default async function ClientPanelPage() {
     { data: columns },
     { data: cards },
     { data: invoices },
+    { data: projects },
     { data: files },
     { data: meetings },
   ] = await Promise.all([
@@ -92,6 +94,11 @@ export default async function ClientPanelPage() {
       .select("*")
       .eq("client_id", client.id)
       .order("issued_at", { ascending: false }),
+    admin
+      .from("projects")
+      .select("*")
+      .eq("client_id", client.id)
+      .order("sort_order", { ascending: true }),
     admin
       .from("client_files")
       .select("*")
@@ -166,6 +173,7 @@ export default async function ClientPanelPage() {
   return (
     <Panel
       client={client}
+      projects={(projects as Project[]) ?? []}
       columns={(columns as KanbanColumn[]) ?? []}
       cards={(cards as KanbanCard[]) ?? []}
       invoices={invoiceRows}

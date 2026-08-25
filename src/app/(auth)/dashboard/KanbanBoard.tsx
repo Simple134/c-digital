@@ -17,6 +17,7 @@ import type {
   Client,
   KanbanCard,
   KanbanColumn,
+  Project,
   TeamMember,
 } from "@/lib/supabase/types";
 import useIsMobile from "./useIsMobile";
@@ -30,6 +31,7 @@ type CardFormValues = {
   priority: string;
   assignee_id: string;
   client_id: string;
+  project_id: string;
   assigned_to_client: boolean;
   image_url: string | null;
   image_path: string | null;
@@ -138,6 +140,7 @@ function buildBoardData(
           priority: card.priority,
           assignee_id: card.assignee_id,
           client_id: card.client_id,
+          project_id: card.project_id,
           assigned_to_client: card.assigned_to_client,
           image_url: card.image_url,
           image_path: card.image_path,
@@ -157,6 +160,8 @@ export default function KanbanBoard({
   // Cliente con el que entrar al tablero, enviado desde la ficha de Clientes:
   // filtra el tablero por él y deja el selector listo para crear su tarea.
   prefillClientId,
+  // Proyecto con el que entrar al tablero desde la vista de Proyectos.
+  prefillProjectId,
   // Tarjeta concreta a abrir al entrar, cuando el salto viene de una tarea de la
   // ficha del cliente y no del botón general de "asignar tarea".
   prefillCardId,
@@ -164,6 +169,7 @@ export default function KanbanBoard({
 }: {
   supabase: Supabase;
   prefillClientId?: string | null;
+  prefillProjectId?: string | null;
   prefillCardId?: string | null;
   onPrefillUsed?: () => void;
 }) {
@@ -173,9 +179,11 @@ export default function KanbanBoard({
   const [columns, setColumns] = useState<KanbanColumn[]>([]);
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedClientId, setSelectedClientId] = useState("");
+  const [selectedProjectId, setSelectedProjectId] = useState("");
   const [selectedMemberId, setSelectedMemberId] = useState("");
   const [linkCopied, setLinkCopied] = useState(false);
   // Resultado del último aviso por correo. Va aparte de `error` porque `error`
@@ -202,7 +210,7 @@ export default function KanbanBoard({
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
-    const [cols, cards, team, clientRows] = await Promise.all([
+    const [cols, cards, team, clientRows, projectRows] = await Promise.all([
       supabase
         .from("kanban_columns")
         .select("*")
@@ -219,17 +227,33 @@ export default function KanbanBoard({
         .from("clients")
         .select("*")
         .order("sort_order", { ascending: true }),
+      supabase
+        .from("projects")
+        .select("*")
+        .order("sort_order", { ascending: true }),
     ]);
-    if (cols.error || cards.error || team.error || clientRows.error) {
+    if (
+      cols.error ||
+      cards.error ||
+      team.error ||
+      clientRows.error ||
+      projectRows.error
+    ) {
       setError(
-        (cols.error ?? cards.error ?? team.error ?? clientRows.error)
-          ?.message ?? "Error al cargar",
+        (
+          cols.error ??
+          cards.error ??
+          team.error ??
+          clientRows.error ??
+          projectRows.error
+        )?.message ?? "Error al cargar",
       );
       setLoading(false);
       return;
     }
     setMembers((team.data as TeamMember[]) ?? []);
     setClients((clientRows.data as Client[]) ?? []);
+    setProjects((projectRows.data as Project[]) ?? []);
     setColumns((cols.data as KanbanColumn[]) ?? []);
     setData(
       buildBoardData(
@@ -249,11 +273,12 @@ export default function KanbanBoard({
   const [pendingCardId, setPendingCardId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!prefillClientId && !prefillCardId) return;
+    if (!prefillClientId && !prefillProjectId && !prefillCardId) return;
     if (prefillClientId) setSelectedClientId(prefillClientId);
+    if (prefillProjectId) setSelectedProjectId(prefillProjectId);
     if (prefillCardId) setPendingCardId(prefillCardId);
     onPrefillUsed?.();
-  }, [prefillClientId, prefillCardId, onPrefillUsed]);
+  }, [prefillClientId, prefillProjectId, prefillCardId, onPrefillUsed]);
 
   useEffect(() => {
     if (!pendingCardId || !data) return;
@@ -265,6 +290,7 @@ export default function KanbanBoard({
   }, [pendingCardId, data]);
 
   const selectedClient = clients.find((c) => c.id === selectedClientId);
+  const selectedProject = projects.find((p) => p.id === selectedProjectId);
 
   // Los archivados salen de los selectores pero no del tablero: sus tarjetas
   // viejas siguen existiendo y deben poder verse.
@@ -272,6 +298,27 @@ export default function KanbanBoard({
     () => clients.filter((c) => c.active !== false),
     [clients],
   );
+
+  const activeProjects = useMemo(
+    () =>
+      projects.filter(
+        (p) =>
+          p.status !== "archivado" &&
+          (!selectedClientId || p.client_id === selectedClientId),
+      ),
+    [projects, selectedClientId],
+  );
+
+  useEffect(() => {
+    if (!selectedProjectId) return;
+    const project = projects.find((p) => p.id === selectedProjectId);
+    if (
+      !project ||
+      (selectedClientId && project.client_id !== selectedClientId)
+    ) {
+      setSelectedProjectId("");
+    }
+  }, [projects, selectedClientId, selectedProjectId]);
 
   const doneColumnIds = useMemo(
     () => new Set(columns.filter((c) => c.is_done).map((c) => c.id)),
@@ -318,7 +365,8 @@ export default function KanbanBoard({
   // más las del propio filtro. Sin filtro se ve todo (incluidas las columnas
   // con dueño) para que nada de trabajo quede escondido.
   const visibleData = useMemo(() => {
-    if (!data || (!selectedClientId && !selectedMemberId)) return data;
+    if (!data || (!selectedClientId && !selectedProjectId && !selectedMemberId))
+      return data;
     const visibleColumnIds = data.root.children.filter(isColumnVisible);
     const next: BoardData = {
       root: { ...data.root, children: visibleColumnIds },
@@ -328,6 +376,8 @@ export default function KanbanBoard({
       const visibleChildren = col.children.filter((cardId) => {
         const content = data[cardId]?.content;
         if (selectedClientId && content?.client_id !== selectedClientId)
+          return false;
+        if (selectedProjectId && content?.project_id !== selectedProjectId)
           return false;
         if (selectedMemberId === CLIENT_FILTER) {
           if (!content?.assigned_to_client) return false;
@@ -346,7 +396,13 @@ export default function KanbanBoard({
       for (const cardId of visibleChildren) next[cardId] = data[cardId];
     }
     return next;
-  }, [data, selectedClientId, selectedMemberId, isColumnVisible]);
+  }, [
+    data,
+    selectedClientId,
+    selectedProjectId,
+    selectedMemberId,
+    isColumnVisible,
+  ]);
 
   /**
    * Tarjetas aplanadas para el reporte. Respeta el filtro de cliente (permite
@@ -362,6 +418,8 @@ export default function KanbanBoard({
         if (!content) continue;
         if (selectedClientId && content.client_id !== selectedClientId)
           continue;
+        if (selectedProjectId && content.project_id !== selectedProjectId)
+          continue;
         cards.push({
           assignee_id: (content.assignee_id as string | null) ?? null,
           assigned_to_client: Boolean(content.assigned_to_client),
@@ -371,7 +429,7 @@ export default function KanbanBoard({
       }
     }
     return computeDeliveryStats(cards, statsDays);
-  }, [data, selectedClientId, statsDays]);
+  }, [data, selectedClientId, selectedProjectId, statsDays]);
 
   /**
    * Pide al servidor que avise por correo a quien acabó de recibir la tarea.
@@ -451,6 +509,7 @@ export default function KanbanBoard({
             priority: item.content?.priority ?? null,
             assignee_id: item.content?.assignee_id ?? null,
             client_id: item.content?.client_id ?? null,
+            project_id: item.content?.project_id ?? null,
             // Sin esto el upsert al arrastrar perdería la marca de "pendiente
             // del cliente" (volvería al default false).
             assigned_to_client: item.content?.assigned_to_client ?? false,
@@ -595,6 +654,7 @@ export default function KanbanBoard({
   async function createCard(values: CardFormValues) {
     if (!cardModalColumn) return;
     const clientId = selectedClientId || values.client_id || null;
+    const projectId = selectedProjectId || values.project_id || null;
     const waitingOnClient = clientId ? values.assigned_to_client : false;
     // Se pide el id de vuelta porque los avisos por correo se resuelven en el
     // servidor a partir de la tarjeta ya guardada.
@@ -607,6 +667,7 @@ export default function KanbanBoard({
         priority: values.priority || null,
         assignee_id: values.assignee_id || null,
         client_id: clientId,
+        project_id: projectId,
         // Solo tiene sentido esperar al cliente si la tarjeta le pertenece.
         assigned_to_client: waitingOnClient,
         image_url: values.image_url,
@@ -646,6 +707,7 @@ export default function KanbanBoard({
       priority: values.priority || null,
       assignee_id: values.assignee_id || null,
       client_id: values.client_id || null,
+      project_id: values.project_id || null,
       assigned_to_client: values.client_id ? values.assigned_to_client : false,
       image_url: values.image_url,
       image_path: values.image_path,
@@ -698,8 +760,34 @@ export default function KanbanBoard({
     // Quitar el cliente también quita la marca de "pendiente del cliente":
     // sin cliente no hay a quién esperar.
     const patch = clientId
-      ? { client_id: clientId }
-      : { client_id: null, assigned_to_client: false };
+      ? { client_id: clientId, project_id: null }
+      : { client_id: null, project_id: null, assigned_to_client: false };
+    const { error } = await supabase
+      .from("kanban_cards")
+      .update(patch)
+      .eq("id", cardId);
+    if (error) {
+      setError(error.message);
+      return;
+    }
+    setData((current) => {
+      if (!current || !current[cardId]) return current;
+      return {
+        ...current,
+        [cardId]: {
+          ...current[cardId],
+          content: { ...current[cardId].content, ...patch },
+        },
+      };
+    });
+  }
+
+  async function assignProject(cardId: string, projectId: string) {
+    const project = projects.find((p) => p.id === projectId);
+    const patch = {
+      project_id: projectId || null,
+      ...(project ? { client_id: project.client_id } : {}),
+    };
     const { error } = await supabase
       .from("kanban_cards")
       .update(patch)
@@ -1031,6 +1119,30 @@ export default function KanbanBoard({
               ? { flex: "1 1 100%", minWidth: 0, fontSize: 16, minHeight: 40 }
               : null),
           }}
+          value={selectedProjectId}
+          onChange={(e) => setSelectedProjectId(e.target.value)}
+          disabled={!selectedClientId}
+        >
+          <option value="">
+            {selectedClientId ? "Todos los proyectos" : "Elige un cliente"}
+          </option>
+          {(selectedProject && selectedProject.status === "archivado"
+            ? [...activeProjects, selectedProject]
+            : activeProjects
+          ).map((p) => (
+            <option key={p.id} value={p.id}>
+              {p.name}
+              {p.status === "archivado" ? " (archivado)" : ""}
+            </option>
+          ))}
+        </select>
+        <select
+          style={{
+            ...styles.clientPicker,
+            ...(isMobile
+              ? { flex: "1 1 100%", minWidth: 0, fontSize: 16, minHeight: 40 }
+              : null),
+          }}
           value={selectedMemberId}
           onChange={(e) => setSelectedMemberId(e.target.value)}
         >
@@ -1119,9 +1231,14 @@ export default function KanbanBoard({
                   card={card}
                   members={members}
                   clients={clients}
+                  projects={projects}
                   showClientSelector={!selectedClientId}
+                  showProjectSelector={!selectedProjectId}
                   onDelete={() => deleteCard(card.id)}
                   onAssignClient={(clientId) => assignClient(card.id, clientId)}
+                  onAssignProject={(projectId) =>
+                    assignProject(card.id, projectId)
+                  }
                   onToggleAssignedToClient={(next) =>
                     toggleAssignedToClient(card.id, next)
                   }
@@ -1197,7 +1314,9 @@ export default function KanbanBoard({
           columnTitle={cardModalColumn.title}
           members={members}
           clients={activeClients}
+          projects={activeProjects}
           lockedClientId={selectedClientId || undefined}
+          lockedProjectId={selectedProjectId || undefined}
           onClose={() => setCardModalColumn(null)}
           onCreate={createCard}
           onUpload={uploadImage}
@@ -1210,6 +1329,7 @@ export default function KanbanBoard({
           card={editingCard}
           members={members}
           clients={clients}
+          projects={projects}
           onClose={() => setEditingCard(null)}
           onSave={(values) => updateCard(editingCard.id, values)}
           onUpload={uploadImage}
@@ -1381,18 +1501,24 @@ function Card({
   card,
   members,
   clients,
+  projects,
   showClientSelector,
+  showProjectSelector,
   onDelete,
   onAssignClient,
+  onAssignProject,
   onToggleAssignedToClient,
   onEdit,
 }: {
   card: BoardItem;
   members: TeamMember[];
   clients: Client[];
+  projects: Project[];
   showClientSelector: boolean;
+  showProjectSelector: boolean;
   onDelete: () => void;
   onAssignClient: (clientId: string) => void;
+  onAssignProject: (projectId: string) => void;
   onToggleAssignedToClient: (next: boolean) => void;
   onEdit: () => void;
 }) {
@@ -1401,6 +1527,13 @@ function Card({
   const assignee = members.find((m) => m.id === card.content?.assignee_id);
   const clientId = card.content?.client_id as string | null | undefined;
   const client = clients.find((c) => c.id === clientId);
+  const projectId = card.content?.project_id as string | null | undefined;
+  const project = projects.find((p) => p.id === projectId);
+  const clientProjects = clientId
+    ? projects.filter(
+        (p) => p.client_id === clientId && p.status !== "archivado",
+      )
+    : [];
   const waitingOnClient = Boolean(card.content?.assigned_to_client);
   const createdAt = fmtDateTime(card.content?.created_at as string | undefined);
   const dueDate = card.content?.due_date as string | null | undefined;
@@ -1470,6 +1603,7 @@ function Card({
         ) : (
           assignee && <Avatar member={assignee} />
         )}
+        {project && <span style={styles.clientBadge}>{project.name}</span>}
       </div>
       {clientId && (
         <Switch
@@ -1492,6 +1626,21 @@ function Card({
           {clients.map((c) => (
             <option key={c.id} value={c.id}>
               {c.name}
+            </option>
+          ))}
+        </select>
+      )}
+      {showProjectSelector && clientProjects.length > 0 && (
+        <select
+          style={styles.clientSelect}
+          value={(card.content?.project_id as string) ?? ""}
+          onClick={(e) => e.stopPropagation()}
+          onChange={(e) => onAssignProject(e.target.value)}
+        >
+          <option value="">Sin proyecto</option>
+          {clientProjects.map((p) => (
+            <option key={p.id} value={p.id}>
+              {p.name}
             </option>
           ))}
         </select>
@@ -1791,7 +1940,9 @@ function CardModal({
   columnTitle,
   members,
   clients,
+  projects,
   lockedClientId,
+  lockedProjectId,
   onClose,
   onCreate,
   onUpload,
@@ -1800,7 +1951,9 @@ function CardModal({
   columnTitle: string;
   members: TeamMember[];
   clients: Client[];
+  projects: Project[];
   lockedClientId?: string;
+  lockedProjectId?: string;
   onClose: () => void;
   onCreate: (v: CardFormValues) => Promise<void>;
   onUpload: (
@@ -1813,6 +1966,7 @@ function CardModal({
   const [priority, setPriority] = useState("");
   const [assigneeId, setAssigneeId] = useState("");
   const [clientId, setClientId] = useState("");
+  const [projectId, setProjectId] = useState("");
   const [assignedToClient, setAssignedToClient] = useState(false);
   const [dueDate, setDueDate] = useState("");
   const [image, setImage] = useState<{
@@ -1823,6 +1977,10 @@ function CardModal({
 
   // El cliente efectivo: el fijado por el filtro del tablero o el elegido aquí.
   const effectiveClientId = lockedClientId ?? clientId;
+  const effectiveProjectId = lockedProjectId ?? projectId;
+  const availableProjects = projects.filter(
+    (p) => !effectiveClientId || p.client_id === effectiveClientId,
+  );
 
   async function submit() {
     if (!title.trim()) return;
@@ -1833,6 +1991,7 @@ function CardModal({
       priority,
       assignee_id: assigneeId,
       client_id: clientId,
+      project_id: projectId,
       assigned_to_client: assignedToClient,
       due_date: dueDate,
       ...image,
@@ -1925,6 +2084,7 @@ function CardModal({
               value={clientId}
               onChange={(e) => {
                 setClientId(e.target.value);
+                setProjectId("");
                 if (!e.target.value) setAssignedToClient(false);
               }}
             >
@@ -1938,7 +2098,25 @@ function CardModal({
           </label>
         )}
 
-        {effectiveClientId && (
+        {!lockedProjectId && availableProjects.length > 0 && (
+          <label style={styles.field}>
+            <span style={styles.label}>Proyecto</span>
+            <select
+              style={inp}
+              value={projectId}
+              onChange={(e) => setProjectId(e.target.value)}
+            >
+              <option value="">Sin proyecto</option>
+              {availableProjects.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
+
+        {(effectiveClientId || effectiveProjectId) && (
           <ClientResponsibleField
             checked={assignedToClient}
             onChange={setAssignedToClient}
@@ -1969,6 +2147,7 @@ function EditCardModal({
   card,
   members,
   clients,
+  projects,
   onClose,
   onSave,
   onUpload,
@@ -1977,6 +2156,7 @@ function EditCardModal({
   card: BoardItem;
   members: TeamMember[];
   clients: Client[];
+  projects: Project[];
   onClose: () => void;
   onSave: (v: CardFormValues) => Promise<void>;
   onUpload: (
@@ -1996,6 +2176,9 @@ function EditCardModal({
   );
   const [clientId, setClientId] = useState(
     (card.content?.client_id as string) ?? "",
+  );
+  const [projectId, setProjectId] = useState(
+    (card.content?.project_id as string) ?? "",
   );
   const [assignedToClient, setAssignedToClient] = useState(
     Boolean(card.content?.assigned_to_client),
@@ -2023,6 +2206,7 @@ function EditCardModal({
       priority,
       assignee_id: assigneeId,
       client_id: clientId,
+      project_id: projectId,
       assigned_to_client: assignedToClient,
       due_date: dueDate,
       ...image,
@@ -2043,6 +2227,9 @@ function EditCardModal({
   const pbtn = isMobile
     ? { ...styles.primaryBtn, ...styles.touchBtn }
     : styles.primaryBtn;
+  const availableProjects = projects.filter(
+    (p) => p.client_id === clientId && p.status !== "archivado",
+  );
   return (
     <Modal title="Editar tarjeta" onClose={onClose}>
       <div style={body}>
@@ -2107,6 +2294,7 @@ function EditCardModal({
             value={clientId}
             onChange={(e) => {
               setClientId(e.target.value);
+              setProjectId("");
               if (!e.target.value) setAssignedToClient(false);
             }}
           >
@@ -2118,6 +2306,24 @@ function EditCardModal({
             ))}
           </select>
         </label>
+
+        {availableProjects.length > 0 && (
+          <label style={styles.field}>
+            <span style={styles.label}>Proyecto</span>
+            <select
+              style={inp}
+              value={projectId}
+              onChange={(e) => setProjectId(e.target.value)}
+            >
+              <option value="">Sin proyecto</option>
+              {availableProjects.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
 
         {clientId && (
           <ClientResponsibleField
