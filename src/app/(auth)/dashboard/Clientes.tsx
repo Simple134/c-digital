@@ -7,6 +7,7 @@ import {
   useState,
   type CSSProperties,
 } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { fmtDateTime } from "@/lib/format";
 import {
   computeTotals,
@@ -20,11 +21,14 @@ import type {
   Client,
   ClientFile,
   ClientFileKind,
+  InvoiceReceipt,
+  MeetingRequest,
   Proposal,
   Invoice,
   InvoiceItem,
   InvoicePayment,
   KanbanCard,
+  Project,
 } from "@/lib/supabase/types";
 import useIsMobile from "./useIsMobile";
 
@@ -171,16 +175,19 @@ export default function Clientes({
   const [clients, setClients] = useState<Client[]>([]);
   const [invoices, setInvoices] = useState<ClientInvoice[]>([]);
   const [cards, setCards] = useState<KanbanCard[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
   const [files, setFiles] = useState<ClientFile[]>([]);
+  const [receipts, setReceipts] = useState<InvoiceReceipt[]>([]);
+  const [meetings, setMeetings] = useState<MeetingRequest[]>([]);
   const [proposals, setProposals] = useState<Proposal[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [showArchived, setShowArchived] = useState(false);
   // `"new"` = ficha en blanco; un id = editando ese cliente.
   const [editing, setEditing] = useState<Client | "new" | null>(null);
   const [copied, setCopied] = useState(false);
+  const [registerLinkCopied, setRegisterLinkCopied] = useState(false);
   // Resultado del último recordatorio. `ok` separa el envío del fallo: pintar
   // los dos igual haría que un "no se pudo enviar" se leyera como enviado.
   const [notice, setNotice] = useState<{ text: string; ok: boolean } | null>(
@@ -188,30 +195,64 @@ export default function Clientes({
   );
   const [sending, setSending] = useState(false);
   const isMobile = useIsMobile();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const selectedId = searchParams.get("client");
 
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
-    const [cli, inv, kanban, cf, props] = await Promise.all([
-      supabase.from("clients").select("*").order("name"),
-      supabase
-        .from("invoices")
-        .select("*, invoice_items(*), invoice_payments(*)")
-        .eq("party_type", "client")
-        .order("issued_at", { ascending: false }),
-      supabase.from("kanban_cards").select("*"),
-      supabase
-        .from("client_files")
-        .select("*")
-        .order("created_at", { ascending: false }),
-      supabase
-        .from("proposals")
-        .select("*")
-        .order("created_at", { ascending: false }),
-    ]);
-    if (cli.error || inv.error || kanban.error) {
+    const [cli, inv, kanban, projectRows, cf, receiptRows, meetingRows, props] =
+      await Promise.all([
+        supabase.from("clients").select("*").order("name"),
+        supabase
+          .from("invoices")
+          .select("*, invoice_items(*), invoice_payments(*)")
+          .eq("party_type", "client")
+          .order("issued_at", { ascending: false }),
+        supabase.from("kanban_cards").select("*"),
+        supabase
+          .from("projects")
+          .select("*")
+          .order("sort_order", { ascending: true }),
+        supabase
+          .from("client_files")
+          .select("*")
+          .order("created_at", { ascending: false }),
+        supabase
+          .from("invoice_receipts")
+          .select("*")
+          .order("created_at", { ascending: false }),
+        supabase
+          .from("meeting_requests")
+          .select("*")
+          .order("created_at", { ascending: false }),
+        supabase
+          .from("proposals")
+          .select("*")
+          .order("created_at", { ascending: false }),
+      ]);
+    if (
+      cli.error ||
+      inv.error ||
+      kanban.error ||
+      projectRows.error ||
+      cf.error ||
+      receiptRows.error ||
+      meetingRows.error ||
+      props.error
+    ) {
       setError(
-        (cli.error ?? inv.error ?? kanban.error)?.message ?? "Error al cargar",
+        (
+          cli.error ??
+          inv.error ??
+          kanban.error ??
+          projectRows.error ??
+          cf.error ??
+          receiptRows.error ??
+          meetingRows.error ??
+          props.error
+        )?.message ?? "Error al cargar",
       );
       setLoading(false);
       return;
@@ -219,7 +260,10 @@ export default function Clientes({
     setClients((cli.data as Client[]) ?? []);
     setInvoices((inv.data as ClientInvoice[]) ?? []);
     setCards((kanban.data as KanbanCard[]) ?? []);
+    setProjects((projectRows.data as Project[]) ?? []);
     setFiles((cf.data as ClientFile[]) ?? []);
+    setReceipts((receiptRows.data as InvoiceReceipt[]) ?? []);
+    setMeetings((meetingRows.data as MeetingRequest[]) ?? []);
     setProposals((props.data as Proposal[]) ?? []);
     setLoading(false);
   }, [supabase]);
@@ -323,7 +367,7 @@ export default function Clientes({
         .select("id")
         .single();
       if (error) return error.message;
-      if (data) setSelectedId(data.id);
+      if (data) openClient(data.id);
     }
     setEditing(null);
     await load();
@@ -365,8 +409,18 @@ export default function Clientes({
       .delete()
       .eq("id", client.id);
     if (error) return setError(error.message);
-    setSelectedId(null);
+    closeClient();
     load();
+  }
+
+  function openClient(id: string) {
+    router.push(`/dashboard?view=clientes&client=${id}`);
+    setNotice(null);
+  }
+
+  function closeClient() {
+    router.push("/dashboard?view=clientes");
+    setNotice(null);
   }
 
   async function sendPanelInvite(client: Client) {
@@ -429,7 +483,63 @@ export default function Clientes({
     });
   }
 
+  function copyPanelRegisterLink() {
+    const url = `${window.location.origin}/panel/registro`;
+    navigator.clipboard
+      .writeText(url)
+      .then(() => {
+        setRegisterLinkCopied(true);
+        setTimeout(() => setRegisterLinkCopied(false), 2000);
+      })
+      .catch(() => {
+        setError("No se pudo copiar el link. Intenta de nuevo.");
+      });
+  }
+
   if (loading) return <p style={{ color: "#888" }}>Cargando clientes…</p>;
+
+  if (selected) {
+    return (
+      <div>
+        {error && <p style={s.errorBox}>{error}</p>}
+        <ClientDetail
+          client={selected}
+          projects={projects.filter((p) => p.client_id === selected.id)}
+          invoices={invoices.filter((i) => i.client_id === selected.id)}
+          cards={cards.filter((c) => c.client_id === selected.id)}
+          files={files.filter((f) => f.client_id === selected.id)}
+          receipts={receipts.filter((r) => r.client_id === selected.id)}
+          meetings={meetings.filter((m) => m.client_id === selected.id)}
+          proposals={proposals.filter((p) => p.client_id === selected.id)}
+          onFilesChanged={load}
+          copied={copied}
+          notice={notice}
+          sending={sending}
+          onBack={closeClient}
+          onEdit={() => setEditing(selected)}
+          onArchive={() => archive(selected)}
+          onDelete={() => remove(selected)}
+          onCopyLink={() => copyPublicLink(selected)}
+          onCreateInvoice={() => onCreateInvoice(selected.id)}
+          onAssignTask={() => onAssignTask(selected.id)}
+          onRemind={() => sendReminder(selected)}
+          onInvite={() => sendPanelInvite(selected)}
+          onOpenTask={(cardId) => onOpenTask(selected.id, cardId)}
+        />
+
+        {editing && (
+          <ClientEditor
+            initial={editing === "new" ? emptyDraft() : toDraft(editing)}
+            title={
+              editing === "new" ? "Nuevo cliente" : `Editar ${editing.name}`
+            }
+            onClose={() => setEditing(null)}
+            onSave={save}
+          />
+        )}
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -458,6 +568,13 @@ export default function Clientes({
           {showArchived ? "Ocultar archivados" : "Ver archivados"}
         </button>
         <button
+          onClick={copyPanelRegisterLink}
+          style={{ ...s.secondaryBtn, ...(isMobile ? s.touchBtn : null) }}
+          title="Copia el formulario público para que un cliente cree su acceso"
+        >
+          {registerLinkCopied ? "✓ Link copiado" : "Copiar link registro"}
+        </button>
+        <button
           onClick={() => setEditing("new")}
           style={{ ...s.primaryBtn, ...(isMobile ? s.touchBtn : null) }}
         >
@@ -471,51 +588,106 @@ export default function Clientes({
           ...(isMobile ? { gridTemplateColumns: "1fr", gap: 14 } : null),
         }}
       >
-        {/* Lista */}
         <div
           style={{
-            ...s.list,
-            ...(isMobile ? { gridTemplateColumns: "1fr" } : null),
+            ...s.clientTable,
+            ...(isMobile ? s.clientTableMobile : null),
           }}
         >
           {visible.length === 0 && (
-            <p style={{ color: "#666", fontSize: 13 }}>
+            <p style={{ color: "#666", fontSize: 13, padding: 14 }}>
               {search
                 ? "Nadie coincide con la búsqueda."
                 : "Aún no hay clientes."}
             </p>
           )}
+          {visible.length > 0 && !isMobile && (
+            <div style={s.clientTableHead}>
+              <span>Cliente</span>
+              <span>Contacto</span>
+              <span>Facturación</span>
+              <span>Trabajo</span>
+              <span>Panel</span>
+            </div>
+          )}
           {visible.map((c) => {
             const bal = balances.get(c.id);
             const act = activity.get(c.id);
+            const clientProjects = projects.filter((p) => p.client_id === c.id);
+            const balanceText = bal
+              ? Object.entries(bal)
+                  .map(([cur, amount]) => fmtMoney(amount, cur))
+                  .join(" + ")
+              : act?.invoices
+                ? "Al día"
+                : "Sin facturas";
             return (
               <button
                 key={c.id}
-                onClick={() => {
-                  setSelectedId(c.id);
-                  // El aviso pertenece al cliente que lo generó: si no se
-                  // limpia, "enviado a Juan" aparecería en la ficha de Ana.
-                  setNotice(null);
-                }}
+                onClick={() => openClient(c.id)}
                 style={{
-                  ...s.listItem,
-                  borderColor: selectedId === c.id ? "#00e5a0" : "#222",
-                  background: selectedId === c.id ? "#0f1a15" : "#0e0e0e",
+                  ...s.clientRow,
+                  ...(isMobile ? s.clientRowMobile : null),
                   opacity: c.active === false ? 0.5 : 1,
                 }}
               >
-                <div style={{ fontWeight: 600, fontSize: 14 }}>
-                  {c.name}
-                  {c.active === false && (
-                    <span style={s.archivedTag}>archivado</span>
-                  )}
+                <div style={s.clientCellMain}>
+                  <span style={s.clientName}>
+                    {c.name}
+                    {c.active === false && (
+                      <span style={s.archivedTag}>archivado</span>
+                    )}
+                  </span>
+                  <span style={s.listMeta}>
+                    {c.company || "Sin razón social"}
+                  </span>
                 </div>
-                {(c.company || c.email) && (
-                  <div style={s.listMeta}>{c.company || c.email}</div>
-                )}
-                {/* Acceso al panel: se muestra siempre, incluso en clientes
-                    nuevos, porque invitar es un paso pendiente por hacer. */}
-                <div style={{ marginTop: 6 }}>
+
+                <div style={s.clientCell}>
+                  <span>{c.email || "Sin correo"}</span>
+                  <span style={s.listMeta}>
+                    {c.phone || c.contact_name || "Sin teléfono"}
+                  </span>
+                </div>
+
+                <div style={s.clientCell}>
+                  <span
+                    style={{
+                      color: bal
+                        ? "#ff9b9b"
+                        : act?.invoices
+                          ? "#7be6b8"
+                          : "#777",
+                      fontWeight: 600,
+                    }}
+                  >
+                    {balanceText}
+                  </span>
+                  <span style={s.listMeta}>
+                    {act?.invoices
+                      ? `${act.invoices} factura${act.invoices === 1 ? "" : "s"}`
+                      : "Sin historial"}
+                  </span>
+                </div>
+
+                <div style={s.clientCell}>
+                  <span>
+                    {clientProjects.length} proyecto
+                    {clientProjects.length === 1 ? "" : "s"}
+                  </span>
+                  <span style={s.listMeta}>
+                    {act?.openTasks
+                      ? `${act.openTasks} tarea${act.openTasks === 1 ? "" : "s"} abierta${act.openTasks === 1 ? "" : "s"}`
+                      : "Sin tareas abiertas"}
+                  </span>
+                </div>
+
+                <div
+                  style={{
+                    ...s.clientCell,
+                    alignItems: isMobile ? "flex-start" : "flex-end",
+                  }}
+                >
                   {c.auth_user_id ? (
                     <span
                       style={{
@@ -531,57 +703,6 @@ export default function Clientes({
                       Sin registrar
                     </span>
                   )}
-                </div>
-                {/* Sin facturas ni tareas no se pinta la fila de badges: un
-                    cliente nuevo se ve limpio en vez de lleno de "sin nada". */}
-                <div
-                  style={{
-                    ...s.listStats,
-                    display: act?.invoices || act?.openTasks ? "flex" : "none",
-                  }}
-                >
-                  {/* Facturas y tareas: lo primero que se pregunta de un
-                      cliente es si le debemos algo o él a nosotros. */}
-                  {act?.invoices ? (
-                    <span
-                      style={{
-                        ...s.tag,
-                        color: "#5a8cff",
-                        borderColor: "#2b3f6b",
-                      }}
-                    >
-                      {act.invoices} factura{act.invoices === 1 ? "" : "s"}
-                    </span>
-                  ) : null}
-                  {bal ? (
-                    Object.entries(bal).map(([cur, amount]) => (
-                      <span
-                        key={cur}
-                        style={{
-                          ...s.tag,
-                          color: "#ff8080",
-                          borderColor: "#5c1f1f",
-                        }}
-                      >
-                        debe {fmtMoney(amount, cur)}
-                      </span>
-                    ))
-                  ) : act?.invoices ? (
-                    <span
-                      style={{
-                        ...s.tag,
-                        color: "#00e5a0",
-                        borderColor: "#1f5c48",
-                      }}
-                    >
-                      al día
-                    </span>
-                  ) : null}
-                  {act?.openTasks ? (
-                    <span style={{ ...s.tag, color: "#ccc" }}>
-                      {act.openTasks} tarea{act.openTasks === 1 ? "" : "s"}
-                    </span>
-                  ) : null}
                   {act?.waitingOnClient ? (
                     <span
                       style={{
@@ -590,7 +711,7 @@ export default function Clientes({
                         borderColor: "#5c4c1f",
                       }}
                     >
-                      ⏳ {act.waitingOnClient} esperando por él
+                      {act.waitingOnClient} pendiente
                     </span>
                   ) : null}
                 </div>
@@ -599,48 +720,6 @@ export default function Clientes({
           })}
         </div>
       </div>
-
-      {/* Ficha del cliente seleccionado, en modal. "Editar" cierra el modal
-          antes de abrir el editor lateral: dos capas a la vez se pelean. */}
-      {selected && (
-        <div style={s.modalOverlay} onClick={() => setSelectedId(null)}>
-          <div
-            style={{ ...s.modal, ...(isMobile ? { padding: 14 } : null) }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              onClick={() => setSelectedId(null)}
-              style={s.modalClose}
-              aria-label="Cerrar"
-            >
-              ✕
-            </button>
-            <ClientDetail
-              client={selected}
-              invoices={invoices.filter((i) => i.client_id === selected.id)}
-              cards={cards.filter((c) => c.client_id === selected.id)}
-              files={files.filter((f) => f.client_id === selected.id)}
-              proposals={proposals.filter((p) => p.client_id === selected.id)}
-              onFilesChanged={load}
-              copied={copied}
-              notice={notice}
-              sending={sending}
-              onEdit={() => {
-                setSelectedId(null);
-                setEditing(selected);
-              }}
-              onArchive={() => archive(selected)}
-              onDelete={() => remove(selected)}
-              onCopyLink={() => copyPublicLink(selected)}
-              onCreateInvoice={() => onCreateInvoice(selected.id)}
-              onAssignTask={() => onAssignTask(selected.id)}
-              onRemind={() => sendReminder(selected)}
-              onInvite={() => sendPanelInvite(selected)}
-              onOpenTask={(cardId) => onOpenTask(selected.id, cardId)}
-            />
-          </div>
-        </div>
-      )}
 
       {editing && (
         <ClientEditor
@@ -720,14 +799,18 @@ function IconRestore() {
 
 function ClientDetail({
   client,
+  projects,
   invoices,
   cards,
   files,
+  receipts,
+  meetings,
   proposals,
   onFilesChanged,
   copied,
   notice,
   sending,
+  onBack,
   onEdit,
   onArchive,
   onDelete,
@@ -739,14 +822,18 @@ function ClientDetail({
   onOpenTask,
 }: {
   client: Client;
+  projects: Project[];
   invoices: ClientInvoice[];
   cards: KanbanCard[];
   files: ClientFile[];
+  receipts: InvoiceReceipt[];
+  meetings: MeetingRequest[];
   proposals: Proposal[];
   onFilesChanged: () => void;
   copied: boolean;
   notice: { text: string; ok: boolean } | null;
   sending: boolean;
+  onBack: () => void;
   onEdit: () => void;
   onArchive: () => void;
   onDelete: () => void;
@@ -762,13 +849,44 @@ function ClientDetail({
   // Las que el recordatorio incluiría: solo lo que espera al cliente.
   const waitingOnClient = openCards.filter((c) => c.assigned_to_client);
   const custom = Object.entries(client.custom_fields ?? {});
+  const allPayments = invoices.flatMap((inv) =>
+    inv.invoice_payments.map((payment) => ({ invoice: inv, payment })),
+  );
+  const latestPayment = allPayments
+    .slice()
+    .sort((a, b) =>
+      a.payment.paid_at < b.payment.paid_at
+        ? 1
+        : a.payment.paid_at > b.payment.paid_at
+          ? -1
+          : 0,
+    )[0];
+  const preferredPaymentMethod =
+    client.custom_fields?.["Método de pago"] ??
+    client.custom_fields?.["Metodo de pago"] ??
+    latestPayment?.payment.method ??
+    null;
+  const creditLabel =
+    client.custom_fields?.["Crédito"] ??
+    client.custom_fields?.["Credito"] ??
+    "Sin crédito configurado";
   // Lo que falta cobrarle, por moneda.
   const owed: Record<string, number> = {};
+  const billed: Record<string, number> = {};
+  const paid: Record<string, number> = {};
   for (const inv of invoices) {
     const t = computeTotals(inv, inv.invoice_items, inv.invoice_payments);
+    billed[inv.currency] = (billed[inv.currency] ?? 0) + t.total;
+    paid[inv.currency] = (paid[inv.currency] ?? 0) + t.paid;
     if (t.balance > 0)
       owed[inv.currency] = (owed[inv.currency] ?? 0) + t.balance;
   }
+  const moneyList = (rows: Record<string, number>) =>
+    Object.keys(rows).length
+      ? Object.entries(rows)
+          .map(([cur, amount]) => fmtMoney(amount, cur))
+          .join(" + ")
+      : "RD$0.00";
 
   // Lo que impide facturarle en serio. Se avisa aquí y no al guardar: el
   // problema es del dato, no del momento en que se llena el formulario.
@@ -778,89 +896,102 @@ function ClientDetail({
   ].filter(Boolean) as string[];
 
   return (
-    <div>
-      {/* Cabecera: identidad con editar/eliminar como iconos al lado del
-          nombre — lo que más se usa no debe requerir scroll. El confirm() de
-          eliminar es la salvaguarda contra el clic accidental. */}
-      <div style={{ ...s.detailHead, paddingRight: 28 }}>
-        <div style={{ minWidth: 0 }}>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 10,
-              flexWrap: "wrap",
-            }}
-          >
-            <h2 style={{ margin: 0, fontSize: 22 }}>{client.name}</h2>
-            <button
-              onClick={onEdit}
-              style={s.iconBtn}
-              title="Editar cliente"
-              aria-label="Editar"
-            >
-              <IconPencil />
-            </button>
-            {client.active === false && (
+    <div style={s.clientDetailPage}>
+      <div
+        style={{
+          ...s.clientDetailHeader,
+          ...(isMobile ? s.clientDetailHeaderMobile : null),
+        }}
+      >
+        <div
+          style={{
+            ...s.clientHeaderTop,
+            ...(isMobile ? { gridTemplateColumns: "1fr" } : null),
+          }}
+        >
+          <div style={s.clientTitleBlock}>
+            <div style={s.clientTitleLine}>
               <button
-                onClick={onArchive}
-                style={s.iconBtn}
-                title="Reactivar cliente"
-                aria-label="Reactivar"
+                onClick={onBack}
+                style={{ ...s.ghostBtn, ...(isMobile ? s.touchBtn : null) }}
               >
-                <IconRestore />
+                Volver
               </button>
-            )}
-            <button
-              onClick={onDelete}
-              style={{ ...s.iconBtn, color: "#ff8080", borderColor: "#5c1f1f" }}
-              title="Eliminar cliente"
-              aria-label="Eliminar"
-            >
-              <IconTrash />
-            </button>
-          </div>
-          {client.company && (
-            <div style={{ color: "#888", fontSize: 13, marginTop: 4 }}>
-              {client.company}
-            </div>
-          )}
-          <div
-            style={{
-              display: "flex",
-              gap: 6,
-              marginTop: 8,
-              alignItems: "center",
-              flexWrap: "wrap",
-            }}
-          >
-            {client.auth_user_id ? (
-              <span
-                style={{ ...s.tag, color: "#00e5a0", borderColor: "#1f5c48" }}
+              <h2 style={s.clientDetailTitle}>{client.name}</h2>
+              <button
+                onClick={onEdit}
+                style={s.iconBtn}
+                title="Editar cliente"
+                aria-label="Editar"
               >
-                ✓ Acceso al panel
-              </span>
-            ) : (
-              <span style={{ ...s.tag, color: "#777" }}>Sin registrar</span>
-            )}
-            {client.active === false && (
-              <span style={s.archivedTag}>archivado</span>
-            )}
-            <span style={{ fontSize: 11, color: "#666" }}>
-              Cliente desde {fmtDateTime(client.created_at)}
-            </span>
+                <IconPencil />
+              </button>
+              {client.active === false && (
+                <button
+                  onClick={onArchive}
+                  style={s.iconBtn}
+                  title="Reactivar cliente"
+                  aria-label="Reactivar"
+                >
+                  <IconRestore />
+                </button>
+              )}
+              <button
+                onClick={onDelete}
+                style={{
+                  ...s.iconBtn,
+                  color: "#ff8080",
+                  borderColor: "#5c1f1f",
+                }}
+                title="Eliminar cliente"
+                aria-label="Eliminar"
+              >
+                <IconTrash />
+              </button>
+            </div>
+          </div>
+
+          <div style={s.headerActions}>
+            <button
+              onClick={onCreateInvoice}
+              style={{ ...s.primaryBtn, ...(isMobile ? s.touchBtn : null) }}
+            >
+              Crear factura
+            </button>
+            <button
+              onClick={onAssignTask}
+              style={{ ...s.secondaryBtn, ...(isMobile ? s.touchBtn : null) }}
+            >
+              Asignar tarea
+            </button>
           </div>
         </div>
+
+        <div style={s.clientMetaLine}>
+          {client.company && <span>{client.company}</span>}
+          <span>Cliente desde {fmtDateTime(client.created_at)}</span>
+          {client.active === false && (
+            <span style={s.archivedTag}>archivado</span>
+          )}
+          {client.auth_user_id ? (
+            <span
+              style={{ ...s.tag, color: "#00e5a0", borderColor: "#1f5c48" }}
+            >
+              Acceso al panel
+            </span>
+          ) : (
+            <span style={{ ...s.tag, color: "#777" }}>Sin registrar</span>
+          )}
+        </div>
+
+        {gaps.length > 0 && (
+          <p style={s.headerWarnBox}>Ficha incompleta: {gaps.join("; ")}.</p>
+        )}
       </div>
 
-      {gaps.length > 0 && (
-        <p style={s.warnBox}>Ficha incompleta: {gaps.join("; ")}.</p>
-      )}
-
-      {/* Lo primero que se pregunta de un cliente, de un vistazo. */}
-      <div style={{ ...s.detailStats, marginTop: 14 }}>
+      <div style={s.detailStats}>
         <div style={s.detailStat}>
-          <span style={s.detailStatLabel}>Cobro pendiente</span>
+          <span style={s.detailStatLabel}>Saldo</span>
           <span
             style={{
               ...s.detailStatValue,
@@ -875,87 +1006,36 @@ function ClientDetail({
           </span>
         </div>
         <div style={s.detailStat}>
-          <span style={s.detailStatLabel}>Tareas abiertas</span>
+          <span style={s.detailStatLabel}>Facturado</span>
+          <span style={s.detailStatValue}>{moneyList(billed)}</span>
+        </div>
+        <div style={s.detailStat}>
+          <span style={s.detailStatLabel}>Pagos</span>
+          <span style={s.detailStatValue}>{moneyList(paid)}</span>
+        </div>
+        <div style={s.detailStat}>
+          <span style={s.detailStatLabel}>Trabajo activo</span>
           <span style={s.detailStatValue}>
-            {openCards.length}
-            {waitingOnClient.length > 0 && (
-              <span style={{ color: "#e6b800", fontSize: 12, fontWeight: 400 }}>
-                {" "}
-                · {waitingOnClient.length} esperando por él
-              </span>
-            )}
+            {openCards.length} orden{openCards.length === 1 ? "" : "es"}
           </span>
         </div>
         <div style={s.detailStat}>
-          <span style={s.detailStatLabel}>Facturas</span>
-          <span style={s.detailStatValue}>{invoices.length}</span>
+          <span style={s.detailStatLabel}>Método</span>
+          <span style={s.detailStatValue}>
+            {preferredPaymentMethod ?? "Sin definir"}
+          </span>
         </div>
-      </div>
-
-      {/* Acciones: las dos principales siempre; las contextuales solo cuando
-          son accionables — un botón apagado es ruido, no información. */}
-      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 16 }}>
-        <button
-          onClick={onCreateInvoice}
-          style={{ ...s.primaryBtn, ...(isMobile ? s.touchBtn : null) }}
-        >
-          Crear factura
-        </button>
-        <button
-          onClick={onAssignTask}
-          style={{ ...s.secondaryBtn, ...(isMobile ? s.touchBtn : null) }}
-        >
-          Asignar tarea
-        </button>
-        {waitingOnClient.length > 0 && client.email && (
-          <button
-            onClick={onRemind}
-            disabled={sending}
-            style={{
-              ...s.ghostBtn,
-              ...(isMobile ? s.touchBtn : null),
-              opacity: sending ? 0.45 : 1,
-            }}
-            title={`Le recuerda ${waitingOnClient.length} tarea(s)`}
-          >
-            {sending
-              ? "Enviando…"
-              : `✉ Recordar pendientes (${waitingOnClient.length})`}
-          </button>
-        )}
-        {!client.auth_user_id && client.email && (
-          <button
-            onClick={onInvite}
-            disabled={sending}
-            style={{
-              ...s.ghostBtn,
-              ...(isMobile ? s.touchBtn : null),
-              opacity: sending ? 0.45 : 1,
-            }}
-            title="Le envía el enlace para crear su cuenta del panel"
-          >
-            {sending ? "Enviando…" : "Invitar al panel"}
-          </button>
-        )}
-        <button
-          onClick={onCopyLink}
-          style={{ ...s.ghostBtn, ...(isMobile ? s.touchBtn : null) }}
-        >
-          {copied ? "✓ Link copiado" : "Copiar link del tablero"}
-        </button>
       </div>
 
       {notice && <p style={notice.ok ? s.okBox : s.warnBox}>{notice.text}</p>}
 
-      {/* Cuerpo en dos columnas: identidad/contacto a la izquierda, actividad
-          (facturas y tareas) a la derecha. En móvil colapsa a una. */}
       <div
         style={{
-          ...s.detailCols,
+          ...s.detailWorkspace,
           ...(isMobile ? { gridTemplateColumns: "1fr" } : null),
         }}
       >
-        <div style={s.detailCol}>
+        <aside style={s.detailRail}>
           <section style={s.sectionCard}>
             <h3 style={s.h3}>Contacto</h3>
             <dl style={{ ...s.dataGrid, marginTop: 0 }}>
@@ -973,14 +1053,13 @@ function ClientDetail({
               {client.website && (
                 <div>
                   <dt style={s.dt}>Sitio web</dt>
-                  <dd style={{ ...s.dd }}>
+                  <dd style={s.dd}>
                     <a
                       href={client.website}
                       target="_blank"
                       rel="noopener noreferrer"
                       style={s.link}
                     >
-                      {/* Se muestra sin el esquema: es ruido en una ficha. */}
                       {client.website
                         .replace(/^https?:\/\//, "")
                         .replace(/\/$/, "")}
@@ -988,13 +1067,63 @@ function ClientDetail({
                   </dd>
                 </div>
               )}
-              {/* Campos adicionales: se listan igual que los fijos, en el orden
-                  en que se guardaron, para que la ficha se lea como una sola
-                  cosa. */}
+            </dl>
+          </section>
+
+          <section style={s.sectionCard}>
+            <h3 style={s.h3}>Cuenta</h3>
+            <dl style={{ ...s.dataGrid, marginTop: 0 }}>
+              <Datum label="Crédito" value={creditLabel} />
+              <Datum
+                label="Suscripciones"
+                value={
+                  client.custom_fields?.["Suscripciones"] ??
+                  client.custom_fields?.["Suscripción"] ??
+                  client.custom_fields?.["Suscripcion"] ??
+                  "Sin suscripciones registradas"
+                }
+              />
+              <Datum
+                label="Cotizaciones"
+                value={
+                  client.custom_fields?.["Cotizaciones"] ??
+                  "Sin cotizaciones registradas"
+                }
+              />
+              <Datum label="Método de pago" value={preferredPaymentMethod} />
               {custom.map(([label, value]) => (
                 <Datum key={label} label={label} value={value || null} />
               ))}
             </dl>
+          </section>
+
+          <section style={s.sectionCard}>
+            <h3 style={s.h3}>Acciones</h3>
+            <div style={s.actionStack}>
+              {waitingOnClient.length > 0 && client.email && (
+                <button
+                  onClick={onRemind}
+                  disabled={sending}
+                  style={{ ...s.ghostBtn, opacity: sending ? 0.45 : 1 }}
+                >
+                  {sending
+                    ? "Enviando..."
+                    : `Recordar pendientes (${waitingOnClient.length})`}
+                </button>
+              )}
+              {!client.auth_user_id && client.email && (
+                <button
+                  onClick={onInvite}
+                  disabled={sending}
+                  style={{ ...s.ghostBtn, opacity: sending ? 0.45 : 1 }}
+                >
+                  {sending ? "Enviando..." : "Invitar al panel"}
+                </button>
+              )}
+              <button onClick={onCopyLink} style={s.ghostBtn}>
+                {copied ? "Link copiado" : "Copiar link del tablero"}
+              </button>
+            </div>
           </section>
 
           {client.notes && (
@@ -1005,46 +1134,196 @@ function ClientDetail({
               </p>
             </section>
           )}
-        </div>
+        </aside>
 
-        <div style={s.detailCol}>
-          {/* Facturas y tareas solo existen si hay algo que listar: una sección
-              que únicamente dice "no hay nada" es ruido, no información. */}
-          {invoices.length > 0 && (
+        <main style={s.detailMain}>
+          <section style={s.sectionCard}>
+            <h3 style={s.h3}>Proyectos ({projects.length})</h3>
+            {projects.length > 0 ? (
+              <div style={s.moduleGrid}>
+                {projects.map((project) => {
+                  const projectCards = cards.filter(
+                    (card) => card.project_id === project.id,
+                  );
+                  const done = projectCards.filter(
+                    (card) => card.completed_at,
+                  ).length;
+                  return (
+                    <div key={project.id} style={s.projectTile}>
+                      <strong>{project.name}</strong>
+                      <span style={s.listMeta}>{project.status}</span>
+                      <span style={s.body}>
+                        {done} de {projectCards.length} tareas
+                      </span>
+                      <span style={s.listMeta}>
+                        {project.due_date
+                          ? `vence ${project.due_date}`
+                          : "sin vencimiento"}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <p style={s.emptyText}>No hay proyectos vinculados.</p>
+            )}
+          </section>
+
+          <div
+            style={{
+              ...s.moduleColumns,
+              ...(isMobile ? { gridTemplateColumns: "1fr" } : null),
+            }}
+          >
+            <section style={s.sectionCard}>
+              <h3 style={s.h3}>Facturas ({invoices.length})</h3>
+              {invoices.length > 0 ? (
+                invoices.map((inv) => {
+                  const t = computeTotals(
+                    inv,
+                    inv.invoice_items,
+                    inv.invoice_payments,
+                  );
+                  return (
+                    <div
+                      key={inv.id}
+                      style={{ ...s.row, ...(isMobile ? s.rowMobile : null) }}
+                    >
+                      <span style={{ fontWeight: 600 }}>#{inv.number}</span>
+                      <span style={{ color: "#888" }}>
+                        {fmtDateTime(inv.issued_at)}
+                      </span>
+                      <span>{fmtMoney(t.total, inv.currency)}</span>
+                      <span
+                        style={{ color: STATUS_COLOR[t.status], fontSize: 12 }}
+                      >
+                        {STATUS_LABEL[t.status]}
+                      </span>
+                    </div>
+                  );
+                })
+              ) : (
+                <p style={s.emptyText}>Sin facturas todavía.</p>
+              )}
+            </section>
+
+            <section style={s.sectionCard}>
+              <h3 style={s.h3}>Pagos ({allPayments.length})</h3>
+              {allPayments.length > 0 ? (
+                allPayments.map(({ invoice, payment }) => (
+                  <div
+                    key={payment.id}
+                    style={{ ...s.row, ...(isMobile ? s.rowMobile : null) }}
+                  >
+                    <span style={{ fontWeight: 600 }}>
+                      {fmtMoney(Number(payment.amount), invoice.currency)}
+                    </span>
+                    <span style={{ color: "#888" }}>
+                      Factura #{invoice.number}
+                    </span>
+                    <span style={{ color: "#888" }}>{payment.method}</span>
+                    <span style={{ color: "#888", fontSize: 12 }}>
+                      {fmtDateTime(payment.paid_at)}
+                    </span>
+                  </div>
+                ))
+              ) : (
+                <p style={s.emptyText}>Sin pagos registrados.</p>
+              )}
+            </section>
+          </div>
+
+          <div
+            style={{
+              ...s.moduleColumns,
+              ...(isMobile ? { gridTemplateColumns: "1fr" } : null),
+            }}
+          >
             <section style={s.sectionCard}>
               <h3 style={s.h3}>
-                Facturas ({invoices.length})
-                {Object.keys(owed).length > 0 && (
-                  <span
-                    style={{ color: "#ff8080", fontWeight: 400, fontSize: 13 }}
-                  >
-                    {" · pendiente "}
-                    {Object.entries(owed)
-                      .map(([cur, amount]) => fmtMoney(amount, cur))
-                      .join(" + ")}
-                  </span>
-                )}
+                Órdenes y tareas ({openCards.length}
+                {cards.length > openCards.length ? ` de ${cards.length}` : ""})
               </h3>
-              {invoices.map((inv) => {
-                const t = computeTotals(
-                  inv,
-                  inv.invoice_items,
-                  inv.invoice_payments,
+              {openCards.length > 0 ? (
+                openCards.map((card) => (
+                  <button
+                    key={card.id}
+                    onClick={() => onOpenTask(card.id)}
+                    style={{
+                      ...s.row,
+                      ...s.rowButton,
+                      ...(isMobile ? s.rowMobile : null),
+                    }}
+                  >
+                    <span
+                      style={{ gridColumn: "1 / span 2", textAlign: "left" }}
+                    >
+                      {card.title}
+                    </span>
+                    <span style={{ color: "#888", fontSize: 12 }}>
+                      {card.due_date ? `vence ${card.due_date}` : "sin fecha"}
+                    </span>
+                    <span style={{ fontSize: 12, color: "#e6b800" }}>
+                      {card.assigned_to_client ? "pendiente del cliente" : ""}
+                    </span>
+                  </button>
+                ))
+              ) : (
+                <p style={s.emptyText}>Sin tareas abiertas.</p>
+              )}
+            </section>
+
+            <section style={s.sectionCard}>
+              <h3 style={s.h3}>Reuniones ({meetings.length})</h3>
+              {meetings.length > 0 ? (
+                meetings.map((meeting) => (
+                  <div
+                    key={meeting.id}
+                    style={{ ...s.row, ...(isMobile ? s.rowMobile : null) }}
+                  >
+                    <span style={{ fontWeight: 600 }}>
+                      {meeting.meeting_date ?? "Sin fecha"}
+                    </span>
+                    <span style={{ color: "#888" }}>
+                      {meeting.meeting_time ?? meeting.status}
+                    </span>
+                    <span style={{ color: "#888" }}>
+                      {meeting.project_id
+                        ? projects.find((p) => p.id === meeting.project_id)
+                            ?.name
+                        : ""}
+                    </span>
+                    <span style={{ color: "#888", fontSize: 12 }}>
+                      {meeting.summary ? "con resumen" : "sin resumen"}
+                    </span>
+                  </div>
+                ))
+              ) : (
+                <p style={s.emptyText}>Sin reuniones registradas.</p>
+              )}
+            </section>
+          </div>
+
+          {receipts.length > 0 && (
+            <section style={s.sectionCard}>
+              <h3 style={s.h3}>Comprobantes ({receipts.length})</h3>
+              {receipts.map((receipt) => {
+                const invoice = invoices.find(
+                  (inv) => inv.id === receipt.invoice_id,
                 );
                 return (
                   <div
-                    key={inv.id}
+                    key={receipt.id}
                     style={{ ...s.row, ...(isMobile ? s.rowMobile : null) }}
                   >
-                    <span style={{ fontWeight: 600 }}>#{inv.number}</span>
-                    <span style={{ color: "#888" }}>
-                      {fmtDateTime(inv.issued_at)}
+                    <span style={{ fontWeight: 600 }}>
+                      Factura #{invoice?.number ?? "-"}
                     </span>
-                    <span>{fmtMoney(t.total, inv.currency)}</span>
-                    <span
-                      style={{ color: STATUS_COLOR[t.status], fontSize: 12 }}
-                    >
-                      {STATUS_LABEL[t.status]}
+                    <span style={{ color: "#888" }}>
+                      {receipt.note || "Sin nota"}
+                    </span>
+                    <span style={{ color: "#888", fontSize: 12 }}>
+                      {fmtDateTime(receipt.created_at)}
                     </span>
                   </div>
                 );
@@ -1052,51 +1331,24 @@ function ClientDetail({
             </section>
           )}
 
-          {openCards.length > 0 && (
-            <section style={s.sectionCard}>
-              <h3 style={s.h3}>
-                Tareas abiertas ({openCards.length}
-                {cards.length > openCards.length ? ` de ${cards.length}` : ""})
-              </h3>
-              {openCards.map((card) => (
-                <button
-                  key={card.id}
-                  onClick={() => onOpenTask(card.id)}
-                  style={{
-                    ...s.row,
-                    ...s.rowButton,
-                    ...(isMobile ? s.rowMobile : null),
-                  }}
-                  title="Abrir esta tarea en el Kanban"
-                >
-                  <span style={{ gridColumn: "1 / span 2", textAlign: "left" }}>
-                    {card.title}
-                  </span>
-                  <span style={{ color: "#888", fontSize: 12 }}>
-                    {card.due_date ? `vence ${card.due_date}` : "sin fecha"}
-                  </span>
-                  <span style={{ fontSize: 12, color: "#e6b800" }}>
-                    {card.assigned_to_client ? "⏳ pendiente del cliente" : ""}
-                  </span>
-                </button>
-              ))}
-            </section>
-          )}
-
-          {/* Lo que el cliente ve en la sección Archivos de su panel. */}
-          <ClientFilesSection
-            clientId={client.id}
-            files={files}
-            onChanged={onFilesChanged}
-          />
-
-          {/* Propuestas HTML con link público + contraseña. */}
-          <ClientProposalsSection
-            clientId={client.id}
-            proposals={proposals}
-            onChanged={onFilesChanged}
-          />
-        </div>
+          <div
+            style={{
+              ...s.moduleColumns,
+              ...(isMobile ? { gridTemplateColumns: "1fr" } : null),
+            }}
+          >
+            <ClientFilesSection
+              clientId={client.id}
+              files={files}
+              onChanged={onFilesChanged}
+            />
+            <ClientProposalsSection
+              clientId={client.id}
+              proposals={proposals}
+              onChanged={onFilesChanged}
+            />
+          </div>
+        </main>
       </div>
     </div>
   );
@@ -1860,31 +2112,71 @@ const s: Record<string, CSSProperties> = {
     flexWrap: "wrap",
     marginBottom: 20,
   },
-  // Cards arriba (máximo 4 por fila) y la ficha del seleccionado debajo.
   layout: {
     display: "grid",
     gridTemplateColumns: "1fr",
     gap: 20,
     alignItems: "start",
   },
-  list: {
+  clientTable: {
     display: "grid",
-    gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
+    border: "1px solid #202020",
+    borderRadius: 10,
+    overflow: "hidden",
+    background: "#0c0c0c",
+  },
+  clientTableMobile: {
+    border: "none",
+    background: "transparent",
     gap: 10,
   },
-  listItem: {
+  clientTableHead: {
+    display: "grid",
+    gridTemplateColumns: "1.35fr 1.25fr 1fr 1fr .75fr",
+    gap: 14,
+    padding: "10px 14px",
+    color: "#777",
+    fontSize: 10,
+    textTransform: "uppercase",
+    letterSpacing: 0.9,
+    borderBottom: "1px solid #202020",
+  },
+  clientRow: {
+    display: "grid",
+    gridTemplateColumns: "1.35fr 1.25fr 1fr 1fr .75fr",
+    gap: 14,
+    alignItems: "center",
+    width: "100%",
     textAlign: "left",
-    border: "1px solid #222",
-    borderRadius: 12,
-    padding: "14px",
+    border: "none",
+    borderBottom: "1px solid #1a1a1a",
+    padding: "13px 14px",
     cursor: "pointer",
     color: "#eee",
-    background: "#0e0e0e",
+    background: "transparent",
     minWidth: 0,
+    fontFamily: "inherit",
+  },
+  clientRowMobile: {
+    gridTemplateColumns: "1fr",
+    border: "1px solid #202020",
+    borderRadius: 10,
+    background: "#0d0d0d",
+  },
+  clientCellMain: {
     display: "flex",
     flexDirection: "column",
-    alignItems: "flex-start",
+    gap: 3,
+    minWidth: 0,
   },
+  clientCell: {
+    display: "flex",
+    flexDirection: "column",
+    gap: 3,
+    minWidth: 0,
+    fontSize: 13,
+  },
+  clientName: { fontWeight: 700, fontSize: 14, overflowWrap: "anywhere" },
   listMeta: { fontSize: 12, color: "#888", marginTop: 3 },
   listStats: {
     fontSize: 11,
@@ -1910,24 +2202,65 @@ const s: Record<string, CSSProperties> = {
     marginLeft: 6,
     verticalAlign: "middle",
   },
-  detail: {
-    border: "1px solid #222",
-    borderRadius: 12,
-    padding: 20,
-    minHeight: 200,
+  clientDetailPage: { display: "grid", gap: 16 },
+  clientDetailHeader: {
+    display: "grid",
+    gap: 10,
+    alignItems: "start",
+    minWidth: 0,
   },
-  detailHead: {
+  clientDetailHeaderMobile: { gap: 12 },
+  clientHeaderTop: {
+    display: "grid",
+    gridTemplateColumns: "minmax(0, 1fr) auto",
+    gap: 16,
+    alignItems: "center",
+    minWidth: 0,
+  },
+  clientTitleBlock: { display: "grid", gap: 8, minWidth: 0, flex: 1 },
+  clientTitleLine: {
     display: "flex",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    gap: 12,
+    alignItems: "center",
+    gap: 10,
     flexWrap: "wrap",
+    minWidth: 0,
+  },
+  clientDetailTitle: {
+    margin: 0,
+    fontSize: 30,
+    lineHeight: 1.1,
+    overflowWrap: "anywhere",
+    minWidth: 0,
+  },
+  clientMetaLine: {
+    display: "flex",
+    gap: 8,
+    alignItems: "center",
+    flexWrap: "wrap",
+    color: "#777",
+    fontSize: 12,
+  },
+  headerActions: {
+    display: "flex",
+    gap: 8,
+    flexWrap: "wrap",
+    justifyContent: "flex-end",
+  },
+  headerWarnBox: {
+    background: "#2a230f",
+    border: "1px solid #5c4c1f",
+    color: "#e6c86b",
+    padding: "9px 12px",
+    borderRadius: 8,
+    fontSize: 12,
+    margin: 0,
+    width: "100%",
+    boxSizing: "border-box",
   },
   detailStats: {
     display: "grid",
     gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
     gap: 10,
-    marginTop: 18,
   },
   detailStat: {
     background: "#111",
@@ -1946,19 +2279,50 @@ const s: Record<string, CSSProperties> = {
     color: "#777",
   },
   detailStatValue: { fontSize: 17, fontWeight: 600, letterSpacing: -0.2 },
-  // Cuerpo de la ficha: dos columnas de tarjetas (contacto/notas | actividad).
-  detailCols: {
+  detailWorkspace: {
     display: "grid",
-    gridTemplateColumns: "1fr 1fr",
-    gap: 14,
+    gridTemplateColumns: "320px minmax(0, 1fr)",
+    gap: 16,
     alignItems: "start",
-    marginTop: 16,
   },
-  detailCol: { display: "grid", gap: 14, alignContent: "start", minWidth: 0 },
+  detailRail: {
+    display: "grid",
+    gap: 12,
+    alignContent: "start",
+    minWidth: 0,
+  },
+  detailMain: {
+    display: "grid",
+    gap: 12,
+    alignContent: "start",
+    minWidth: 0,
+  },
+  moduleColumns: {
+    display: "grid",
+    gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+    gap: 12,
+    alignItems: "start",
+  },
+  moduleGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+    gap: 10,
+  },
+  projectTile: {
+    display: "grid",
+    gap: 5,
+    border: "1px solid #202020",
+    borderRadius: 8,
+    padding: "11px 12px",
+    background: "#0d0d0d",
+    minWidth: 0,
+  },
+  actionStack: { display: "grid", gap: 8 },
+  emptyText: { color: "#666", fontSize: 13, margin: 0 },
   sectionCard: {
     background: "#101010",
     border: "1px solid #1c1c1c",
-    borderRadius: 10,
+    borderRadius: 8,
     padding: "14px 16px",
     minWidth: 0,
   },
@@ -2123,37 +2487,6 @@ const s: Record<string, CSSProperties> = {
     borderRadius: 8,
     fontSize: 12,
     marginTop: 14,
-  },
-  modalOverlay: {
-    position: "fixed",
-    inset: 0,
-    background: "rgba(0,0,0,.65)",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 16,
-    zIndex: 50,
-  },
-  modal: {
-    position: "relative",
-    background: "#0b0b0b",
-    border: "1px solid #222",
-    borderRadius: 14,
-    padding: 24,
-    // Ancho para dos columnas de la ficha; en pantallas chicas ocupa el 100%.
-    width: "min(980px, 100%)",
-    maxHeight: "88vh",
-    overflowY: "auto",
-  },
-  modalClose: {
-    position: "absolute",
-    top: 14,
-    right: 16,
-    background: "transparent",
-    border: "none",
-    color: "#888",
-    fontSize: 18,
-    cursor: "pointer",
   },
   overlay: {
     position: "fixed",

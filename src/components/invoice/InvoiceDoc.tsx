@@ -30,12 +30,13 @@ export default function InvoiceDoc({
 }) {
   const t = computeTotals(invoice, items, payments);
   const cur = invoice.currency;
+  const note = invoice.note?.trim();
 
   return (
-    <article style={S.sheet}>
+    <article className="invoice-sheet" style={S.sheet}>
       {/* Encabezado: destinatario a la izquierda, fecha y estado a la derecha */}
-      <header style={S.top}>
-        <div>
+      <header className="invoice-top" style={S.top}>
+        <div className="invoice-party" style={S.partyBlock}>
           <div style={S.muted}>
             {invoice.party_type === "client" ? "Cliente:" : "Colaborador:"}
           </div>
@@ -57,10 +58,13 @@ export default function InvoiceDoc({
           )}
           <div style={S.rule} />
         </div>
-        <div style={{ textAlign: "right" }}>
+        <div
+          className="invoice-status"
+          style={{ ...S.statusBlock, textAlign: "right" }}
+        >
           <div style={S.dateLine}>Fecha: {fmtDateTime(invoice.issued_at)}</div>
           <div style={{ ...S.muted, marginTop: 14 }}>Estado de la Factura</div>
-          <div style={S.statusLine}>
+          <div className="invoice-status-line" style={S.statusLine}>
             {STATUS_LABEL[t.status]} {fmtMoney(Math.max(t.balance, 0), cur)}
           </div>
         </div>
@@ -69,7 +73,7 @@ export default function InvoiceDoc({
       <h1 style={S.invoiceNo}>Factura #{invoice.number}</h1>
 
       {/* Ítems */}
-      <div style={S.itemsHead}>
+      <div className="invoice-items-head" style={S.itemsHead}>
         <span>Precio</span>
         <span>Cantidad</span>
         <span>Total</span>
@@ -77,12 +81,14 @@ export default function InvoiceDoc({
       {items.map((it) => (
         <div key={it.id} style={{ marginTop: 18 }}>
           <div style={S.concept}>{it.concept}</div>
-          <div style={S.itemsRow}>
-            <span>{fmtMoney(Number(it.unit_price), cur)}</span>
-            <span>
+          <div className="invoice-items-row" style={S.itemsRow}>
+            <span data-label="Precio">
+              {fmtMoney(Number(it.unit_price), cur)}
+            </span>
+            <span data-label="Cantidad">
               {Number(it.quantity)} {it.unit}
             </span>
-            <span>{fmtMoney(itemTotal(it), cur)}</span>
+            <span data-label="Total">{fmtMoney(itemTotal(it), cur)}</span>
           </div>
         </div>
       ))}
@@ -91,35 +97,37 @@ export default function InvoiceDoc({
       )}
 
       {/* Totales */}
-      <div style={S.totals}>
+      <div className="invoice-totals" style={S.totals}>
         <div style={S.discount}>Descuento: {fmtMoney(t.discount, cur)}</div>
         {t.tax > 0 && (
           <div style={S.discount}>
             ITBIS ({Number(invoice.tax_rate)}%): {fmtMoney(t.tax, cur)}
           </div>
         )}
-        <div style={S.total}>Total: {fmtMoney(t.total, cur)}</div>
+        <div className="invoice-total" style={S.total}>
+          Total: {fmtMoney(t.total, cur)}
+        </div>
       </div>
 
       {/* Abonos */}
       {payments.length > 0 && (
-        <section style={{ marginTop: 46 }}>
-          <div style={S.payHead}>
+        <section style={{ ...S.compactSection, marginTop: 12 }}>
+          <div className="invoice-pay-head" style={S.payHead}>
             <span>Método de pago</span>
             <span>Fecha</span>
             <span style={{ textAlign: "right" }}>Cantidad</span>
           </div>
           {payments.map((p) => (
-            <div key={p.id} style={S.payRow}>
-              <span>{p.method}</span>
-              <span>{fmtDateTime(p.paid_at)}</span>
-              <span style={{ textAlign: "right" }}>
+            <div key={p.id} className="invoice-pay-row" style={S.payRow}>
+              <span data-label="Método">{p.method}</span>
+              <span data-label="Fecha">{fmtDateTime(p.paid_at)}</span>
+              <span data-label="Cantidad" style={{ textAlign: "right" }}>
                 {fmtMoney(Number(p.amount), cur)}
               </span>
             </div>
           ))}
           {t.balance > 0 && (
-            <div style={S.balance}>
+            <div className="invoice-balance" style={S.balance}>
               Saldo pendiente: {fmtMoney(t.balance, cur)}
             </div>
           )}
@@ -127,24 +135,22 @@ export default function InvoiceDoc({
       )}
 
       {invoice.description && (
-        <section style={{ marginTop: 46 }}>
+        <section style={{ ...S.compactSection, marginTop: 12 }}>
           <h2 style={S.h2}>Descripción de Factura</h2>
           <p style={S.body}>{invoice.description}</p>
         </section>
       )}
 
-      <div style={{ marginTop: 30, fontSize: 13, fontWeight: 700 }}>
-        Nota:{" "}
-        <span style={{ fontWeight: 400, color: "#ccc" }}>
-          {invoice.note ?? ""}
-        </span>
-      </div>
+      {note && (
+        <div style={{ marginTop: 18, fontSize: 13, fontWeight: 700 }}>
+          Nota: <span style={{ fontWeight: 400, color: "#ccc" }}>{note}</span>
+        </div>
+      )}
 
-      <footer style={S.footer}>
-        <div style={S.logo}>
+      <footer className="invoice-footer" style={S.footer}>
+        <div className="invoice-logo" style={S.logo}>
           C Digital<span style={{ color: "#00e5a0" }}>.</span>
         </div>
-        <div style={S.linktree}>Linktree: C Digital</div>
       </footer>
     </article>
   );
@@ -154,8 +160,9 @@ const S: Record<string, React.CSSProperties> = {
   sheet: {
     background: "#0a0a0a",
     color: "#fff",
-    padding: "64px 56px",
+    padding: "48px 56px 42px",
     maxWidth: 820,
+    width: "100%",
     margin: "0 auto",
     fontFamily: "Helvetica, Arial, sans-serif",
     // El PDF del ejemplo es una hoja completa en negro; sin esto la impresión
@@ -164,11 +171,18 @@ const S: Record<string, React.CSSProperties> = {
     boxSizing: "border-box",
   },
   top: {
+    position: "static",
     display: "flex",
     justifyContent: "space-between",
     alignItems: "flex-start",
     gap: 24,
+    flexWrap: "wrap",
+    width: "auto",
+    padding: 0,
+    zIndex: "auto",
   },
+  partyBlock: { minWidth: 240, flex: "1 1 260px" },
+  statusBlock: { minWidth: 240, flex: "1 1 260px" },
   muted: { fontSize: 13, color: "#bbb" },
   partyName: { fontSize: 26, fontWeight: 400, marginTop: 4 },
   partyLine: { fontSize: 13, color: "#bbb", marginTop: 3 },
@@ -179,7 +193,14 @@ const S: Record<string, React.CSSProperties> = {
   },
   dateLine: { fontSize: 15, fontWeight: 700 },
   statusLine: { fontSize: 26, marginTop: 2 },
-  invoiceNo: { fontSize: 30, fontWeight: 700, margin: "44px 0 34px" },
+  invoiceNo: {
+    fontSize: 30,
+    fontWeight: 700,
+    margin: "38px 0 30px",
+    textTransform: "none",
+    letterSpacing: 0,
+    lineHeight: 1.15,
+  },
   itemsHead: {
     display: "grid",
     gridTemplateColumns: "1fr 1fr 1fr",
@@ -191,12 +212,13 @@ const S: Record<string, React.CSSProperties> = {
   itemsRow: {
     display: "grid",
     gridTemplateColumns: "1fr 1fr 1fr",
+    gap: 16,
     fontSize: 14,
-    marginTop: 12,
+    marginTop: 10,
     color: "#eee",
   },
-  totals: { marginTop: 56, textAlign: "right" },
-  discount: { fontSize: 13, fontWeight: 700, marginBottom: 8 },
+  totals: { marginTop: 38, textAlign: "right" },
+  discount: { fontSize: 13, fontWeight: 700, marginBottom: 2 },
   total: { fontSize: 28 },
   payHead: {
     display: "grid",
@@ -207,20 +229,28 @@ const S: Record<string, React.CSSProperties> = {
   payRow: {
     display: "grid",
     gridTemplateColumns: "1fr 1.4fr 1fr",
+    gap: 16,
     fontSize: 14,
     color: "#ddd",
-    marginTop: 14,
+    marginTop: 9,
   },
   balance: {
-    marginTop: 22,
+    marginTop: 12,
     textAlign: "right",
     fontSize: 15,
     fontWeight: 700,
     color: "#e6b800",
   },
-  h2: { fontSize: 24, fontWeight: 400, margin: "0 0 6px" },
+  compactSection: { paddingTop: 0, paddingBottom: 0, position: "static" },
+  h2: {
+    fontSize: 24,
+    fontWeight: 400,
+    margin: "0 0 6px",
+    textTransform: "none",
+    letterSpacing: 0,
+    lineHeight: 1.2,
+  },
   body: { fontSize: 13, color: "#ccc", margin: 0 },
-  footer: { marginTop: 80 },
+  footer: { marginTop: 20 },
   logo: { fontSize: 54, fontWeight: 300, letterSpacing: -1 },
-  linktree: { textAlign: "right", fontSize: 13, color: "#ddd", marginTop: 26 },
 };

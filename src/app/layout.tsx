@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { EditorialShell } from "@/components/layout/EditorialShell";
 import { PostHogProvider } from "@/components/PostHogProvider";
@@ -8,6 +8,11 @@ export const metadata: Metadata = {
   title: "Agencia de marketing digital y diseño para pymes en RD",
   description:
     "La mejor agencia de marketing digital y diseño especializada en acompañar desde cero a pymes de Rep. Dom. a posicionar sus negocios y digitalizar sus negocios.",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
 };
 
 export default function RootLayout({

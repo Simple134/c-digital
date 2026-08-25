@@ -12,7 +12,7 @@ export default function PrintTrigger() {
   return (
     <div className="invoice-actions">
       <button type="button" onClick={() => window.print()} style={btn}>
-        Descargar PDF
+        Imprimir / Descargar PDF
       </button>
     </div>
   );
@@ -20,7 +20,7 @@ export default function PrintTrigger() {
 
 const btn: React.CSSProperties = {
   position: "fixed",
-  top: 20,
+  bottom: 20,
   right: 20,
   zIndex: 10,
   background: "#00e5a0",
@@ -31,4 +31,6 @@ const btn: React.CSSProperties = {
   fontSize: 13,
   fontWeight: 700,
   cursor: "pointer",
+  maxWidth: "calc(100vw - 40px)",
+  whiteSpace: "normal",
 };

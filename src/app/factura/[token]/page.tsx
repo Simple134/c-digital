@@ -78,9 +78,95 @@ export default async function FacturaPage({
   if (!data) notFound();
 
   return (
-    <main style={{ background: "#0a0a0a", minHeight: "100vh" }}>
+    <main
+      style={{ background: "#0a0a0a", minHeight: "100vh", overflowX: "hidden" }}
+    >
       {/* Va en la página y no en el botón: el iframe imprime sin montarlo. */}
       <style>{`
+        .invoice-sheet {
+          width: 100%;
+        }
+
+        @media (max-width: 640px) {
+          .invoice-sheet {
+            padding: 32px 20px 40px !important;
+            max-width: none !important;
+            overflow-wrap: anywhere !important;
+          }
+
+          .invoice-top {
+            display: block !important;
+          }
+
+          .invoice-status {
+            text-align: left !important;
+            margin-top: 32px !important;
+          }
+
+          .invoice-sheet h1 {
+            margin: 36px 0 28px !important;
+            font-size: 26px !important;
+            line-height: 1.1 !important;
+          }
+
+          .invoice-status-line,
+          .invoice-total {
+            font-size: 24px !important;
+            line-height: 1.15 !important;
+          }
+
+          .invoice-totals,
+          .invoice-balance {
+            text-align: left !important;
+          }
+
+          .invoice-items-head,
+          .invoice-pay-head {
+            display: none !important;
+          }
+
+          .invoice-items-row,
+          .invoice-pay-row {
+            display: grid !important;
+            grid-template-columns: 1fr !important;
+            gap: 8px !important;
+            margin-top: 12px !important;
+          }
+
+          .invoice-items-row span,
+          .invoice-pay-row span {
+            display: block !important;
+            min-width: 0 !important;
+            text-align: left !important;
+            overflow-wrap: anywhere !important;
+          }
+
+          .invoice-items-row span::before,
+          .invoice-pay-row span::before {
+            content: attr(data-label);
+            display: block;
+            color: #888;
+            font-size: 12px;
+            text-align: left;
+            margin-bottom: 2px;
+          }
+
+          .invoice-footer {
+            margin-top: 52px !important;
+          }
+
+          .invoice-logo {
+            font-size: 44px !important;
+            line-height: 1 !important;
+          }
+
+          .invoice-actions button {
+            left: 20px !important;
+            right: 20px !important;
+            width: calc(100vw - 40px) !important;
+          }
+        }
+
         @media print {
           .invoice-actions { display: none !important; }
           @page { margin: 0; }

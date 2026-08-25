@@ -26,6 +26,7 @@ import type {
   KanbanCard,
   KanbanColumn,
   MeetingRequest,
+  Project,
 } from "@/lib/supabase/types";
 import useIsMobile from "../(auth)/dashboard/useIsMobile";
 
@@ -60,6 +61,7 @@ const MEETING_STATUS_LABEL: Record<string, string> = {
 
 interface Props {
   client: Client;
+  projects: Project[];
   columns: KanbanColumn[];
   cards: KanbanCard[];
   invoices: Invoice[];
@@ -68,6 +70,7 @@ interface Props {
   files: PanelFile[];
   receipts: PanelReceipt[];
   meetings: MeetingRequest[];
+  selectedProjectId?: string;
 }
 
 /**
@@ -90,8 +93,11 @@ function bucketize(cards: KanbanCard[], columns: KanbanColumn[]) {
 }
 
 export default function Panel(props: Props) {
-  const { client, cards } = props;
+  const { client, cards, projects } = props;
   const [section, setSection] = useState<SectionId>("dashboard");
+  const [selectedProjectId, setSelectedProjectId] = useState<string>(
+    projects.find((p) => p.status !== "archivado")?.id ?? "",
+  );
   const isMobile = useIsMobile();
   const router = useRouter();
 
@@ -101,9 +107,25 @@ export default function Panel(props: Props) {
     router.refresh();
   }
 
-  const pendingOfClient = cards.filter(
+  const visibleCards = selectedProjectId
+    ? cards.filter((c) => c.project_id === selectedProjectId)
+    : cards;
+  const visibleInvoices = selectedProjectId
+    ? props.invoices.filter((i) => i.project_id === selectedProjectId)
+    : props.invoices;
+  const visibleFiles = selectedProjectId
+    ? props.files.filter((f) => f.project_id === selectedProjectId)
+    : props.files;
+  const pendingOfClient = visibleCards.filter(
     (c) => c.assigned_to_client && !c.completed_at,
   );
+  const scopedProps = {
+    ...props,
+    cards: visibleCards,
+    invoices: visibleInvoices,
+    files: visibleFiles,
+    selectedProjectId,
+  };
 
   return (
     <div
@@ -164,13 +186,32 @@ export default function Panel(props: Props) {
             <span style={styles.sideName}>{client.name}</span>
           </div>
         )}
-        {section === "dashboard" && (
-          <DashboardSection {...props} goTo={setSection} />
+        {projects.length > 0 && (
+          <label style={styles.projectPicker}>
+            <span style={styles.fieldLabel}>Proyecto</span>
+            <select
+              value={selectedProjectId}
+              onChange={(e) => setSelectedProjectId(e.target.value)}
+              style={styles.input}
+            >
+              <option value="">Todos los proyectos</option>
+              {projects
+                .filter((p) => p.status !== "archivado")
+                .map((project) => (
+                  <option key={project.id} value={project.id}>
+                    {project.name}
+                  </option>
+                ))}
+            </select>
+          </label>
         )}
-        {section === "tareas" && <TareasSection {...props} />}
-        {section === "archivos" && <ArchivosSection {...props} />}
-        {section === "facturacion" && <FacturacionSection {...props} />}
-        {section === "reuniones" && <ReunionesSection {...props} />}
+        {section === "dashboard" && (
+          <DashboardSection {...scopedProps} goTo={setSection} />
+        )}
+        {section === "tareas" && <TareasSection {...scopedProps} />}
+        {section === "archivos" && <ArchivosSection {...scopedProps} />}
+        {section === "facturacion" && <FacturacionSection {...scopedProps} />}
+        {section === "reuniones" && <ReunionesSection {...scopedProps} />}
         {section === "cuenta" && <CuentaSection client={client} />}
       </main>
     </div>
@@ -336,7 +377,7 @@ function sesionExpirada(res: Response): boolean {
 }
 
 function TareasSection(props: Props) {
-  const { cards, columns } = props;
+  const { cards, columns, selectedProjectId } = props;
   const router = useRouter();
   const { todo, doing, done } = bucketize(cards, columns);
   const [open, setOpen] = useState<KanbanCard | null>(null);
@@ -354,7 +395,11 @@ function TareasSection(props: Props) {
       const res = await fetch("/api/panel/task", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title, description: desc }),
+        body: JSON.stringify({
+          title,
+          description: desc,
+          projectId: selectedProjectId || null,
+        }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -996,10 +1041,22 @@ function ReunionesSection({ meetings }: Props) {
 /* ---------------- Cuenta ---------------- */
 
 function CuentaSection({ client }: { client: Client }) {
+  const router = useRouter();
+  const initialName = splitName(client.contact_name || client.name);
+  const [firstName, setFirstName] = useState(initialName.firstName);
+  const [lastName, setLastName] = useState(initialName.lastName);
+  const [phone, setPhone] = useState(client.phone ?? "");
+  const [email, setEmail] = useState(client.email ?? "");
+  const [editing, setEditing] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
+  const displayName = splitName(client.contact_name || client.name);
+
   const rows: [string, string | null][] = [
-    ["Nombre", client.name],
+    ["Nombre", displayName.firstName],
+    ["Apellido", displayName.lastName],
     ["Empresa", client.company],
-    ["Contacto", client.contact_name],
     ["Correo", client.email],
     ["Teléfono", client.phone],
     ["RNC / Cédula", client.tax_id],
@@ -1007,24 +1064,129 @@ function CuentaSection({ client }: { client: Client }) {
     ["Sitio web", client.website],
     ...Object.entries(client.custom_fields ?? {}),
   ];
+
+  async function saveAccount(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    setError(null);
+    setSaved(false);
+
+    const res = await fetch("/api/panel/account", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ firstName, lastName, phone, email }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      setError(data.error ?? "No se pudieron guardar los cambios.");
+      setBusy(false);
+      return;
+    }
+
+    setSaved(true);
+    setEditing(false);
+    setBusy(false);
+    router.refresh();
+  }
+
   return (
     <section style={styles.section}>
-      <h2 style={styles.h2}>Cuenta</h2>
-      <div style={styles.card}>
-        {rows
-          .filter(([, v]) => v)
-          .map(([label, value]) => (
-            <div key={label} style={styles.accountRow}>
-              <span style={styles.accountLabel}>{label}</span>
-              <span style={styles.accountValue}>{value}</span>
-            </div>
-          ))}
+      <div style={styles.sectionHead}>
+        <h2 style={styles.h2}>Cuenta</h2>
+        {!editing && (
+          <button onClick={() => setEditing(true)} style={styles.primaryBtn}>
+            Editar datos
+          </button>
+        )}
       </div>
-      <p style={styles.metaText}>
-        ¿Algún dato incorrecto? Escríbenos y lo actualizamos.
-      </p>
+      <div style={styles.card}>
+        {editing ? (
+          <form onSubmit={saveAccount} style={styles.form}>
+            <div style={styles.formGrid}>
+              <label style={styles.field}>
+                <span style={styles.fieldLabel}>Nombre</span>
+                <input
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  required
+                  maxLength={80}
+                  autoComplete="given-name"
+                  style={styles.input}
+                />
+              </label>
+              <label style={styles.field}>
+                <span style={styles.fieldLabel}>Apellido</span>
+                <input
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  required
+                  maxLength={80}
+                  autoComplete="family-name"
+                  style={styles.input}
+                />
+              </label>
+            </div>
+            <label style={styles.field}>
+              <span style={styles.fieldLabel}>Número de teléfono</span>
+              <input
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                required
+                maxLength={40}
+                type="tel"
+                autoComplete="tel"
+                style={styles.input}
+              />
+            </label>
+            <label style={styles.field}>
+              <span style={styles.fieldLabel}>Correo electrónico</span>
+              <input
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                type="email"
+                autoComplete="email"
+                style={styles.input}
+              />
+            </label>
+            {error && <p style={styles.formError}>{error}</p>}
+            <div style={styles.formActions}>
+              <button
+                type="button"
+                onClick={() => setEditing(false)}
+                disabled={busy}
+                style={styles.secondaryBtn}
+              >
+                Cancelar
+              </button>
+              <button type="submit" disabled={busy} style={styles.primaryBtn}>
+                {busy ? "Guardando…" : "Guardar cambios"}
+              </button>
+            </div>
+          </form>
+        ) : (
+          rows
+            .filter(([, v]) => v)
+            .map(([label, value]) => (
+              <div key={label} style={styles.accountRow}>
+                <span style={styles.accountLabel}>{label}</span>
+                <span style={styles.accountValue}>{value}</span>
+              </div>
+            ))
+        )}
+      </div>
+      {saved && <p style={styles.okText}>Datos actualizados.</p>}
     </section>
   );
+}
+
+function splitName(value: string): { firstName: string; lastName: string } {
+  const parts = value.trim().replace(/\s+/g, " ").split(" ").filter(Boolean);
+  if (parts.length <= 1) return { firstName: parts[0] ?? "", lastName: "" };
+  return {
+    firstName: parts.slice(0, -1).join(" "),
+    lastName: parts[parts.length - 1],
+  };
 }
 
 /* ---------------- Modal genérico ---------------- */
@@ -1093,6 +1255,13 @@ const styles: Record<string, React.CSSProperties> = {
     padding: "0 12px 20px",
   },
   mobileHead: { display: "flex", flexDirection: "column", marginBottom: 18 },
+  projectPicker: {
+    display: "flex",
+    flexDirection: "column",
+    gap: 6,
+    maxWidth: 420,
+    marginBottom: 18,
+  },
   sideLabel: {
     fontSize: 10,
     textTransform: "uppercase",
@@ -1334,6 +1503,17 @@ const styles: Record<string, React.CSSProperties> = {
     padding: 4,
   },
   form: { display: "flex", flexDirection: "column", gap: 12 },
+  formGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+    gap: 12,
+  },
+  formActions: {
+    display: "flex",
+    justifyContent: "flex-end",
+    gap: 8,
+    flexWrap: "wrap",
+  },
   field: { display: "flex", flexDirection: "column", gap: 6 },
   fieldLabel: {
     fontSize: 10,
@@ -1355,6 +1535,17 @@ const styles: Record<string, React.CSSProperties> = {
     fontFamily: "inherit",
   },
   formError: { color: "#ff8080", fontSize: 12, margin: 0 },
+  okText: { color: "#00e5a0", fontSize: 12, margin: "10px 0 0" },
+  secondaryBtn: {
+    fontSize: 13,
+    fontWeight: 600,
+    color: "#ddd",
+    background: "#171717",
+    border: "1px solid #2a2a2a",
+    borderRadius: 8,
+    padding: "9px 16px",
+    cursor: "pointer",
+  },
   accountRow: {
     display: "flex",
     justifyContent: "space-between",

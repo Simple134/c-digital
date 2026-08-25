@@ -6,6 +6,7 @@ import {
   useMemo,
   useState,
   type CSSProperties,
+  type KeyboardEvent,
 } from "react";
 import InvoicePrintButton from "@/components/invoice/InvoicePrintButton";
 import { fmtDateTime } from "@/lib/format";
@@ -28,6 +29,7 @@ import type {
   InvoiceItem,
   InvoiceParty,
   InvoicePayment,
+  Project,
   TeamMember,
 } from "@/lib/supabase/types";
 import useIsMobile from "./useIsMobile";
@@ -57,6 +59,22 @@ const emptyItem = (): DraftItem => ({
   unit: "UNIT",
 });
 
+function addMoney(
+  acc: Record<string, number>,
+  currency: string,
+  amount: number,
+) {
+  acc[currency] = (acc[currency] ?? 0) + amount;
+}
+
+function fmtBreakdown(amounts: Record<string, number>) {
+  const rows = Object.entries(amounts).filter(([, amount]) => amount > 0);
+  if (rows.length === 0) return "RD$0.00";
+  return rows
+    .map(([currency, amount]) => fmtMoney(amount, currency))
+    .join(" / ");
+}
+
 /** `datetime-local` necesita "YYYY-MM-DDTHH:mm" en hora local, no ISO en UTC. */
 function toLocalInput(iso: string): string {
   const d = new Date(iso);
@@ -78,6 +96,7 @@ export default function Facturacion({
 }) {
   const [invoices, setInvoices] = useState<FullInvoice[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
   const [team, setTeam] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -87,14 +106,17 @@ export default function Facturacion({
   const [statusFilter, setStatusFilter] = useState<InvoiceStatus | "todos">(
     "todos",
   );
+  const [projectFilter, setProjectFilter] = useState("");
   const [editing, setEditing] = useState<FullInvoice | "new" | null>(null);
-  const [expanded, setExpanded] = useState<string | null>(null);
+  const [paymentsInvoiceId, setPaymentsInvoiceId] = useState<string | null>(
+    null,
+  );
   const isMobile = useIsMobile();
 
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
-    const [inv, cli, tm] = await Promise.all([
+    const [inv, cli, projectRows, tm] = await Promise.all([
       // Ítems y abonos vienen anidados: el estado de cada factura se calcula en
       // el cliente y no vale la pena una consulta por fila.
       supabase
@@ -102,9 +124,15 @@ export default function Facturacion({
         .select("*, invoice_items(*), invoice_payments(*)")
         .order("issued_at", { ascending: false }),
       supabase.from("clients").select("*").order("name"),
+      supabase
+        .from("projects")
+        .select("*")
+        .order("sort_order", { ascending: true }),
       supabase.from("team_members").select("*").order("name"),
     ]);
-    if (inv.error) setError(inv.error.message);
+    if (inv.error || projectRows.error) {
+      setError((inv.error ?? projectRows.error)?.message ?? "Error al cargar");
+    }
     setInvoices(
       ((inv.data as FullInvoice[]) ?? []).map((i) => ({
         ...i,
@@ -117,6 +145,7 @@ export default function Facturacion({
       })),
     );
     setClients((cli.data as Client[]) ?? []);
+    setProjects((projectRows.data as Project[]) ?? []);
     setTeam((tm.data as TeamMember[]) ?? []);
     setLoading(false);
   }, [supabase]);
@@ -220,39 +249,99 @@ export default function Facturacion({
     .filter(
       ({ inv }) => partyFilter === "todas" || inv.party_type === partyFilter,
     )
+    .filter(({ inv }) => !projectFilter || inv.project_id === projectFilter)
     .filter(({ t }) => statusFilter === "todos" || t.status === statusFilter);
 
-  // Resumen: lo que falta cobrar a clientes vs. lo que falta pagarle al equipo.
-  // Se agrupa por moneda porque sumar pesos con dólares daría un número falso.
-  const summary = useMemo(() => {
-    const acc: Record<string, { cobrar: number; pagar: number }> = {};
+  const activeProjects = projects.filter((p) => p.status !== "archivado");
+
+  const paymentsInvoice = paymentsInvoiceId
+    ? withTotals.find(({ inv }) => inv.id === paymentsInvoiceId)
+    : null;
+
+  const statusCounts = useMemo(
+    () =>
+      withTotals.reduce(
+        (acc, { t }) => {
+          acc[t.status] += 1;
+          return acc;
+        },
+        { pendiente: 0, abonada: 0, completado: 0 } as Record<
+          InvoiceStatus,
+          number
+        >,
+      ),
+    [withTotals],
+  );
+
+  // KPIs agrupados por moneda: no se mezclan pesos y dólares en un solo número.
+  const kpis = useMemo(() => {
+    const invoiced: Record<string, number> = {};
+    const paid: Record<string, number> = {};
+    const receivable: Record<string, number> = {};
+    const payable: Record<string, number> = {};
+    let openInvoices = 0;
+
     for (const { inv, t } of withTotals) {
-      if (t.balance <= 0) continue;
-      const bucket = (acc[inv.currency] ??= { cobrar: 0, pagar: 0 });
-      if (inv.party_type === "client") bucket.cobrar += t.balance;
-      else bucket.pagar += t.balance;
+      addMoney(invoiced, inv.currency, t.total);
+      addMoney(paid, inv.currency, t.paid);
+      if (t.balance > 0) {
+        openInvoices += 1;
+        addMoney(
+          inv.party_type === "client" ? receivable : payable,
+          inv.currency,
+          t.balance,
+        );
+      }
     }
-    return acc;
-  }, [withTotals]);
+
+    return [
+      {
+        label: "Total facturado",
+        value: fmtBreakdown(invoiced),
+        meta: `${invoices.length} factura${invoices.length === 1 ? "" : "s"} emitida${invoices.length === 1 ? "" : "s"}`,
+      },
+      {
+        label: "Abonado",
+        value: fmtBreakdown(paid),
+        meta: "Pagos registrados",
+        tone: "#00e5a0",
+      },
+      {
+        label: "Por cobrar",
+        value: fmtBreakdown(receivable),
+        meta: "Saldo pendiente de clientes",
+        tone: "#e6b800",
+      },
+      {
+        label: "Por pagar",
+        value: fmtBreakdown(payable),
+        meta: "Saldo pendiente al equipo",
+        tone: "#ff8080",
+      },
+      {
+        label: "Facturas abiertas",
+        value: String(openInvoices),
+        meta: `${statusCounts.pendiente} pendiente${statusCounts.pendiente === 1 ? "" : "s"} · ${statusCounts.abonada} abonada${statusCounts.abonada === 1 ? "" : "s"}`,
+      },
+    ];
+  }, [invoices.length, statusCounts, withTotals]);
 
   return (
     <div>
-      {/* Resumen de saldos */}
-      <div style={s.summaryRow}>
-        {Object.entries(summary).map(([currency, v]) => (
-          <div key={currency} style={s.summaryCard}>
-            <div style={s.summaryLabel}>Por cobrar a clientes</div>
-            <div style={{ ...s.summaryValue, color: "#00e5a0" }}>
-              {fmtMoney(v.cobrar, currency)}
-            </div>
-            <div style={{ ...s.summaryLabel, marginTop: 12 }}>
-              Por pagar al equipo
-            </div>
-            <div style={{ ...s.summaryValue, color: "#ff8080" }}>
-              {fmtMoney(v.pagar, currency)}
-            </div>
-          </div>
-        ))}
+      <div
+        style={{
+          ...s.pageHeader,
+          ...(isMobile
+            ? { alignItems: "stretch", flexDirection: "column" }
+            : null),
+        }}
+      >
+        <div>
+          <h1 style={{ fontSize: 28, margin: 0 }}>Facturación</h1>
+          <p style={{ color: "#888", fontSize: 13, marginTop: 6 }}>
+            Facturas a clientes y pagos al equipo, con abonos parciales
+          </p>
+        </div>
         <button
           onClick={() => setEditing("new")}
           style={{
@@ -266,61 +355,114 @@ export default function Facturacion({
         </button>
       </div>
 
-      {/* Filtros */}
-      <div style={s.filters}>
-        {(["todas", "client", "team"] as const).map((p) => (
-          <button
-            key={p}
-            onClick={() => setPartyFilter(p)}
-            style={{
-              ...s.chip,
-              ...(isMobile ? s.touchChip : null),
-              ...(partyFilter === p ? s.chipActive : {}),
-            }}
-          >
-            {p === "todas"
-              ? `Todas (${invoices.length})`
-              : p === "client"
-                ? `Clientes (${invoices.filter((i) => i.party_type === "client").length})`
-                : `Equipo (${invoices.filter((i) => i.party_type === "team").length})`}
-          </button>
+      <div style={s.kpiGrid}>
+        {kpis.map((kpi) => (
+          <div key={kpi.label} style={s.kpiCard}>
+            <div style={s.summaryLabel}>{kpi.label}</div>
+            <div
+              style={{
+                ...s.summaryValue,
+                ...(kpi.tone ? { color: kpi.tone } : null),
+              }}
+            >
+              {kpi.value}
+            </div>
+            <div style={s.kpiMeta}>{kpi.meta}</div>
+          </div>
         ))}
       </div>
 
-      <div style={s.filters}>
-        <button
-          onClick={() => setStatusFilter("todos")}
+      <div style={s.filterPanel}>
+        <div style={s.filterHeader}>
+          <span style={s.filterTitle}>Filtros</span>
+          <span style={s.filterResult}>
+            Mostrando {visible.length} de {invoices.length}
+          </span>
+        </div>
+
+        <div
           style={{
-            ...s.chip,
-            ...(isMobile ? s.touchChip : null),
-            ...(statusFilter === "todos" ? s.chipActive : {}),
+            ...s.filterControls,
+            ...(isMobile ? { gridTemplateColumns: "1fr" } : null),
           }}
         >
-          Todos los estados
-        </button>
-        {(["pendiente", "abonada", "completado"] as InvoiceStatus[]).map(
-          (st) => (
-            <button
-              key={st}
-              onClick={() => setStatusFilter(st)}
-              style={{
-                ...s.chip,
-                ...(isMobile ? s.touchChip : null),
-                ...(statusFilter === st
-                  ? {
-                      ...s.chipActive,
-                      borderColor: STATUS_COLOR[st],
-                      color: STATUS_COLOR[st],
-                    }
-                  : {}),
-              }}
+          <div style={s.filterGroup}>
+            <span style={s.filterLabel}>Facturar a</span>
+            <div style={s.filters}>
+              {(["todas", "client", "team"] as const).map((p) => (
+                <button
+                  key={p}
+                  onClick={() => setPartyFilter(p)}
+                  style={{
+                    ...s.chip,
+                    ...(isMobile ? s.touchChip : null),
+                    ...(partyFilter === p ? s.chipActive : {}),
+                  }}
+                >
+                  {p === "todas"
+                    ? `Todas (${invoices.length})`
+                    : p === "client"
+                      ? `Clientes (${invoices.filter((i) => i.party_type === "client").length})`
+                      : `Equipo (${invoices.filter((i) => i.party_type === "team").length})`}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div style={s.filterGroup}>
+            <span style={s.filterLabel}>Estado</span>
+            <div style={s.filters}>
+              <button
+                onClick={() => setStatusFilter("todos")}
+                style={{
+                  ...s.chip,
+                  ...(isMobile ? s.touchChip : null),
+                  ...(statusFilter === "todos" ? s.chipActive : {}),
+                }}
+              >
+                Todos ({withTotals.length})
+              </button>
+              {(["pendiente", "abonada", "completado"] as InvoiceStatus[]).map(
+                (st) => (
+                  <button
+                    key={st}
+                    onClick={() => setStatusFilter(st)}
+                    style={{
+                      ...s.chip,
+                      ...(isMobile ? s.touchChip : null),
+                      ...(statusFilter === st
+                        ? {
+                            ...s.chipActive,
+                            borderColor: STATUS_COLOR[st],
+                            color: STATUS_COLOR[st],
+                          }
+                        : {}),
+                    }}
+                  >
+                    <span style={{ ...s.dot, background: STATUS_COLOR[st] }} />
+                    {STATUS_LABEL[st]} ({statusCounts[st]})
+                  </button>
+                ),
+              )}
+            </div>
+          </div>
+
+          <div style={s.filterGroup}>
+            <span style={s.filterLabel}>Proyecto</span>
+            <select
+              value={projectFilter}
+              onChange={(e) => setProjectFilter(e.target.value)}
+              style={isMobile ? { ...s.input, ...s.touchInput } : s.input}
             >
-              <span style={{ ...s.dot, background: STATUS_COLOR[st] }} />
-              {STATUS_LABEL[st]} (
-              {withTotals.filter(({ t }) => t.status === st).length})
-            </button>
-          ),
-        )}
+              <option value="">Todos los proyectos</option>
+              {activeProjects.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
       </div>
 
       {error && <p style={s.errorBox}>{error}</p>}
@@ -337,13 +479,7 @@ export default function Facturacion({
               invoice={inv}
               totals={t}
               supabase={supabase}
-              expanded={expanded === inv.id}
-              onToggle={() =>
-                setExpanded((e) => (e === inv.id ? null : inv.id))
-              }
-              onEdit={() => setEditing(inv)}
-              onDelete={() => removeInvoice(inv)}
-              onSend={() => sendEmail(inv)}
+              onOpenDetails={() => setPaymentsInvoiceId(inv.id)}
               onPaymentLink={() => paymentLink(inv)}
               linking={linking === inv.id}
               onChanged={load}
@@ -357,6 +493,7 @@ export default function Facturacion({
         <InvoiceEditor
           supabase={supabase}
           clients={clients}
+          projects={projects}
           team={team}
           invoice={editing === "new" ? null : editing}
           defaultClientId={editing === "new" ? prefilled : null}
@@ -379,6 +516,28 @@ export default function Facturacion({
           onClose={() => setLinkModal(null)}
         />
       )}
+
+      {paymentsInvoice && (
+        <PaymentHistoryDrawer
+          invoice={paymentsInvoice.inv}
+          totals={paymentsInvoice.t}
+          supabase={supabase}
+          isMobile={isMobile}
+          onClose={() => setPaymentsInvoiceId(null)}
+          onEdit={() => {
+            setPaymentsInvoiceId(null);
+            setEditing(paymentsInvoice.inv);
+          }}
+          onDelete={() => {
+            setPaymentsInvoiceId(null);
+            removeInvoice(paymentsInvoice.inv);
+          }}
+          onSend={() => sendEmail(paymentsInvoice.inv)}
+          onPaymentLink={() => paymentLink(paymentsInvoice.inv)}
+          linking={linking === paymentsInvoice.inv.id}
+          onChanged={load}
+        />
+      )}
     </div>
   );
 }
@@ -389,11 +548,7 @@ function InvoiceCard({
   invoice,
   totals,
   supabase,
-  expanded,
-  onToggle,
-  onEdit,
-  onDelete,
-  onSend,
+  onOpenDetails,
   onPaymentLink,
   linking,
   onChanged,
@@ -402,11 +557,7 @@ function InvoiceCard({
   invoice: FullInvoice;
   totals: ReturnType<typeof computeTotals>;
   supabase: Supabase;
-  expanded: boolean;
-  onToggle: () => void;
-  onEdit: () => void;
-  onDelete: () => void;
-  onSend: () => void;
+  onOpenDetails: () => void;
   onPaymentLink: () => void;
   linking: boolean;
   onChanged: () => void;
@@ -414,9 +565,27 @@ function InvoiceCard({
 }) {
   const cur = invoice.currency;
   const color = STATUS_COLOR[totals.status];
+  const [paying, setPaying] = useState(false);
+
+  function openFromKeyboard(e: KeyboardEvent<HTMLDivElement>) {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      onOpenDetails();
+    }
+  }
 
   return (
-    <div style={{ ...s.card, ...(isMobile ? { padding: 14 } : null) }}>
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={onOpenDetails}
+      onKeyDown={openFromKeyboard}
+      style={{
+        ...s.card,
+        ...s.clickableCard,
+        ...(isMobile ? { padding: 14 } : null),
+      }}
+    >
       <div
         style={{
           ...s.cardTop,
@@ -497,69 +666,52 @@ function InvoiceCard({
       </div>
 
       <div style={s.actions}>
-        <button
-          onClick={onToggle}
-          style={{ ...s.ghostBtn, ...(isMobile ? s.touchBtn : null) }}
-        >
-          {expanded
-            ? "Ocultar abonos"
-            : `Abonos (${invoice.invoice_payments.length})`}
-        </button>
-        {/* Un solo botón: el diálogo nativo ya permite ver, guardar como PDF
-            e imprimir, sin abrir otra pestaña. */}
-        <InvoicePrintButton
-          token={invoice.public_token}
-          style={{ ...s.viewBtn, ...(isMobile ? s.touchBtn : null) }}
-        />
-        <button
-          onClick={onSend}
-          style={{ ...s.sendBtn, ...(isMobile ? s.touchBtn : null) }}
-        >
-          Enviar por correo
-        </button>
-        {/* Solo a clientes: a un colaborador se le paga, no se le cobra. Y sin
-            saldo no hay nada que cobrar. */}
-        {invoice.party_type === "client" && totals.balance > 0 && (
+        {totals.balance > 0 && (
           <button
-            onClick={onPaymentLink}
-            disabled={linking}
-            style={{
-              ...s.sendBtn,
-              ...(isMobile ? s.touchBtn : null),
-              ...(linking ? { opacity: 0.6, cursor: "wait" } : null),
+            onClick={(e) => {
+              e.stopPropagation();
+              setPaying(true);
             }}
+            style={{ ...s.primaryBtnSm, ...(isMobile ? s.touchBtn : null) }}
           >
-            {linking
-              ? "Generando…"
-              : invoice.gestiono_share_url
-                ? "Copiar link de pago"
-                : "Generar link de pago"}
+            Pagar
           </button>
         )}
-        <button
-          onClick={onEdit}
-          style={{ ...s.ghostBtn, ...(isMobile ? s.touchBtn : null) }}
-        >
-          Editar
-        </button>
-        <button
-          onClick={onDelete}
-          style={{
-            ...s.dangerBtn,
-            ...(isMobile ? { ...s.touchBtn, marginLeft: 0 } : null),
-          }}
-        >
-          Eliminar
-        </button>
+        {/* Solo a clientes: a un colaborador se le paga, no se le cobra. */}
+        {invoice.party_type === "client" &&
+          (totals.balance > 0 || invoice.gestiono_share_url) && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onPaymentLink();
+              }}
+              disabled={linking}
+              style={{
+                ...s.sendBtn,
+                ...(isMobile ? s.touchBtn : null),
+                ...(linking ? { opacity: 0.6, cursor: "wait" } : null),
+              }}
+            >
+              {linking
+                ? "Generando…"
+                : invoice.gestiono_share_url
+                  ? "Copiar link de pago"
+                  : "Crear link de pago"}
+            </button>
+          )}
       </div>
 
-      {expanded && (
-        <Payments
+      {paying && (
+        <PaymentModal
           invoice={invoice}
           balance={totals.balance}
           supabase={supabase}
-          onChanged={onChanged}
           isMobile={isMobile}
+          onClose={() => setPaying(false)}
+          onSaved={() => {
+            setPaying(false);
+            onChanged();
+          }}
         />
       )}
     </div>
@@ -567,6 +719,310 @@ function InvoiceCard({
 }
 
 /* ---------------- Abonos ---------------- */
+
+function PaymentHistoryDrawer({
+  invoice,
+  totals,
+  supabase,
+  isMobile,
+  onClose,
+  onEdit,
+  onDelete,
+  onSend,
+  onPaymentLink,
+  linking,
+  onChanged,
+}: {
+  invoice: FullInvoice;
+  totals: ReturnType<typeof computeTotals>;
+  supabase: Supabase;
+  isMobile: boolean;
+  onClose: () => void;
+  onEdit: () => void;
+  onDelete: () => void;
+  onSend: () => void;
+  onPaymentLink: () => void;
+  linking: boolean;
+  onChanged: () => void;
+}) {
+  const [paying, setPaying] = useState(false);
+  const [copiedInvoiceLink, setCopiedInvoiceLink] = useState(false);
+
+  useEffect(() => {
+    const onKey = (e: globalThis.KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  async function copyInvoiceLink() {
+    const url = `${window.location.origin}/factura/${invoice.public_token}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopiedInvoiceLink(true);
+      window.setTimeout(() => setCopiedInvoiceLink(false), 2000);
+    } catch {
+      window.open(url, "_blank", "noopener,noreferrer");
+    }
+  }
+
+  return (
+    <div style={s.overlay} onClick={onClose}>
+      <aside
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="invoice-detail-title"
+        style={{
+          ...s.drawer,
+          ...(isMobile
+            ? { width: "100%", borderLeft: "none", height: "100dvh" }
+            : { width: "min(620px, 100%)" }),
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div style={s.drawerHeader}>
+          <div>
+            <h2 id="invoice-detail-title" style={{ margin: 0, fontSize: 20 }}>
+              Factura #{invoice.number}
+            </h2>
+            <p style={{ ...s.help, margin: "6px 0 0" }}>
+              {invoice.party_name} · {STATUS_LABEL[totals.status]}
+            </p>
+          </div>
+          <button onClick={onClose} style={s.closeBtn} aria-label="Cerrar">
+            ✕
+          </button>
+        </div>
+
+        <div
+          style={{ ...s.drawerBody, ...(isMobile ? { padding: 16 } : null) }}
+        >
+          <div style={s.invoiceHero}>
+            <div>
+              <div style={s.summaryLabel}>Total</div>
+              <div style={s.invoiceHeroValue}>
+                {fmtMoney(totals.total, invoice.currency)}
+              </div>
+            </div>
+            <span
+              style={{
+                ...s.badge,
+                color: STATUS_COLOR[totals.status],
+                borderColor: STATUS_COLOR[totals.status] + "55",
+                background: STATUS_COLOR[totals.status] + "18",
+              }}
+            >
+              {STATUS_LABEL[totals.status]}
+            </span>
+          </div>
+
+          <div
+            style={{
+              ...s.detailMetrics,
+              ...(isMobile ? { gridTemplateColumns: "1fr" } : null),
+            }}
+          >
+            <div style={s.detailMetric}>
+              <span style={s.summaryLabel}>Abonado</span>
+              <strong>{fmtMoney(totals.paid, invoice.currency)}</strong>
+            </div>
+            <div style={s.detailMetric}>
+              <span style={s.summaryLabel}>Pendiente</span>
+              <strong
+                style={{ color: totals.balance > 0 ? "#e6b800" : "#00e5a0" }}
+              >
+                {fmtMoney(totals.balance, invoice.currency)}
+              </strong>
+            </div>
+          </div>
+
+          <div style={s.drawerSection}>
+            <h3 style={s.drawerSectionTitle}>Acciones</h3>
+            <div
+              style={{
+                ...s.actionGrid,
+                ...(isMobile ? { gridTemplateColumns: "1fr" } : null),
+              }}
+            >
+              {totals.balance > 0 && (
+                <button
+                  onClick={() => setPaying(true)}
+                  style={{
+                    ...s.primaryBtnSm,
+                    ...s.drawerActionBtn,
+                    ...(isMobile ? s.touchBtn : null),
+                  }}
+                >
+                  Registrar pago
+                </button>
+              )}
+              {invoice.party_type === "client" &&
+                (totals.balance > 0 || invoice.gestiono_share_url) && (
+                  <button
+                    onClick={onPaymentLink}
+                    disabled={linking}
+                    style={{
+                      ...s.sendBtn,
+                      ...s.drawerActionBtn,
+                      ...(isMobile ? s.touchBtn : null),
+                      ...(linking ? { opacity: 0.6, cursor: "wait" } : null),
+                    }}
+                  >
+                    {linking
+                      ? "Generando…"
+                      : invoice.gestiono_share_url
+                        ? "Copiar link de pago"
+                        : "Crear link de pago"}
+                  </button>
+                )}
+              <InvoicePrintButton
+                token={invoice.public_token}
+                style={{
+                  ...s.viewBtn,
+                  ...s.drawerActionBtn,
+                  ...(isMobile ? s.touchBtn : null),
+                }}
+              />
+              <button
+                onClick={copyInvoiceLink}
+                style={{
+                  ...s.ghostBtn,
+                  ...s.drawerActionBtn,
+                  ...(isMobile ? s.touchBtn : null),
+                  ...(copiedInvoiceLink ? { color: "#00e5a0" } : null),
+                }}
+              >
+                {copiedInvoiceLink ? "Link copiado" : "Copiar link factura"}
+              </button>
+              <button
+                onClick={onSend}
+                style={{
+                  ...s.ghostBtn,
+                  ...s.drawerActionBtn,
+                  ...(isMobile ? s.touchBtn : null),
+                }}
+              >
+                Enviar por correo
+              </button>
+              <button
+                onClick={onEdit}
+                style={{
+                  ...s.ghostBtn,
+                  ...s.drawerActionBtn,
+                  ...(isMobile ? s.touchBtn : null),
+                }}
+              >
+                Editar factura
+              </button>
+              <button
+                onClick={onDelete}
+                style={{
+                  ...s.dangerBtn,
+                  ...s.drawerActionBtn,
+                  ...(isMobile ? s.touchBtn : null),
+                }}
+              >
+                Eliminar
+              </button>
+            </div>
+          </div>
+
+          <div style={s.drawerSection}>
+            <h3 style={s.drawerSectionTitle}>Datos de la factura</h3>
+            <div
+              style={{
+                ...s.infoGrid,
+                ...(isMobile ? { gridTemplateColumns: "1fr" } : null),
+              }}
+            >
+              <Info label="Emitida" value={fmtDateTime(invoice.issued_at)} />
+              <Info
+                label="Tipo"
+                value={invoice.party_type === "client" ? "Cliente" : "Equipo"}
+              />
+              <Info label="Moneda" value={invoice.currency} />
+              <Info
+                label="Pagos"
+                value={String(invoice.invoice_payments.length)}
+              />
+              {invoice.party_email && (
+                <Info label="Correo" value={invoice.party_email} />
+              )}
+              {invoice.party_tax_id && (
+                <Info label="RNC / Cédula" value={invoice.party_tax_id} />
+              )}
+              {invoice.description && (
+                <Info label="Descripción" value={invoice.description} wide />
+              )}
+              {invoice.note && <Info label="Nota" value={invoice.note} wide />}
+            </div>
+          </div>
+
+          <div style={s.drawerSection}>
+            <h3 style={s.drawerSectionTitle}>Conceptos</h3>
+            <div style={s.itemList}>
+              {invoice.invoice_items.map((item) => (
+                <div key={item.id} style={s.detailLineItem}>
+                  <div>
+                    <strong>{item.concept}</strong>
+                    <div style={s.help}>
+                      {Number(item.quantity)} {item.unit} ·{" "}
+                      {fmtMoney(Number(item.unit_price), invoice.currency)}
+                    </div>
+                  </div>
+                  <strong>{fmtMoney(itemTotal(item), invoice.currency)}</strong>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div style={s.drawerSection}>
+            <h3 style={s.drawerSectionTitle}>Pagos registrados</h3>
+            <Payments
+              invoice={invoice}
+              balance={totals.balance}
+              supabase={supabase}
+              onChanged={onChanged}
+              isMobile={isMobile}
+            />
+          </div>
+        </div>
+
+        {paying && (
+          <PaymentModal
+            invoice={invoice}
+            balance={totals.balance}
+            supabase={supabase}
+            isMobile={isMobile}
+            onClose={() => setPaying(false)}
+            onSaved={() => {
+              setPaying(false);
+              onChanged();
+            }}
+          />
+        )}
+      </aside>
+    </div>
+  );
+}
+
+function Info({
+  label,
+  value,
+  wide,
+}: {
+  label: string;
+  value: string;
+  wide?: boolean;
+}) {
+  return (
+    <div style={{ ...s.infoItem, ...(wide ? { gridColumn: "1 / -1" } : null) }}>
+      <span style={s.summaryLabel}>{label}</span>
+      <strong>{value}</strong>
+    </div>
+  );
+}
 
 function Payments({
   invoice,
@@ -581,34 +1037,6 @@ function Payments({
   onChanged: () => void;
   isMobile: boolean;
 }) {
-  const [method, setMethod] = useState(PAYMENT_METHODS[0]);
-  const [amount, setAmount] = useState("");
-  const [paidAt, setPaidAt] = useState(() =>
-    toLocalInput(new Date().toISOString()),
-  );
-  const [saving, setSaving] = useState(false);
-
-  async function addPayment() {
-    const value = Number(amount);
-    if (!Number.isFinite(value) || value <= 0) {
-      return alert("Escribe un monto mayor que cero.");
-    }
-    const warning = paymentWarning(value, balance);
-    if (warning && !confirm(warning)) return;
-
-    setSaving(true);
-    const { error } = await supabase.from("invoice_payments").insert({
-      invoice_id: invoice.id,
-      method,
-      amount: value,
-      paid_at: new Date(paidAt).toISOString(),
-    });
-    setSaving(false);
-    if (error) return alert("Error al registrar el abono: " + error.message);
-    setAmount("");
-    onChanged();
-  }
-
   async function removePayment(p: InvoicePayment) {
     if (!confirm("¿Eliminar este abono?")) return;
     const { error } = await supabase
@@ -628,68 +1056,179 @@ function Payments({
       ) : (
         <div style={{ marginBottom: 16 }}>
           {invoice.invoice_payments.map((p) => (
-            <div
-              key={p.id}
-              style={{
-                ...s.payRow,
-                ...(isMobile
-                  ? { gridTemplateColumns: "1fr auto 28px", rowGap: 2 }
-                  : null),
-              }}
-            >
-              <span style={{ color: "#ddd" }}>{p.method}</span>
-              <span style={{ color: "#888" }}>{fmtDateTime(p.paid_at)}</span>
-              <span style={{ color: "#00e5a0", fontWeight: 600 }}>
-                {fmtMoney(Number(p.amount), invoice.currency)}
-              </span>
-              <button onClick={() => removePayment(p)} style={s.miniDanger}>
-                ✕
-              </button>
+            <div key={p.id} style={s.payItem}>
+              <div
+                style={{
+                  ...s.payRow,
+                  ...(isMobile
+                    ? { gridTemplateColumns: "1fr auto 28px", rowGap: 2 }
+                    : null),
+                }}
+              >
+                <span style={{ color: "#ddd" }}>{p.method}</span>
+                <span style={{ color: "#888" }}>{fmtDateTime(p.paid_at)}</span>
+                <span style={{ color: "#00e5a0", fontWeight: 600 }}>
+                  {fmtMoney(Number(p.amount), invoice.currency)}
+                </span>
+                <button onClick={() => removePayment(p)} style={s.miniDanger}>
+                  ✕
+                </button>
+              </div>
+              {p.note && <div style={s.payNote}>{p.note}</div>}
             </div>
           ))}
         </div>
       )}
 
-      <div style={s.payForm}>
-        <select
-          value={method}
-          onChange={(e) => setMethod(e.target.value)}
-          style={{
-            ...s.select,
-            ...(isMobile ? { ...s.touchInput, width: "100%" } : null),
-          }}
-        >
-          {PAYMENT_METHODS.map((m) => (
-            <option key={m} value={m}>
-              {m}
-            </option>
-          ))}
-        </select>
-        <input
-          type="datetime-local"
-          value={paidAt}
-          onChange={(e) => setPaidAt(e.target.value)}
-          style={{ ...s.input, ...(isMobile ? s.touchInput : null) }}
-        />
-        <input
-          type="number"
-          min="0"
-          step="0.01"
-          placeholder={`Monto (falta ${balance})`}
-          value={amount}
-          onChange={(e) => setAmount(e.target.value)}
-          style={{ ...s.input, ...(isMobile ? s.touchInput : null) }}
-        />
-        <button
-          onClick={addPayment}
-          disabled={saving}
-          style={{
-            ...s.primaryBtnSm,
-            ...(isMobile ? { ...s.touchBtn, width: "100%" } : null),
-          }}
-        >
-          {saving ? "Guardando…" : "Registrar abono"}
-        </button>
+      {balance > 0 && invoice.invoice_payments.length === 0 && (
+        <p style={{ color: "#777", fontSize: 12, margin: 0 }}>
+          Usa el botón Pagar de la tarjeta para registrar el primer pago.
+        </p>
+      )}
+    </div>
+  );
+}
+
+function PaymentModal({
+  invoice,
+  balance,
+  supabase,
+  isMobile,
+  onClose,
+  onSaved,
+}: {
+  invoice: FullInvoice;
+  balance: number;
+  supabase: Supabase;
+  isMobile: boolean;
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const [method, setMethod] = useState(PAYMENT_METHODS[0]);
+  const [amount, setAmount] = useState("");
+  const [paidAt, setPaidAt] = useState(() =>
+    toLocalInput(new Date().toISOString()),
+  );
+  const [note, setNote] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    const onKey = (e: globalThis.KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  async function addPayment() {
+    const value = Number(amount);
+    if (!Number.isFinite(value) || value <= 0) {
+      return alert("Escribe un monto mayor que cero.");
+    }
+    const warning = paymentWarning(value, balance);
+    if (warning && !confirm(warning)) return;
+
+    setSaving(true);
+    const { error } = await supabase.from("invoice_payments").insert({
+      invoice_id: invoice.id,
+      method,
+      amount: value,
+      paid_at: new Date(paidAt).toISOString(),
+      note: note.trim() || null,
+    });
+    setSaving(false);
+    if (error) return alert("Error al registrar el pago: " + error.message);
+    onSaved();
+  }
+
+  const inp = isMobile ? { ...s.input, ...s.touchInput } : s.input;
+
+  return (
+    <div style={s.centerOverlay} onClick={onClose}>
+      <div
+        style={{
+          ...s.modal,
+          ...(isMobile ? { width: "100%", padding: 20 } : null),
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div style={s.modalHeader}>
+          <strong style={{ fontSize: 15 }}>Registrar pago</strong>
+          <button onClick={onClose} style={s.closeBtn} aria-label="Cerrar">
+            ✕
+          </button>
+        </div>
+
+        <p style={s.modalAmount}>{fmtMoney(balance, invoice.currency)}</p>
+        <p style={s.help}>Saldo pendiente de la factura #{invoice.number}.</p>
+
+        <label style={s.field}>
+          <span style={s.label}>Método</span>
+          <select
+            value={method}
+            onChange={(e) => setMethod(e.target.value)}
+            style={inp}
+          >
+            {PAYMENT_METHODS.map((m) => (
+              <option key={m} value={m}>
+                {m}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label style={s.field}>
+          <span style={s.label}>Fecha del pago</span>
+          <input
+            type="datetime-local"
+            value={paidAt}
+            onChange={(e) => setPaidAt(e.target.value)}
+            style={inp}
+          />
+        </label>
+
+        <label style={s.field}>
+          <span style={s.label}>Monto</span>
+          <input
+            type="number"
+            min="0"
+            step="0.01"
+            placeholder={String(balance)}
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            style={inp}
+          />
+        </label>
+
+        <label style={s.field}>
+          <span style={s.label}>Nota del pago</span>
+          <textarea
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            placeholder="Ej.: transferencia, referencia, comentario interno"
+            style={{ ...inp, minHeight: 76, resize: "vertical" }}
+          />
+        </label>
+
+        <div style={s.modalFooter}>
+          <button
+            onClick={onClose}
+            style={{ ...s.ghostBtn, ...(isMobile ? s.touchBtn : null) }}
+          >
+            Cancelar
+          </button>
+          <button
+            onClick={addPayment}
+            disabled={saving}
+            style={{
+              ...s.primaryBtn,
+              ...(isMobile ? { ...s.touchBtn, marginLeft: 0 } : null),
+              opacity: saving ? 0.6 : 1,
+            }}
+          >
+            {saving ? "Guardando…" : "Guardar pago"}
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -700,6 +1239,7 @@ function Payments({
 function InvoiceEditor({
   supabase,
   clients,
+  projects,
   team,
   invoice,
   defaultClientId,
@@ -708,6 +1248,7 @@ function InvoiceEditor({
 }: {
   supabase: Supabase;
   clients: Client[];
+  projects: Project[];
   team: TeamMember[];
   invoice: FullInvoice | null;
   defaultClientId?: string | null;
@@ -720,6 +1261,7 @@ function InvoiceEditor({
   const [partyId, setPartyId] = useState<string>(
     invoice?.client_id ?? invoice?.team_member_id ?? defaultClientId ?? "",
   );
+  const [projectId, setProjectId] = useState<string>(invoice?.project_id ?? "");
   const [currency, setCurrency] = useState<InvoiceCurrency>(
     invoice?.currency ?? "DOP",
   );
@@ -757,6 +1299,14 @@ function InvoiceEditor({
     partyType === "client"
       ? clients.filter((c) => c.active !== false || c.id === invoice?.client_id)
       : team;
+  const projectOptions =
+    partyType === "client"
+      ? projects.filter(
+          (p) =>
+            p.client_id === partyId &&
+            (p.status !== "archivado" || p.id === invoice?.project_id),
+        )
+      : [];
 
   const preview = computeTotals(
     { discount: Number(discount) || 0, tax_rate: withTax ? ITBIS : 0 },
@@ -800,6 +1350,7 @@ function InvoiceEditor({
     const base = {
       party_type: partyType,
       client_id: partyType === "client" ? party.id : null,
+      project_id: partyType === "client" ? projectId || null : null,
       team_member_id: partyType === "team" ? party.id : null,
       ...partySnapshot,
       issued_at: new Date(issuedAt).toISOString(),
@@ -916,6 +1467,7 @@ function InvoiceEditor({
                   onClick={() => {
                     setPartyType(p);
                     setPartyId("");
+                    setProjectId("");
                   }}
                   style={{
                     ...s.toggle,
@@ -936,7 +1488,10 @@ function InvoiceEditor({
             </span>
             <select
               value={partyId}
-              onChange={(e) => setPartyId(e.target.value)}
+              onChange={(e) => {
+                setPartyId(e.target.value);
+                setProjectId("");
+              }}
               style={inp}
             >
               <option value="">Selecciona…</option>
@@ -948,6 +1503,25 @@ function InvoiceEditor({
               ))}
             </select>
           </label>
+
+          {partyType === "client" && projectOptions.length > 0 && (
+            <label style={s.field}>
+              <span style={s.label}>Proyecto</span>
+              <select
+                value={projectId}
+                onChange={(e) => setProjectId(e.target.value)}
+                style={inp}
+              >
+                <option value="">Sin proyecto específico</option>
+                {projectOptions.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                    {p.status === "archivado" ? " · archivado" : ""}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
 
           <div
             style={{
@@ -1266,7 +1840,7 @@ function PaymentLinkModal({
   // Cerrar con Escape: el modal tapa la lista y quedarse sin salida de teclado
   // obliga a apuntar con el mouse a la ✕.
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
+    const onKey = (e: globalThis.KeyboardEvent) => {
       if (e.key === "Escape") onClose();
     };
     window.addEventListener("keydown", onKey);
@@ -1350,6 +1924,13 @@ function PaymentLinkModal({
 }
 
 const s: Record<string, CSSProperties> = {
+  pageHeader: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    gap: 18,
+    marginBottom: 22,
+  },
   summaryRow: {
     display: "flex",
     gap: 14,
@@ -1371,7 +1952,70 @@ const s: Record<string, CSSProperties> = {
     color: "#777",
   },
   summaryValue: { fontSize: 20, fontWeight: 700, marginTop: 2 },
-  filters: { display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 12 },
+  kpiGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+    gap: 12,
+    marginBottom: 16,
+  },
+  kpiCard: {
+    background: "#121212",
+    border: "1px solid #232323",
+    borderRadius: 10,
+    padding: "14px 16px",
+    minWidth: 0,
+  },
+  kpiMeta: {
+    color: "#777",
+    fontSize: 12,
+    lineHeight: 1.4,
+    marginTop: 6,
+  },
+  filterPanel: {
+    background: "#0f0f0f",
+    border: "1px solid #232323",
+    borderRadius: 10,
+    padding: 14,
+    display: "flex",
+    flexDirection: "column",
+    gap: 12,
+    marginBottom: 18,
+  },
+  filterHeader: {
+    display: "grid",
+    gridTemplateColumns: "1fr auto",
+    alignItems: "center",
+    gap: 12,
+  },
+  filterTitle: {
+    color: "#ddd",
+    fontSize: 13,
+    fontWeight: 700,
+  },
+  filterControls: {
+    display: "grid",
+    gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+    gap: 14,
+    alignItems: "start",
+  },
+  filterGroup: {
+    display: "flex",
+    flexDirection: "column",
+    gap: 8,
+    minWidth: 0,
+  },
+  filterLabel: {
+    fontSize: 11,
+    color: "#777",
+    textTransform: "uppercase",
+    letterSpacing: 1.2,
+  },
+  filterResult: {
+    color: "#888",
+    fontSize: 12,
+    whiteSpace: "nowrap",
+  },
+  filters: { display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 0 },
   chip: {
     display: "inline-flex",
     alignItems: "center",
@@ -1398,6 +2042,10 @@ const s: Record<string, CSSProperties> = {
     borderRadius: 12,
     padding: 20,
   },
+  clickableCard: {
+    cursor: "pointer",
+    outline: "none",
+  },
   cardTop: {
     display: "flex",
     justifyContent: "space-between",
@@ -1419,7 +2067,7 @@ const s: Record<string, CSSProperties> = {
     overflow: "hidden",
     marginTop: 14,
   },
-  trackFill: { height: "100%", transition: "width .25s" },
+  trackFill: { height: "100%" },
   actions: {
     display: "flex",
     flexWrap: "wrap",
@@ -1500,6 +2148,7 @@ const s: Record<string, CSSProperties> = {
     flexShrink: 0,
   },
   detail: { marginTop: 16, paddingTop: 16, borderTop: "1px solid #232323" },
+  payItem: { borderBottom: "1px solid #1e1e1e", padding: "2px 0 8px" },
   payRow: {
     display: "grid",
     gridTemplateColumns: "1fr 1.4fr auto 28px",
@@ -1508,7 +2157,13 @@ const s: Record<string, CSSProperties> = {
     fontSize: 13,
     padding: "6px 0",
   },
-  payForm: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" },
+  payNote: {
+    color: "#999",
+    fontSize: 12,
+    lineHeight: 1.45,
+    marginTop: 2,
+    paddingRight: 38,
+  },
   itemRow: { display: "flex", gap: 8, alignItems: "center", marginBottom: 8 },
   itemTotal: {
     fontSize: 12,
@@ -1595,6 +2250,86 @@ const s: Record<string, CSSProperties> = {
     display: "flex",
     flexDirection: "column",
     gap: 18,
+  },
+  invoiceHero: {
+    background: "#121212",
+    border: "1px solid #232323",
+    borderRadius: 10,
+    padding: 16,
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    gap: 16,
+  },
+  invoiceHeroValue: {
+    color: "#fff",
+    fontSize: 28,
+    fontWeight: 750,
+    marginTop: 4,
+  },
+  detailMetrics: {
+    display: "grid",
+    gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+    gap: 10,
+  },
+  detailMetric: {
+    background: "#121212",
+    border: "1px solid #232323",
+    borderRadius: 10,
+    padding: 14,
+    display: "flex",
+    flexDirection: "column",
+    gap: 5,
+  },
+  drawerSection: {
+    borderTop: "1px solid #1f1f1f",
+    paddingTop: 18,
+    display: "flex",
+    flexDirection: "column",
+    gap: 12,
+  },
+  drawerSectionTitle: {
+    color: "#f4f4f4",
+    fontSize: 14,
+    margin: 0,
+  },
+  actionGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+    gap: 8,
+  },
+  drawerActionBtn: {
+    width: "100%",
+    marginLeft: 0,
+    justifyContent: "center",
+  },
+  infoGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+    gap: 10,
+  },
+  infoItem: {
+    background: "#121212",
+    border: "1px solid #232323",
+    borderRadius: 8,
+    padding: 12,
+    display: "flex",
+    flexDirection: "column",
+    gap: 5,
+    minWidth: 0,
+  },
+  itemList: {
+    border: "1px solid #232323",
+    borderRadius: 10,
+    overflow: "hidden",
+  },
+  detailLineItem: {
+    display: "flex",
+    justifyContent: "space-between",
+    gap: 14,
+    padding: "12px 14px",
+    borderBottom: "1px solid #1f1f1f",
+    alignItems: "flex-start",
   },
   drawerFooter: {
     padding: "16px 24px",
