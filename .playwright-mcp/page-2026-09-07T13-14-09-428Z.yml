@@ -1,0 +1,60 @@
+- generic [ref=e1]:
+  - alert [ref=e25]: Panel de cliente
+  - generic [ref=e26]:
+    - navigation "Secciones del panel" [ref=e27]:
+      - generic [ref=e28]:
+        - generic [ref=e29]: Panel de
+        - generic [ref=e30]: Cliente Prueba
+      - button "Dashboard" [ref=e31] [cursor=pointer]:
+        - generic [aria-hidden] [ref=e32]: ◫
+        - text: Dashboard
+      - button "Tareas 1" [ref=e33] [cursor=pointer]:
+        - generic [aria-hidden] [ref=e34]: ☰
+        - text: Tareas
+        - generic [ref=e35]: "1"
+      - button "Archivos" [ref=e36] [cursor=pointer]:
+        - generic [aria-hidden] [ref=e37]: ▤
+        - text: Archivos
+      - button "Facturación" [ref=e38] [cursor=pointer]:
+        - generic [aria-hidden] [ref=e39]: $
+        - text: Facturación
+      - button "Reuniones" [ref=e40] [cursor=pointer]:
+        - generic [aria-hidden] [ref=e41]: ◷
+        - text: Reuniones
+      - button "Cuenta" [ref=e42] [cursor=pointer]:
+        - generic [aria-hidden] [ref=e43]: ◉
+        - text: Cuenta
+      - button "Cerrar sesión" [ref=e44] [cursor=pointer]:
+        - generic [aria-hidden] [ref=e45]: ⏻
+        - text: Cerrar sesión
+    - main [ref=e46]:
+      - generic [ref=e78]:
+        - generic [ref=e79]:
+          - heading "Tareas" [level=2] [ref=e80]
+          - button "+ Agregar tarea" [ref=e81] [cursor=pointer]
+        - generic [ref=e82]:
+          - heading "Haciendo · 1" [level=3] [ref=e83]
+          - 'button "Pendiente de ti QA: revisar y aprobar el nuevo banner Adjunta captura de tu WhatsApp Business con el mensaje enviado." [ref=e85] [cursor=pointer]':
+            - generic [ref=e86]: Pendiente de ti
+            - generic [ref=e87]:
+              - generic [aria-hidden] [ref=e88]: ○
+              - text: "QA: revisar y aprobar el nuevo banner"
+            - paragraph [ref=e89]: Adjunta captura de tu WhatsApp Business con el mensaje enviado.
+        - generic [ref=e91]:
+          - generic [ref=e92]:
+            - 'heading "QA: revisar y aprobar el nuevo banner" [level=3] [ref=e93]'
+            - button "Cerrar" [ref=e94] [cursor=pointer]: ✕
+          - generic [ref=e95]:
+            - generic [ref=e96]: Pendiente de ti
+            - paragraph [ref=e97]: Adjunta captura de tu WhatsApp Business con el mensaje enviado.
+            - generic [ref=e98]: Creada el 7 sept de 2026, 09:12 a. m.
+            - generic [ref=e99]:
+              - generic [ref=e100]:
+                - generic [ref=e101]: Nota para el equipo (opcional)
+                - textbox "Nota para el equipo (opcional)" [ref=e102]:
+                  - /placeholder: "Ej: Ya envié el contenido por WhatsApp"
+                  - text: Ya envié el banner aprobado por WhatsApp, quedó como lo hablamos.
+              - generic [ref=e103]:
+                - generic [ref=e104]: Evidencia (imagen, opcional)
+                - button "Evidencia (imagen, opcional)" [active] [ref=e105]
+              - button "Marcar como completada" [ref=e106] [cursor=pointer]

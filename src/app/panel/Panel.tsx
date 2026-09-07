@@ -5,7 +5,7 @@
  * aviso #e6b800 · ok #00e5a0)
  */
 
-import { useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { dueBadge, dueState, fmtDueDate } from "@/lib/delivery";
@@ -18,6 +18,7 @@ import {
 } from "@/lib/invoices";
 import type {
   Client,
+  ClientContact,
   ClientFile,
   Invoice,
   InvoiceItem,
@@ -34,16 +35,30 @@ export type PanelFile = ClientFile & { signedUrl: string | null };
 export type PanelReceipt = InvoiceReceipt & { signedUrl: string | null };
 
 type SectionId =
-  "dashboard" | "tareas" | "archivos" | "facturacion" | "reuniones" | "cuenta";
+  | "dashboard"
+  | "proyectos"
+  | "tareas"
+  | "archivos"
+  | "facturacion"
+  | "reuniones"
+  | "cuenta";
 
 const SECTIONS: { id: SectionId; label: string; icon: string }[] = [
   { id: "dashboard", label: "Dashboard", icon: "◫" },
+  { id: "proyectos", label: "Proyectos", icon: "▣" },
   { id: "tareas", label: "Tareas", icon: "☰" },
   { id: "archivos", label: "Archivos", icon: "▤" },
   { id: "facturacion", label: "Facturación", icon: "$" },
   { id: "reuniones", label: "Reuniones", icon: "◷" },
   { id: "cuenta", label: "Cuenta", icon: "◉" },
 ];
+
+const PROJECT_STATUS_LABEL: Record<string, string> = {
+  activo: "Activo",
+  pausado: "Pausado",
+  completado: "Completado",
+  archivado: "Archivado",
+};
 
 const PRIORITY_LABEL: Record<string, string> = {
   alta: "Alta",
@@ -61,6 +76,8 @@ const MEETING_STATUS_LABEL: Record<string, string> = {
 
 interface Props {
   client: Client;
+  contact: ClientContact;
+  contacts: ClientContact[];
   projects: Project[];
   columns: KanbanColumn[];
   cards: KanbanCard[];
@@ -93,7 +110,7 @@ function bucketize(cards: KanbanCard[], columns: KanbanColumn[]) {
 }
 
 export default function Panel(props: Props) {
-  const { client, cards, projects } = props;
+  const { client, contact, contacts, cards, projects } = props;
   const [section, setSection] = useState<SectionId>("dashboard");
   const [selectedProjectId, setSelectedProjectId] = useState<string>(
     projects.find((p) => p.status !== "archivado")?.id ?? "",
@@ -208,11 +225,23 @@ export default function Panel(props: Props) {
         {section === "dashboard" && (
           <DashboardSection {...scopedProps} goTo={setSection} />
         )}
+        {section === "proyectos" && (
+          <ProyectosSection
+            projects={projects}
+            selectedProjectId={selectedProjectId}
+            onSelect={(id) => {
+              setSelectedProjectId(id);
+              setSection("dashboard");
+            }}
+          />
+        )}
         {section === "tareas" && <TareasSection {...scopedProps} />}
         {section === "archivos" && <ArchivosSection {...scopedProps} />}
         {section === "facturacion" && <FacturacionSection {...scopedProps} />}
         {section === "reuniones" && <ReunionesSection {...scopedProps} />}
-        {section === "cuenta" && <CuentaSection client={client} />}
+        {section === "cuenta" && (
+          <CuentaSection client={client} contact={contact} contacts={contacts} />
+        )}
       </main>
     </div>
   );
@@ -386,6 +415,54 @@ function TareasSection(props: Props) {
   const [desc, setDesc] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [completeComment, setCompleteComment] = useState("");
+  const [completeFiles, setCompleteFiles] = useState<File[]>([]);
+  const [completeBusy, setCompleteBusy] = useState(false);
+  const [completeError, setCompleteError] = useState<string | null>(null);
+  const MAX_EVIDENCE_FILES = 6;
+
+  function addCompleteFiles(picked: FileList | null) {
+    if (!picked || picked.length === 0) return;
+    // `picked` es la FileList en vivo del input: hay que copiarla ya mismo,
+    // antes de que el `onChange` que llama a esta función limpie el input
+    // (para permitir re-seleccionar el mismo archivo) y la vacíe con él.
+    const newFiles = Array.from(picked);
+    setCompleteError(null);
+    setCompleteFiles((prev) =>
+      [...prev, ...newFiles].slice(0, MAX_EVIDENCE_FILES),
+    );
+  }
+
+  function removeCompleteFile(index: number) {
+    setCompleteFiles((prev) => prev.filter((_, i) => i !== index));
+  }
+
+  async function completeTask(cardId: string) {
+    setCompleteBusy(true);
+    setCompleteError(null);
+    try {
+      const form = new FormData();
+      if (completeComment.trim()) form.set("comment", completeComment.trim());
+      completeFiles.forEach((f) => form.append("file", f));
+      const res = await fetch(`/api/panel/task/${cardId}`, {
+        method: "PATCH",
+        body: form,
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        if (sesionExpirada(res)) return;
+        setCompleteError(data.error ?? "No se pudo completar la tarea.");
+      } else {
+        setOpen(null);
+        setCompleteComment("");
+        setCompleteFiles([]);
+        router.refresh();
+      }
+    } catch {
+      setCompleteError("Fallo de red: inténtalo de nuevo.");
+    }
+    setCompleteBusy(false);
+  }
 
   async function addTask(e: React.FormEvent) {
     e.preventDefault();
@@ -514,9 +591,70 @@ function TareasSection(props: Props) {
               </span>
             )}
           </div>
+          {open.client_comment && (
+            <p style={{ ...styles.cardDesc, fontSize: 13 }}>
+              <strong>Tu nota: </strong>
+              {open.client_comment}
+            </p>
+          )}
+          {open.client_evidence.length > 0 && (
+            <div style={styles.evidenceGrid}>
+              {open.client_evidence.map((ev, i) => (
+                <a
+                  key={ev.path}
+                  href={ev.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={styles.evidenceThumbLink}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={ev.url}
+                    alt={`Evidencia ${i + 1} de: ${open.title}`}
+                    style={styles.evidenceThumb}
+                  />
+                </a>
+              ))}
+            </div>
+          )}
           <span style={styles.metaText}>
             Creada el {fmtDateTime(open.created_at)}
           </span>
+
+          {open.assigned_to_client && !open.completed_at && (
+            <div style={styles.form}>
+              <label style={styles.field}>
+                <span style={styles.fieldLabel}>
+                  Nota para el equipo (opcional)
+                </span>
+                <textarea
+                  value={completeComment}
+                  onChange={(e) => setCompleteComment(e.target.value)}
+                  rows={3}
+                  maxLength={2000}
+                  placeholder="Ej: Ya envié el contenido por WhatsApp"
+                  style={{ ...styles.input, resize: "vertical" }}
+                />
+              </label>
+              <EvidencePicker
+                files={completeFiles}
+                onAdd={addCompleteFiles}
+                onRemove={removeCompleteFile}
+                max={MAX_EVIDENCE_FILES}
+              />
+              {completeError && (
+                <p style={styles.formError}>{completeError}</p>
+              )}
+              <button
+                type="button"
+                disabled={completeBusy}
+                onClick={() => completeTask(open.id)}
+                style={styles.primaryBtn}
+              >
+                {completeBusy ? "Enviando…" : "Marcar como completada"}
+              </button>
+            </div>
+          )}
         </Modal>
       )}
 
@@ -558,6 +696,82 @@ function TareasSection(props: Props) {
         </Modal>
       )}
     </section>
+  );
+}
+
+/**
+ * Selector de evidencia para completar una tarea: acepta varias imágenes,
+ * muestra miniaturas locales (URL.createObjectURL) y permite quitarlas antes
+ * de enviar. El upload real ocurre al enviar el formulario, no aquí.
+ */
+function EvidencePicker({
+  files,
+  onAdd,
+  onRemove,
+  max,
+}: {
+  files: File[];
+  onAdd: (picked: FileList | null) => void;
+  onRemove: (index: number) => void;
+  max: number;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const previews = useMemo(
+    () => files.map((f) => URL.createObjectURL(f)),
+    [files],
+  );
+  useEffect(() => {
+    return () => previews.forEach((url) => URL.revokeObjectURL(url));
+  }, [previews]);
+
+  return (
+    <div style={styles.field}>
+      <span style={styles.fieldLabel}>Evidencia (opcional)</span>
+      <input
+        ref={inputRef}
+        type="file"
+        multiple
+        accept="image/jpeg,image/png,image/webp,image/heic"
+        onChange={(e) => {
+          onAdd(e.target.files);
+          e.target.value = "";
+        }}
+        style={{ display: "none" }}
+      />
+      <div style={styles.evidencePickerGrid}>
+        {files.map((file, i) => (
+          <div key={`${file.name}-${i}`} style={styles.evidencePreviewTile}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={previews[i]}
+              alt={file.name}
+              style={styles.evidencePreviewImg}
+            />
+            <button
+              type="button"
+              onClick={() => onRemove(i)}
+              style={styles.evidenceRemoveBtn}
+              aria-label={`Quitar ${file.name}`}
+            >
+              ✕
+            </button>
+          </div>
+        ))}
+        {files.length < max && (
+          <button
+            type="button"
+            onClick={() => inputRef.current?.click()}
+            style={styles.evidenceAddTile}
+          >
+            <span style={{ fontSize: 20, lineHeight: 1 }}>+</span>
+            <span style={{ fontSize: 11 }}>Agregar foto</span>
+          </button>
+        )}
+      </div>
+      <span style={styles.metaText}>
+        {files.length}/{max} imágenes · JPG, PNG, WEBP o HEIC
+      </span>
+    </div>
   );
 }
 
@@ -615,6 +829,98 @@ function TaskCard({
         )}
       </div>
     </button>
+  );
+}
+
+/* ---------------- Proyectos ---------------- */
+
+const PROJECT_STATUS_COLOR: Record<string, string> = {
+  activo: "#00e5a0",
+  pausado: "#e6b800",
+  completado: "#5aa9ff",
+  archivado: "#666",
+};
+
+function ProyectosSection({
+  projects,
+  selectedProjectId,
+  onSelect,
+}: {
+  projects: Project[];
+  selectedProjectId: string;
+  onSelect: (id: string) => void;
+}) {
+  return (
+    <section style={styles.section}>
+      <div style={styles.sectionHead}>
+        <h2 style={styles.h2}>Proyectos</h2>
+      </div>
+
+      {projects.length === 0 && (
+        <p style={styles.empty}>Aún no tienes proyectos con nosotros.</p>
+      )}
+
+      <div style={styles.cardList}>
+        {projects.map((project) => {
+          const active = project.id === selectedProjectId;
+          const color = PROJECT_STATUS_COLOR[project.status] ?? "#888";
+          return (
+            <button
+              key={project.id}
+              onClick={() => onSelect(project.id)}
+              style={{
+                ...styles.card,
+                textAlign: "left",
+                cursor: "pointer",
+                border: active ? "1px solid #5aa9ff" : styles.card.border,
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  gap: 8,
+                }}
+              >
+                <strong style={{ fontSize: 15 }}>{project.name}</strong>
+                <span
+                  style={{ ...styles.pill, color, borderColor: color + "55" }}
+                >
+                  {PROJECT_STATUS_LABEL[project.status] ?? project.status}
+                </span>
+              </div>
+              {project.description && (
+                <p style={{ ...styles.cardDesc, fontSize: 13 }}>
+                  {project.description}
+                </p>
+              )}
+              <div style={styles.cardMeta}>
+                {project.started_at && (
+                  <span style={styles.metaText}>
+                    Inicio {fmtDueDate(project.started_at)}
+                  </span>
+                )}
+                {project.due_date && (
+                  <span style={styles.metaText}>
+                    Entrega {fmtDueDate(project.due_date)}
+                  </span>
+                )}
+              </div>
+            </button>
+          );
+        })}
+      </div>
+
+      {selectedProjectId && projects.length > 1 && (
+        <button
+          onClick={() => onSelect("")}
+          style={{ ...styles.secondaryBtn, alignSelf: "flex-start" }}
+        >
+          Ver todos los proyectos
+        </button>
+      )}
+    </section>
   );
 }
 
@@ -1040,7 +1346,15 @@ function ReunionesSection({ meetings }: Props) {
 
 /* ---------------- Cuenta ---------------- */
 
-function CuentaSection({ client }: { client: Client }) {
+function CuentaSection({
+  client,
+  contact,
+  contacts,
+}: {
+  client: Client;
+  contact: ClientContact;
+  contacts: ClientContact[];
+}) {
   const router = useRouter();
   const initialName = splitName(client.contact_name || client.name);
   const [firstName, setFirstName] = useState(initialName.firstName);
@@ -1176,7 +1490,172 @@ function CuentaSection({ client }: { client: Client }) {
         )}
       </div>
       {saved && <p style={styles.okText}>Datos actualizados.</p>}
+
+      <ColaboradoresCard contact={contact} contacts={contacts} />
     </section>
+  );
+}
+
+/**
+ * Gestión de contactos (logins) del cliente: quién más puede entrar a este
+ * mismo panel y ver los mismos proyectos. Cualquier contacto puede invitar o
+ * quitar a otro, no solo quien lo creó.
+ */
+function ColaboradoresCard({
+  contact,
+  contacts,
+}: {
+  contact: ClientContact;
+  contacts: ClientContact[];
+}) {
+  const router = useRouter();
+  const [inviting, setInviting] = useState(false);
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [removing, setRemoving] = useState<string | null>(null);
+
+  async function invite(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    setError(null);
+    setNotice(null);
+    try {
+      const res = await fetch("/api/panel/contacts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        if (sesionExpirada(res)) return;
+        setError(data.error ?? "No se pudo invitar.");
+      } else {
+        setInviting(false);
+        setName("");
+        setEmail("");
+        setNotice(
+          data.emailSent
+            ? "Invitación enviada por correo."
+            : "Contacto agregado. Como el correo no se pudo enviar, comparte tú mismo el enlace de registro.",
+        );
+        router.refresh();
+      }
+    } catch {
+      setError("Fallo de red: inténtalo de nuevo.");
+    }
+    setBusy(false);
+  }
+
+  async function remove(id: string) {
+    setRemoving(id);
+    setError(null);
+    try {
+      const res = await fetch(`/api/panel/contacts/${id}`, {
+        method: "DELETE",
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        if (sesionExpirada(res)) return;
+        setError(data.error ?? "No se pudo quitar el contacto.");
+      } else {
+        router.refresh();
+      }
+    } catch {
+      setError("Fallo de red: inténtalo de nuevo.");
+    }
+    setRemoving(null);
+  }
+
+  return (
+    <div style={{ ...styles.card, marginTop: 16 }}>
+      <div style={styles.sectionHead}>
+        <h3 style={styles.h3}>Personas con acceso a este panel</h3>
+        {!inviting && (
+          <button
+            onClick={() => setInviting(true)}
+            style={styles.secondaryBtn}
+          >
+            + Invitar
+          </button>
+        )}
+      </div>
+
+      {contacts.map((c) => (
+        <div key={c.id} style={styles.accountRow}>
+          <span style={styles.accountLabel}>
+            {c.name}
+            {c.id === contact.id && " (tú)"}
+            {!c.accepted_at && " · invitación pendiente"}
+          </span>
+          <span
+            style={{
+              ...styles.accountValue,
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+            }}
+          >
+            {c.email}
+            {c.id !== contact.id && (
+              <button
+                onClick={() => remove(c.id)}
+                disabled={removing === c.id}
+                style={{ ...styles.closeBtn, fontSize: 12 }}
+                aria-label={`Quitar a ${c.name}`}
+              >
+                {removing === c.id ? "…" : "✕"}
+              </button>
+            )}
+          </span>
+        </div>
+      ))}
+
+      {inviting && (
+        <form onSubmit={invite} style={{ ...styles.form, marginTop: 12 }}>
+          <div style={styles.formGrid}>
+            <label style={styles.field}>
+              <span style={styles.fieldLabel}>Nombre</span>
+              <input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+                maxLength={120}
+                style={styles.input}
+              />
+            </label>
+            <label style={styles.field}>
+              <span style={styles.fieldLabel}>Correo</span>
+              <input
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                type="email"
+                style={styles.input}
+              />
+            </label>
+          </div>
+          {error && <p style={styles.formError}>{error}</p>}
+          <div style={styles.formActions}>
+            <button
+              type="button"
+              onClick={() => setInviting(false)}
+              disabled={busy}
+              style={styles.secondaryBtn}
+            >
+              Cancelar
+            </button>
+            <button type="submit" disabled={busy} style={styles.primaryBtn}>
+              {busy ? "Enviando…" : "Enviar invitación"}
+            </button>
+          </div>
+        </form>
+      )}
+      {!inviting && error && <p style={styles.formError}>{error}</p>}
+      {notice && <p style={styles.okText}>{notice}</p>}
+    </div>
   );
 }
 
@@ -1471,6 +1950,68 @@ const styles: Record<string, React.CSSProperties> = {
     objectFit: "cover",
     borderRadius: 8,
     display: "block",
+  },
+  evidenceGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fill, minmax(90px, 1fr))",
+    gap: 8,
+  },
+  evidenceThumbLink: { display: "block" },
+  evidenceThumb: {
+    width: "100%",
+    height: 90,
+    objectFit: "cover",
+    borderRadius: 8,
+    display: "block",
+    border: "1px solid #2a2a2a",
+  },
+  evidencePickerGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fill, minmax(84px, 1fr))",
+    gap: 8,
+  },
+  evidencePreviewTile: {
+    position: "relative",
+    width: "100%",
+    aspectRatio: "1",
+    borderRadius: 10,
+    overflow: "hidden",
+    border: "1px solid #2a2a2a",
+  },
+  evidencePreviewImg: {
+    width: "100%",
+    height: "100%",
+    objectFit: "cover",
+    display: "block",
+  },
+  evidenceRemoveBtn: {
+    position: "absolute",
+    top: 4,
+    right: 4,
+    width: 20,
+    height: 20,
+    borderRadius: "50%",
+    border: "none",
+    background: "rgba(10,10,10,.75)",
+    color: "#fff",
+    fontSize: 11,
+    lineHeight: "20px",
+    padding: 0,
+    cursor: "pointer",
+  },
+  evidenceAddTile: {
+    width: "100%",
+    aspectRatio: "1",
+    borderRadius: 10,
+    border: "1px dashed #333",
+    background: "#0e0e0e",
+    color: "#888",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 2,
+    cursor: "pointer",
   },
   overlay: {
     position: "fixed",

@@ -1,0 +1,5 @@
+[     137ms] [LOG] [Fast Refresh] rebuilding @ https://us-assets.i.posthog.com/static/posthog-recorder.js?v=1.379.0:0
+[     660ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1f56dc._.js:13948
+[     681ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_523921._.js:13662
+[   50169ms] [LOG] [Fast Refresh] rebuilding @ https://us-assets.i.posthog.com/static/posthog-recorder.js?v=1.379.0:0
+[   51920ms] [LOG] [Fast Refresh] rebuilding @ https://us-assets.i.posthog.com/static/posthog-recorder.js?v=1.379.0:0

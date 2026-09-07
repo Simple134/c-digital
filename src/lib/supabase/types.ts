@@ -94,6 +94,10 @@ export interface KanbanCard {
   // Instante en que la tarjeta entró a una columna terminal. Se sella una vez y
   // se limpia si vuelve a salir, para que reabrir una tarea no falsee la métrica.
   completed_at: string | null;
+  // Nota y evidencia que deja el cliente al marcar como completada una tarea
+  // que se le asignó (`assigned_to_client`). Nunca las llena el equipo.
+  client_comment: string | null;
+  client_evidence: { url: string; path: string }[];
   sort_order: number;
   created_at: string;
   updated_at: string;
@@ -124,13 +128,31 @@ export interface Client {
   // (Instagram, número de contrato, contacto secundario…). Mapa plano por
   // CHECK en la base de datos: nada de anidamiento.
   custom_fields: Record<string, string>;
-  // Cuenta de auth del cliente para entrar a /panel. Null = aún no se registra.
-  // Se sella en /panel/registro (solo si su correo ya existe en esta tabla).
+  // Legacy: cuenta de auth del primer contacto del cliente. Los logins reales
+  // viven en `client_contacts` desde que un cliente puede tener varios; esta
+  // columna ya no se escribe, se conserva solo por compatibilidad histórica.
   auth_user_id: string | null;
   // false = archivado. Desaparece de los selectores de factura y de tareas pero
   // conserva su historial, que es justo lo que borrarlo destruiría.
   active: boolean;
   sort_order: number;
+  created_at: string;
+}
+
+/**
+ * Un login del panel del cliente. Varios contactos pueden compartir el mismo
+ * `client_id` y por lo tanto ver los mismos proyectos, facturas y tareas.
+ */
+export interface ClientContact {
+  id: string;
+  client_id: string;
+  // Null = invitado pero aún no completa /panel/registro.
+  auth_user_id: string | null;
+  name: string;
+  email: string;
+  invited_by: string | null;
+  // Null = invitación pendiente.
+  accepted_at: string | null;
   created_at: string;
 }
 

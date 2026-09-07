@@ -1,0 +1,61 @@
+- generic [active] [ref=e1]:
+  - alert [ref=e15]: Panel de cliente
+  - generic [ref=e26]:
+    - navigation "Secciones del panel" [ref=e27]:
+      - generic [ref=e28]:
+        - generic [ref=e29]: Panel de
+        - generic [ref=e30]: Ana Contacto1
+      - button "Dashboard" [ref=e31] [cursor=pointer]:
+        - generic [aria-hidden] [ref=e32]: ◫
+        - text: Dashboard
+      - button "Proyectos" [ref=e33] [cursor=pointer]:
+        - generic [aria-hidden] [ref=e34]: ▣
+        - text: Proyectos
+      - button "Tareas" [ref=e35] [cursor=pointer]:
+        - generic [aria-hidden] [ref=e36]: ☰
+        - text: Tareas
+      - button "Archivos" [ref=e37] [cursor=pointer]:
+        - generic [aria-hidden] [ref=e38]: ▤
+        - text: Archivos
+      - button "Facturación" [ref=e39] [cursor=pointer]:
+        - generic [aria-hidden] [ref=e40]: $
+        - text: Facturación
+      - button "Reuniones" [ref=e41] [cursor=pointer]:
+        - generic [aria-hidden] [ref=e42]: ◷
+        - text: Reuniones
+      - button "Cuenta" [ref=e43] [cursor=pointer]:
+        - generic [aria-hidden] [ref=e44]: ◉
+        - text: Cuenta
+      - button "Cerrar sesión" [ref=e45] [cursor=pointer]:
+        - generic [aria-hidden] [ref=e46]: ⏻
+        - text: Cerrar sesión
+    - main [ref=e47]:
+      - generic [ref=e48]:
+        - generic [ref=e49]: Proyecto
+        - combobox "Proyecto" [ref=e50]:
+          - option "Todos los proyectos"
+          - option "Rediseño de sitio web" [selected]
+          - option "Campaña de lanzamiento"
+      - generic [ref=e51]:
+        - heading "Dashboard" [level=2] [ref=e52]
+        - generic [ref=e53]:
+          - generic [ref=e54]:
+            - generic [ref=e55]: Progreso del proyecto
+            - generic [ref=e56]: 0% y avanzando
+            - generic [ref=e58]: 0 de 0 tareas completadas
+          - generic [ref=e59]:
+            - generic [ref=e60]: Facturado
+            - generic [ref=e61]: —
+            - generic [ref=e62]: Sin facturas emitidas
+          - generic [ref=e63]:
+            - generic [ref=e64]: Resumen de tareas
+            - generic [ref=e65]:
+              - generic [ref=e66]:
+                - generic [ref=e67]: "0"
+                - generic [ref=e68]: Por hacer
+              - generic [ref=e69]:
+                - generic [ref=e70]: "0"
+                - generic [ref=e71]: Haciendo
+              - generic [ref=e72]:
+                - generic [ref=e73]: "0"
+                - generic [ref=e74]: Hechas

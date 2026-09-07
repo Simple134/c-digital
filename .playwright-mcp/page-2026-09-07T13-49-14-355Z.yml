@@ -1,0 +1,21 @@
+- generic [active] [ref=f1e1]:
+  - status [ref=f1e52]:
+    - generic [ref=f1e57]:
+      - text: Static route
+      - button "Hide static indicator" [ref=f1e58] [cursor=pointer]
+  - alert [ref=f1e51]: Agencia de marketing digital y diseño para pymes en RD
+  - main [ref=f1e63]:
+    - generic [ref=f1e64]:
+      - generic [ref=f1e65]:
+        - text: Acceso a tu panel
+        - heading "C Digital" [level=1] [ref=f1e66]
+      - generic [ref=f1e67]:
+        - generic [ref=f1e68]:
+          - generic [ref=f1e69]: Correo
+          - textbox "Correo" [ref=f1e70]:
+            - /placeholder: tu@correo.com
+        - generic [ref=f1e71]:
+          - generic [ref=f1e72]: Contraseña
+          - textbox "Contraseña" [ref=f1e73]:
+            - /placeholder: ••••••••
+        - button "Iniciar sesión" [ref=f1e74] [cursor=pointer]

@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { isTeamMember } from "@/lib/supabase/guards";
 import type {
   Client,
+  ClientContact,
   ClientFile,
   Invoice,
   InvoiceItem,
@@ -28,9 +29,11 @@ const SIGNED_URL_TTL = 60 * 60;
  * Panel del cliente: /panel
  *
  * Protegido por sesión de Supabase (mismo guard que /dashboard). El usuario
- * autenticado se vincula a su fila de `clients` vía `auth_user_id`, sellada en
- * el registro (/panel/registro). Los datos se leen con el service role: el
- * vínculo sesión→cliente ya se validó aquí, igual que en /proyecto/[token].
+ * autenticado se vincula a su fila de `client_contacts` vía `auth_user_id`,
+ * sellada en el registro (/panel/registro); esa fila apunta al `client` que
+ * puede tener varios contactos (logins) compartiendo los mismos proyectos.
+ * Los datos se leen con el service role: el vínculo sesión→contacto→cliente
+ * ya se validó aquí, igual que en /proyecto/[token].
  */
 export default async function ClientPanelPage() {
   const supabase = await createServerSupabase();
@@ -41,16 +44,16 @@ export default async function ClientPanelPage() {
   if (!user) redirect("/login");
 
   const admin = createAdminClient();
-  const { data: clientRow } = await admin
-    .from("clients")
-    .select("*")
+  const { data: contactRow } = await admin
+    .from("client_contacts")
+    .select("*, clients(*)")
     .eq("auth_user_id", user.id)
     .maybeSingle();
 
-  // Sesión válida pero sin cliente vinculado: si es del equipo va a su
+  // Sesión válida pero sin contacto vinculado: si es del equipo va a su
   // dashboard; si no, se le informa (redirigir a /login con sesión
   // activa crearía un loop con el middleware).
-  if (!clientRow) {
+  if (!contactRow) {
     if (await isTeamMember()) redirect("/dashboard");
     return (
       <main
@@ -70,7 +73,11 @@ export default async function ClientPanelPage() {
       </main>
     );
   }
-  const client = clientRow as Client;
+  const { clients: clientData, ...contactData } = contactRow as ClientContact & {
+    clients: Client;
+  };
+  const client = clientData;
+  const contact = contactData as ClientContact;
 
   const [
     { data: columns },
@@ -79,6 +86,7 @@ export default async function ClientPanelPage() {
     { data: projects },
     { data: files },
     { data: meetings },
+    { data: contacts },
   ] = await Promise.all([
     admin
       .from("kanban_columns")
@@ -109,6 +117,11 @@ export default async function ClientPanelPage() {
       .select("*")
       .eq("client_id", client.id)
       .order("created_at", { ascending: false }),
+    admin
+      .from("client_contacts")
+      .select("*")
+      .eq("client_id", client.id)
+      .order("created_at", { ascending: true }),
   ]);
 
   const invoiceRows = (invoices as Invoice[]) ?? [];
@@ -173,6 +186,8 @@ export default async function ClientPanelPage() {
   return (
     <Panel
       client={client}
+      contact={contact}
+      contacts={(contacts as ClientContact[]) ?? []}
       projects={(projects as Project[]) ?? []}
       columns={(columns as KanbanColumn[]) ?? []}
       cards={(cards as KanbanCard[]) ?? []}

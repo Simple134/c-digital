@@ -84,7 +84,7 @@ export async function POST(request: NextRequest) {
   const admin = createAdminClient();
   const { data: client, error: clientError } = await admin
     .from("clients")
-    .select("name, email, auth_user_id, active")
+    .select("name, email, active")
     .eq("id", body.clientId)
     .maybeSingle();
 
@@ -112,7 +112,11 @@ export async function POST(request: NextRequest) {
       recipientName: client.name,
     });
   }
-  if (client.auth_user_id) {
+  const { count: contactCount } = await admin
+    .from("client_contacts")
+    .select("id", { count: "exact", head: true })
+    .eq("client_id", body.clientId);
+  if (contactCount) {
     return NextResponse.json<InviteResult>({
       sent: false,
       reason: `${client.name} ya tiene cuenta en el panel.`,

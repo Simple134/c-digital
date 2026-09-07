@@ -1,0 +1,60 @@
+- generic [active] [ref=f3e1]:
+  - generic [ref=f3e2]:
+    - navigation "Secciones del panel" [ref=f3e3]:
+      - generic [ref=f3e4]:
+        - generic [ref=f3e5]: Panel de
+        - generic [ref=f3e6]: Cliente Prueba2
+      - button "Dashboard" [ref=f3e7] [cursor=pointer]:
+        - generic [aria-hidden] [ref=f3e8]: ◫
+        - text: Dashboard
+      - button "Tareas 1" [ref=f3e9] [cursor=pointer]:
+        - generic [aria-hidden] [ref=f3e10]: ☰
+        - text: Tareas
+        - generic [ref=f3e11]: "1"
+      - button "Archivos" [ref=f3e12] [cursor=pointer]:
+        - generic [aria-hidden] [ref=f3e13]: ▤
+        - text: Archivos
+      - button "Facturación" [ref=f3e14] [cursor=pointer]:
+        - generic [aria-hidden] [ref=f3e15]: $
+        - text: Facturación
+      - button "Reuniones" [ref=f3e16] [cursor=pointer]:
+        - generic [aria-hidden] [ref=f3e17]: ◷
+        - text: Reuniones
+      - button "Cuenta" [ref=f3e18] [cursor=pointer]:
+        - generic [aria-hidden] [ref=f3e19]: ◉
+        - text: Cuenta
+      - button "Cerrar sesión" [ref=f3e20] [cursor=pointer]:
+        - generic [aria-hidden] [ref=f3e21]: ⏻
+        - text: Cerrar sesión
+    - main [ref=f3e22]:
+      - generic [ref=f3e23]:
+        - heading "Dashboard" [level=2] [ref=f3e24]
+        - generic [ref=f3e25]:
+          - generic [ref=f3e26]:
+            - generic [ref=f3e27]: Progreso del proyecto
+            - generic [ref=f3e28]: 0% y avanzando
+            - generic [ref=f3e30]: 0 de 1 tareas completadas
+          - generic [ref=f3e31]:
+            - generic [ref=f3e32]: Facturado
+            - generic [ref=f3e33]: —
+            - generic [ref=f3e34]: Sin facturas emitidas
+          - generic [ref=f3e35]:
+            - generic [ref=f3e36]: Resumen de tareas
+            - generic [ref=f3e37]:
+              - generic [ref=f3e38]:
+                - generic [ref=f3e39]: "0"
+                - generic [ref=f3e40]: Por hacer
+              - generic [ref=f3e41]:
+                - generic [ref=f3e42]: "1"
+                - generic [ref=f3e43]: Haciendo
+              - generic [ref=f3e44]:
+                - generic [ref=f3e45]: "0"
+                - generic [ref=f3e46]: Hechas
+        - heading "Te toca a ti" [level=3] [ref=f3e47]
+        - 'button "Pendiente de ti QA2: subir varias evidencias Prueba de múltiples imágenes de evidencia." [ref=f3e49] [cursor=pointer]':
+          - generic [ref=f3e50]: Pendiente de ti
+          - generic [ref=f3e51]:
+            - generic [aria-hidden] [ref=f3e52]: ○
+            - text: "QA2: subir varias evidencias"
+          - paragraph [ref=f3e53]: Prueba de múltiples imágenes de evidencia.
+  - alert [ref=f3e54]

@@ -1,0 +1,21 @@
+- generic [active] [ref=e1]:
+  - main [ref=e3]:
+    - generic [ref=e4]:
+      - generic [ref=e5]:
+        - text: Acceso a tu panel
+        - heading "C Digital" [level=1] [ref=e6]
+      - generic [ref=e7]:
+        - generic [ref=e8]:
+          - generic [ref=e9]: Correo
+          - textbox "Correo" [ref=e10]:
+            - /placeholder: tu@correo.com
+        - generic [ref=e11]:
+          - generic [ref=e12]: Contraseña
+          - textbox "Contraseña" [ref=e13]:
+            - /placeholder: ••••••••
+        - button "Iniciar sesión" [ref=e14] [cursor=pointer]
+  - status [ref=e15]:
+    - generic [ref=e20]:
+      - text: Static route
+      - button "Hide static indicator" [ref=e21] [cursor=pointer]
+  - alert [ref=e25]

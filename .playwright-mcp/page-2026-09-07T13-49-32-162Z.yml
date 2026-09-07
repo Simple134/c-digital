@@ -1,0 +1,61 @@
+- generic [active] [ref=f1e1]:
+  - alert [ref=f1e51]: Panel de cliente
+  - generic [ref=f1e75]:
+    - navigation "Secciones del panel" [ref=f1e76]:
+      - generic [ref=f1e77]:
+        - generic [ref=f1e78]: Panel de
+        - generic [ref=f1e79]: Ana Contacto1
+      - button "Dashboard" [ref=f1e80] [cursor=pointer]:
+        - generic [aria-hidden] [ref=f1e81]: ◫
+        - text: Dashboard
+      - button "Proyectos" [ref=f1e82] [cursor=pointer]:
+        - generic [aria-hidden] [ref=f1e83]: ▣
+        - text: Proyectos
+      - button "Tareas" [ref=f1e84] [cursor=pointer]:
+        - generic [aria-hidden] [ref=f1e85]: ☰
+        - text: Tareas
+      - button "Archivos" [ref=f1e86] [cursor=pointer]:
+        - generic [aria-hidden] [ref=f1e87]: ▤
+        - text: Archivos
+      - button "Facturación" [ref=f1e88] [cursor=pointer]:
+        - generic [aria-hidden] [ref=f1e89]: $
+        - text: Facturación
+      - button "Reuniones" [ref=f1e90] [cursor=pointer]:
+        - generic [aria-hidden] [ref=f1e91]: ◷
+        - text: Reuniones
+      - button "Cuenta" [ref=f1e92] [cursor=pointer]:
+        - generic [aria-hidden] [ref=f1e93]: ◉
+        - text: Cuenta
+      - button "Cerrar sesión" [ref=f1e94] [cursor=pointer]:
+        - generic [aria-hidden] [ref=f1e95]: ⏻
+        - text: Cerrar sesión
+    - main [ref=f1e96]:
+      - generic [ref=f1e97]:
+        - generic [ref=f1e98]: Proyecto
+        - combobox "Proyecto" [ref=f1e99]:
+          - option "Todos los proyectos"
+          - option "Rediseño de sitio web" [selected]
+          - option "Campaña de lanzamiento"
+      - generic [ref=f1e100]:
+        - heading "Dashboard" [level=2] [ref=f1e101]
+        - generic [ref=f1e102]:
+          - generic [ref=f1e103]:
+            - generic [ref=f1e104]: Progreso del proyecto
+            - generic [ref=f1e105]: 0% y avanzando
+            - generic [ref=f1e107]: 0 de 0 tareas completadas
+          - generic [ref=f1e108]:
+            - generic [ref=f1e109]: Facturado
+            - generic [ref=f1e110]: —
+            - generic [ref=f1e111]: Sin facturas emitidas
+          - generic [ref=f1e112]:
+            - generic [ref=f1e113]: Resumen de tareas
+            - generic [ref=f1e114]:
+              - generic [ref=f1e115]:
+                - generic [ref=f1e116]: "0"
+                - generic [ref=f1e117]: Por hacer
+              - generic [ref=f1e118]:
+                - generic [ref=f1e119]: "0"
+                - generic [ref=f1e120]: Haciendo
+              - generic [ref=f1e121]:
+                - generic [ref=f1e122]: "0"
+                - generic [ref=f1e123]: Hechas

@@ -1,0 +1,54 @@
+- generic [ref=e1]:
+  - alert [ref=e15]: Panel de cliente
+  - generic [ref=e26]:
+    - navigation "Secciones del panel" [ref=e27]:
+      - generic [ref=e28]:
+        - generic [ref=e29]: Panel de
+        - generic [ref=e30]: Ana Contacto1
+      - button "Dashboard" [ref=e31] [cursor=pointer]:
+        - generic [aria-hidden] [ref=e32]: ◫
+        - text: Dashboard
+      - button "Proyectos" [active] [ref=e33] [cursor=pointer]:
+        - generic [aria-hidden] [ref=e34]: ▣
+        - text: Proyectos
+      - button "Tareas" [ref=e35] [cursor=pointer]:
+        - generic [aria-hidden] [ref=e36]: ☰
+        - text: Tareas
+      - button "Archivos" [ref=e37] [cursor=pointer]:
+        - generic [aria-hidden] [ref=e38]: ▤
+        - text: Archivos
+      - button "Facturación" [ref=e39] [cursor=pointer]:
+        - generic [aria-hidden] [ref=e40]: $
+        - text: Facturación
+      - button "Reuniones" [ref=e41] [cursor=pointer]:
+        - generic [aria-hidden] [ref=e42]: ◷
+        - text: Reuniones
+      - button "Cuenta" [ref=e43] [cursor=pointer]:
+        - generic [aria-hidden] [ref=e44]: ◉
+        - text: Cuenta
+      - button "Cerrar sesión" [ref=e45] [cursor=pointer]:
+        - generic [aria-hidden] [ref=e46]: ⏻
+        - text: Cerrar sesión
+    - main [ref=e47]:
+      - generic [ref=e48]:
+        - generic [ref=e49]: Proyecto
+        - combobox "Proyecto" [ref=e50]:
+          - option "Todos los proyectos"
+          - option "Rediseño de sitio web" [selected]
+          - option "Campaña de lanzamiento"
+      - generic [ref=e75]:
+        - heading "Proyectos" [level=2] [ref=e77]
+        - generic [ref=e78]:
+          - button "Rediseño de sitio web Activo Landing page y blog nuevos. Inicio 18 ago de 2026" [ref=e79] [cursor=pointer]:
+            - generic [ref=e80]:
+              - strong [ref=e81]: Rediseño de sitio web
+              - generic [ref=e82]: Activo
+            - paragraph [ref=e83]: Landing page y blog nuevos.
+            - generic [ref=e84]: Inicio 18 ago de 2026
+          - button "Campaña de lanzamiento Pausado Ads + contenido para el lanzamiento del producto. Inicio 2 sept de 2026" [ref=e86] [cursor=pointer]:
+            - generic [ref=e87]:
+              - strong [ref=e88]: Campaña de lanzamiento
+              - generic [ref=e89]: Pausado
+            - paragraph [ref=e90]: Ads + contenido para el lanzamiento del producto.
+            - generic [ref=e91]: Inicio 2 sept de 2026
+        - button "Ver todos los proyectos" [ref=e93] [cursor=pointer]

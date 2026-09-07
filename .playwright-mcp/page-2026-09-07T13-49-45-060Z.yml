@@ -1,0 +1,67 @@
+- generic [ref=f1e1]:
+  - alert [ref=f1e51]: Panel de cliente
+  - generic [ref=f1e75]:
+    - navigation "Secciones del panel" [ref=f1e76]:
+      - generic [ref=f1e77]:
+        - generic [ref=f1e78]: Panel de
+        - generic [ref=f1e79]: Ana Contacto1
+      - button "Dashboard" [ref=f1e80] [cursor=pointer]:
+        - generic [aria-hidden] [ref=f1e81]: ◫
+        - text: Dashboard
+      - button "Proyectos" [ref=f1e82] [cursor=pointer]:
+        - generic [aria-hidden] [ref=f1e83]: ▣
+        - text: Proyectos
+      - button "Tareas" [ref=f1e84] [cursor=pointer]:
+        - generic [aria-hidden] [ref=f1e85]: ☰
+        - text: Tareas
+      - button "Archivos" [ref=f1e86] [cursor=pointer]:
+        - generic [aria-hidden] [ref=f1e87]: ▤
+        - text: Archivos
+      - button "Facturación" [ref=f1e88] [cursor=pointer]:
+        - generic [aria-hidden] [ref=f1e89]: $
+        - text: Facturación
+      - button "Reuniones" [ref=f1e90] [cursor=pointer]:
+        - generic [aria-hidden] [ref=f1e91]: ◷
+        - text: Reuniones
+      - button "Cuenta" [active] [ref=f1e92] [cursor=pointer]:
+        - generic [aria-hidden] [ref=f1e93]: ◉
+        - text: Cuenta
+      - button "Cerrar sesión" [ref=f1e94] [cursor=pointer]:
+        - generic [aria-hidden] [ref=f1e95]: ⏻
+        - text: Cerrar sesión
+    - main [ref=f1e96]:
+      - generic [ref=f1e97]:
+        - generic [ref=f1e98]: Proyecto
+        - combobox "Proyecto" [ref=f1e99]:
+          - option "Todos los proyectos"
+          - option "Rediseño de sitio web" [selected]
+          - option "Campaña de lanzamiento"
+      - generic [ref=f1e124]:
+        - generic [ref=f1e125]:
+          - heading "Cuenta" [level=2] [ref=f1e126]
+          - button "Editar datos" [ref=f1e127] [cursor=pointer]
+        - generic [ref=f1e128]:
+          - generic [ref=f1e129]:
+            - generic [ref=f1e130]: Nombre
+            - generic [ref=f1e131]: Ana
+          - generic [ref=f1e132]:
+            - generic [ref=f1e133]: Apellido
+            - generic [ref=f1e134]: Contacto1
+          - generic [ref=f1e135]:
+            - generic [ref=f1e136]: Correo
+            - generic [ref=f1e137]: ana.contacto1.qa@example.com
+          - generic [ref=f1e138]:
+            - generic [ref=f1e139]: Teléfono
+            - generic [ref=f1e140]: "8095551111"
+        - generic [ref=f1e141]:
+          - generic [ref=f1e142]:
+            - heading "Personas con acceso a este panel" [level=3] [ref=f1e143]
+            - button "+ Invitar" [ref=f1e144] [cursor=pointer]
+          - generic [ref=f1e145]:
+            - generic [ref=f1e146]: Ana Contacto1
+            - generic [ref=f1e147]:
+              - text: ana.contacto1.qa@example.com
+              - button "Quitar a Ana Contacto1" [ref=f1e148] [cursor=pointer]: ✕
+          - generic [ref=f1e149]:
+            - generic [ref=f1e150]: Bruno Colega (tú)
+            - generic [ref=f1e151]: bruno.colega.qa@example.com

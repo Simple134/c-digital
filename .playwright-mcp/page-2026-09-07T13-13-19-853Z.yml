@@ -1,0 +1,60 @@
+- generic [active] [ref=e1]:
+  - alert [ref=e25]: Panel de cliente
+  - generic [ref=e26]:
+    - navigation "Secciones del panel" [ref=e27]:
+      - generic [ref=e28]:
+        - generic [ref=e29]: Panel de
+        - generic [ref=e30]: Cliente Prueba
+      - button "Dashboard" [ref=e31] [cursor=pointer]:
+        - generic [aria-hidden] [ref=e32]: ◫
+        - text: Dashboard
+      - button "Tareas 1" [ref=e33] [cursor=pointer]:
+        - generic [aria-hidden] [ref=e34]: ☰
+        - text: Tareas
+        - generic [ref=e35]: "1"
+      - button "Archivos" [ref=e36] [cursor=pointer]:
+        - generic [aria-hidden] [ref=e37]: ▤
+        - text: Archivos
+      - button "Facturación" [ref=e38] [cursor=pointer]:
+        - generic [aria-hidden] [ref=e39]: $
+        - text: Facturación
+      - button "Reuniones" [ref=e40] [cursor=pointer]:
+        - generic [aria-hidden] [ref=e41]: ◷
+        - text: Reuniones
+      - button "Cuenta" [ref=e42] [cursor=pointer]:
+        - generic [aria-hidden] [ref=e43]: ◉
+        - text: Cuenta
+      - button "Cerrar sesión" [ref=e44] [cursor=pointer]:
+        - generic [aria-hidden] [ref=e45]: ⏻
+        - text: Cerrar sesión
+    - main [ref=e46]:
+      - generic [ref=e47]:
+        - heading "Dashboard" [level=2] [ref=e48]
+        - generic [ref=e49]:
+          - generic [ref=e50]:
+            - generic [ref=e51]: Progreso del proyecto
+            - generic [ref=e52]: 0% y avanzando
+            - generic [ref=e54]: 0 de 1 tareas completadas
+          - generic [ref=e55]:
+            - generic [ref=e56]: Facturado
+            - generic [ref=e57]: —
+            - generic [ref=e58]: Sin facturas emitidas
+          - generic [ref=e59]:
+            - generic [ref=e60]: Resumen de tareas
+            - generic [ref=e61]:
+              - generic [ref=e62]:
+                - generic [ref=e63]: "0"
+                - generic [ref=e64]: Por hacer
+              - generic [ref=e65]:
+                - generic [ref=e66]: "1"
+                - generic [ref=e67]: Haciendo
+              - generic [ref=e68]:
+                - generic [ref=e69]: "0"
+                - generic [ref=e70]: Hechas
+        - heading "Te toca a ti" [level=3] [ref=e71]
+        - 'button "Pendiente de ti QA: revisar y aprobar el nuevo banner Adjunta captura de tu WhatsApp Business con el mensaje enviado." [ref=e73] [cursor=pointer]':
+          - generic [ref=e74]: Pendiente de ti
+          - generic [ref=e75]:
+            - generic [aria-hidden] [ref=e76]: ○
+            - text: "QA: revisar y aprobar el nuevo banner"
+          - paragraph [ref=e77]: Adjunta captura de tu WhatsApp Business con el mensaje enviado.

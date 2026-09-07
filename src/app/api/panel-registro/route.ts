@@ -10,9 +10,14 @@ interface RegistroPayload {
   passwordConfirm: string;
 }
 
-// Registro de clientes para /panel. Soporta dos entradas:
-// - invitación: el correo ya existe en `clients` y solo se vincula la cuenta;
-// - enlace público: se crea una ficha mínima del cliente y su usuario Auth.
+// Registro de contactos para /panel. Un cliente puede tener varios contactos
+// (logins) compartiendo los mismos proyectos; este endpoint resuelve tres
+// entradas distintas para el mismo formulario:
+// - invitación de un colega (el correo ya existe en `client_contacts` sin
+//   auth_user_id, creada desde /api/panel/contacts): solo se vincula la cuenta;
+// - invitación del equipo (el correo existe en `clients` pero aún no tiene
+//   ningún contacto): se crea su primer contacto;
+// - enlace público: no existe en ningún lado, se crea cliente + contacto.
 export async function POST(request: NextRequest) {
   let body: RegistroPayload;
   try {
@@ -48,30 +53,61 @@ export async function POST(request: NextRequest) {
 
   const admin = createAdminClient();
 
-  const { data: client, error: clientError } = await admin
-    .from("clients")
-    .select("id, auth_user_id, active")
+  const { data: existingContact, error: contactError } = await admin
+    .from("client_contacts")
+    .select("id, client_id, auth_user_id")
     .ilike("email", email)
     .maybeSingle();
 
-  if (clientError) {
-    return NextResponse.json({ error: clientError.message }, { status: 500 });
+  if (contactError) {
+    return NextResponse.json({ error: contactError.message }, { status: 500 });
   }
-  if (client && !client.active) {
-    return NextResponse.json(
-      { error: "Este correo no está autorizado. Contáctanos para activarlo." },
-      { status: 403 },
-    );
-  }
-  if (client?.auth_user_id) {
+  if (existingContact?.auth_user_id) {
     return NextResponse.json(
       { error: "Este correo ya tiene una cuenta. Inicia sesión." },
       { status: 409 },
     );
   }
+  if (existingContact) {
+    const { data: ownerClient } = await admin
+      .from("clients")
+      .select("active")
+      .eq("id", existingContact.client_id)
+      .maybeSingle();
+    if (ownerClient && !ownerClient.active) {
+      return NextResponse.json(
+        {
+          error:
+            "Este correo no está autorizado. Contáctanos para activarlo.",
+        },
+        { status: 403 },
+      );
+    }
+  }
 
-  let clientId = client?.id ?? null;
+  let clientId = existingContact?.client_id ?? null;
+  let contactId = existingContact?.id ?? null;
   let fichaCreada = false;
+
+  // Sin contacto todavía: puede ser un cliente que el equipo dio de alta con
+  // correo pero sin invitar aún, o un registro público de cero.
+  if (!clientId) {
+    const { data: legacyClient } = await admin
+      .from("clients")
+      .select("id, active")
+      .ilike("email", email)
+      .maybeSingle();
+
+    if (legacyClient && !legacyClient.active) {
+      return NextResponse.json(
+        {
+          error: "Este correo no está autorizado. Contáctanos para activarlo.",
+        },
+        { status: 403 },
+      );
+    }
+    clientId = legacyClient?.id ?? null;
+  }
 
   if (!clientId) {
     const { data: last } = await admin
@@ -105,12 +141,12 @@ export async function POST(request: NextRequest) {
     fichaCreada = true;
   }
 
-  // El alta son dos escrituras en sistemas distintos (Auth y Postgres) y no hay
-  // transacción que las cubra. Si la segunda falla, la cuenta queda huérfana:
-  // el cliente puede entrar pero no es nadie para el panel ("no autorizado" en
-  // todo) y tampoco puede reintentar, porque su correo ya existe en Auth. De ahí
-  // que aquí se adopte una cuenta huérfana previa y se deshaga la creación si el
-  // vínculo no llega a grabarse.
+  // El alta son varias escrituras en sistemas distintos (Auth y Postgres) y no
+  // hay transacción que las cubra. Si una posterior falla, la cuenta queda
+  // huérfana: la persona puede entrar pero no es nadie para el panel ("no
+  // autorizado" en todo) y tampoco puede reintentar, porque su correo ya
+  // existe en Auth. De ahí que aquí se adopte una cuenta huérfana previa y se
+  // deshaga lo creado si el vínculo no llega a grabarse.
   let userId: string | null = null;
   let cuentaAdoptada = false;
 
@@ -133,7 +169,8 @@ export async function POST(request: NextRequest) {
     }
 
     // En invitaciones puede existir una cuenta huérfana de un intento anterior.
-    // Se adopta porque el correo ya estaba autorizado por el equipo.
+    // Se adopta porque el correo ya estaba autorizado (por el equipo o por un
+    // colega suyo).
     const huerfana = await buscarUsuarioPorCorreo(admin, email);
     if (!huerfana) {
       return NextResponse.json(
@@ -152,17 +189,24 @@ export async function POST(request: NextRequest) {
     cuentaAdoptada = true;
   }
 
-  const { error: linkError } = await admin
-    .from("clients")
-    .update({
-      auth_user_id: userId,
-      contact_name: fullName,
-      phone,
-      email,
-    })
-    .eq("id", clientId);
+  const contactUpsert = contactId
+    ? await admin
+        .from("client_contacts")
+        .update({ auth_user_id: userId, name: fullName, accepted_at: new Date().toISOString() })
+        .eq("id", contactId)
+    : await admin
+        .from("client_contacts")
+        .insert({
+          client_id: clientId,
+          auth_user_id: userId,
+          name: fullName,
+          email,
+          accepted_at: new Date().toISOString(),
+        })
+        .select("id")
+        .single();
 
-  if (linkError) {
+  if (contactUpsert.error) {
     // Sin vínculo la cuenta no sirve para nada y bloquearía el próximo intento;
     // se deshace la creación. Una cuenta adoptada no se borra: no la creamos
     // nosotros y puede tener historia.
@@ -178,7 +222,13 @@ export async function POST(request: NextRequest) {
     if (fichaCreada) {
       await admin.from("clients").delete().eq("id", clientId);
     }
-    return NextResponse.json({ error: linkError.message }, { status: 500 });
+    return NextResponse.json(
+      { error: contactUpsert.error.message },
+      { status: 500 },
+    );
+  }
+  if (!contactId && "data" in contactUpsert && contactUpsert.data) {
+    contactId = contactUpsert.data.id;
   }
 
   return NextResponse.json({ ok: true });

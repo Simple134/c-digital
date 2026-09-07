@@ -180,6 +180,12 @@ export default function Clientes({
   const [receipts, setReceipts] = useState<InvoiceReceipt[]>([]);
   const [meetings, setMeetings] = useState<MeetingRequest[]>([]);
   const [proposals, setProposals] = useState<Proposal[]>([]);
+  // Clientes con al menos un contacto registrado (client_contacts.auth_user_id
+  // no nulo). `clients.auth_user_id` quedó legacy desde que hay varios logins
+  // por cliente.
+  const [registeredClientIds, setRegisteredClientIds] = useState<Set<string>>(
+    new Set(),
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
@@ -202,8 +208,17 @@ export default function Clientes({
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
-    const [cli, inv, kanban, projectRows, cf, receiptRows, meetingRows, props] =
-      await Promise.all([
+    const [
+      cli,
+      inv,
+      kanban,
+      projectRows,
+      cf,
+      receiptRows,
+      meetingRows,
+      props,
+      contactRows,
+    ] = await Promise.all([
         supabase.from("clients").select("*").order("name"),
         supabase
           .from("invoices")
@@ -231,6 +246,7 @@ export default function Clientes({
           .from("proposals")
           .select("*")
           .order("created_at", { ascending: false }),
+        supabase.from("client_contacts").select("client_id, auth_user_id"),
       ]);
     if (
       cli.error ||
@@ -240,7 +256,8 @@ export default function Clientes({
       cf.error ||
       receiptRows.error ||
       meetingRows.error ||
-      props.error
+      props.error ||
+      contactRows.error
     ) {
       setError(
         (
@@ -251,7 +268,8 @@ export default function Clientes({
           cf.error ??
           receiptRows.error ??
           meetingRows.error ??
-          props.error
+          props.error ??
+          contactRows.error
         )?.message ?? "Error al cargar",
       );
       setLoading(false);
@@ -265,6 +283,16 @@ export default function Clientes({
     setReceipts((receiptRows.data as InvoiceReceipt[]) ?? []);
     setMeetings((meetingRows.data as MeetingRequest[]) ?? []);
     setProposals((props.data as Proposal[]) ?? []);
+    setRegisteredClientIds(
+      new Set(
+        (
+          (contactRows.data as { client_id: string; auth_user_id: string | null }[]) ??
+          []
+        )
+          .filter((c) => c.auth_user_id)
+          .map((c) => c.client_id),
+      ),
+    );
     setLoading(false);
   }, [supabase]);
 
@@ -504,6 +532,7 @@ export default function Clientes({
         {error && <p style={s.errorBox}>{error}</p>}
         <ClientDetail
           client={selected}
+          registeredClientIds={registeredClientIds}
           projects={projects.filter((p) => p.client_id === selected.id)}
           invoices={invoices.filter((i) => i.client_id === selected.id)}
           cards={cards.filter((c) => c.client_id === selected.id)}
@@ -688,7 +717,7 @@ export default function Clientes({
                     alignItems: isMobile ? "flex-start" : "flex-end",
                   }}
                 >
-                  {c.auth_user_id ? (
+                  {registeredClientIds.has(c.id) ? (
                     <span
                       style={{
                         ...s.tag,
@@ -799,6 +828,7 @@ function IconRestore() {
 
 function ClientDetail({
   client,
+  registeredClientIds,
   projects,
   invoices,
   cards,
@@ -822,6 +852,7 @@ function ClientDetail({
   onOpenTask,
 }: {
   client: Client;
+  registeredClientIds: Set<string>;
   projects: Project[];
   invoices: ClientInvoice[];
   cards: KanbanCard[];
@@ -973,7 +1004,7 @@ function ClientDetail({
           {client.active === false && (
             <span style={s.archivedTag}>archivado</span>
           )}
-          {client.auth_user_id ? (
+          {registeredClientIds.has(client.id) ? (
             <span
               style={{ ...s.tag, color: "#00e5a0", borderColor: "#1f5c48" }}
             >
@@ -1111,7 +1142,7 @@ function ClientDetail({
                     : `Recordar pendientes (${waitingOnClient.length})`}
                 </button>
               )}
-              {!client.auth_user_id && client.email && (
+              {!registeredClientIds.has(client.id) && client.email && (
                 <button
                   onClick={onInvite}
                   disabled={sending}

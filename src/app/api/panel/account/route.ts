@@ -46,9 +46,11 @@ export async function PATCH(request: NextRequest) {
     );
   }
 
+  // `client.email` es el correo de la empresa (facturación, avisos), no el
+  // login de quien edita: desde que hay varios contactos por cliente, cada
+  // uno cambia su propio correo de acceso en Auth por su cuenta, no aquí.
   const admin = createAdminClient();
   const currentEmail = client.email?.trim().toLowerCase() ?? "";
-  let authEmailUpdated = false;
 
   if (email !== currentEmail) {
     const { data: existingClient, error: existingError } = await admin
@@ -71,21 +73,6 @@ export async function PATCH(request: NextRequest) {
         { status: 409 },
       );
     }
-
-    if (client.auth_user_id) {
-      const { error: authError } = await admin.auth.admin.updateUserById(
-        client.auth_user_id,
-        { email, email_confirm: true },
-      );
-      if (authError) {
-        console.error("[panel/account] Error actualizando Auth:", authError);
-        return NextResponse.json(
-          { error: "No se pudo actualizar el correo de acceso." },
-          { status: 500 },
-        );
-      }
-      authEmailUpdated = true;
-    }
   }
 
   const { error: updateError } = await admin
@@ -96,23 +83,10 @@ export async function PATCH(request: NextRequest) {
       phone,
       email,
     })
-    .eq("id", client.id)
-    .eq("auth_user_id", client.auth_user_id);
+    .eq("id", client.id);
 
   if (updateError) {
     console.error("[panel/account] Error actualizando cliente:", updateError);
-    if (authEmailUpdated && client.auth_user_id && currentEmail) {
-      const { error: rollbackError } = await admin.auth.admin.updateUserById(
-        client.auth_user_id,
-        { email: currentEmail, email_confirm: true },
-      );
-      if (rollbackError) {
-        console.error(
-          "[panel/account] No se pudo revertir el correo de Auth:",
-          rollbackError,
-        );
-      }
-    }
     return NextResponse.json(
       { error: "No se pudieron guardar los cambios." },
       { status: 500 },
