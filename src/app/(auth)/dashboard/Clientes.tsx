@@ -15,7 +15,6 @@ import {
   STATUS_COLOR,
   STATUS_LABEL,
 } from "@/lib/invoices";
-import { siteOrigin } from "@/lib/site";
 import type { createClient } from "@/lib/supabase/client";
 import type {
   Client,
@@ -192,14 +191,7 @@ export default function Clientes({
   const [showArchived, setShowArchived] = useState(false);
   // `"new"` = ficha en blanco; un id = editando ese cliente.
   const [editing, setEditing] = useState<Client | "new" | null>(null);
-  const [copied, setCopied] = useState(false);
   const [registerLinkCopied, setRegisterLinkCopied] = useState(false);
-  // Resultado del último recordatorio. `ok` separa el envío del fallo: pintar
-  // los dos igual haría que un "no se pudo enviar" se leyera como enviado.
-  const [notice, setNotice] = useState<{ text: string; ok: boolean } | null>(
-    null,
-  );
-  const [sending, setSending] = useState(false);
   const isMobile = useIsMobile();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -443,72 +435,10 @@ export default function Clientes({
 
   function openClient(id: string) {
     router.push(`/dashboard?view=clientes&client=${id}`);
-    setNotice(null);
   }
 
   function closeClient() {
     router.push("/dashboard?view=clientes");
-    setNotice(null);
-  }
-
-  async function sendPanelInvite(client: Client) {
-    setSending(true);
-    setNotice(null);
-    try {
-      const res = await fetch("/api/panel-invite", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ clientId: client.id }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setNotice({ text: data.error ?? "No se pudo enviar.", ok: false });
-      } else if (data.sent) {
-        setNotice({
-          text: `Invitación al panel enviada a ${client.name}.`,
-          ok: true,
-        });
-      } else {
-        setNotice({ text: data.reason ?? "No se envió.", ok: false });
-      }
-    } catch {
-      setNotice({ text: "Fallo de red: el correo no salió.", ok: false });
-    }
-    setSending(false);
-  }
-
-  async function sendReminder(client: Client) {
-    setSending(true);
-    setNotice(null);
-    try {
-      const res = await fetch("/api/client-reminder", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ clientId: client.id }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setNotice({ text: data.error ?? "No se pudo enviar.", ok: false });
-      } else if (data.sent) {
-        setNotice({
-          text: `Recordatorio enviado a ${client.name} con ${data.taskCount} tarea(s).`,
-          ok: true,
-        });
-      } else {
-        setNotice({ text: data.reason ?? "No se envió.", ok: false });
-      }
-    } catch {
-      setNotice({ text: "Fallo de red: el correo no salió.", ok: false });
-    }
-    setSending(false);
-  }
-
-  function copyPublicLink(client: Client) {
-    const url = `${siteOrigin()}/proyecto/${client.public_token}`;
-    navigator.clipboard.writeText(url).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    });
   }
 
   function copyPanelRegisterLink() {
@@ -541,18 +471,12 @@ export default function Clientes({
           meetings={meetings.filter((m) => m.client_id === selected.id)}
           proposals={proposals.filter((p) => p.client_id === selected.id)}
           onFilesChanged={load}
-          copied={copied}
-          notice={notice}
-          sending={sending}
           onBack={closeClient}
           onEdit={() => setEditing(selected)}
           onArchive={() => archive(selected)}
           onDelete={() => remove(selected)}
-          onCopyLink={() => copyPublicLink(selected)}
           onCreateInvoice={() => onCreateInvoice(selected.id)}
           onAssignTask={() => onAssignTask(selected.id)}
-          onRemind={() => sendReminder(selected)}
-          onInvite={() => sendPanelInvite(selected)}
           onOpenTask={(cardId) => onOpenTask(selected.id, cardId)}
         />
 
@@ -837,18 +761,12 @@ function ClientDetail({
   meetings,
   proposals,
   onFilesChanged,
-  copied,
-  notice,
-  sending,
   onBack,
   onEdit,
   onArchive,
   onDelete,
-  onCopyLink,
   onCreateInvoice,
   onAssignTask,
-  onRemind,
-  onInvite,
   onOpenTask,
 }: {
   client: Client;
@@ -861,24 +779,16 @@ function ClientDetail({
   meetings: MeetingRequest[];
   proposals: Proposal[];
   onFilesChanged: () => void;
-  copied: boolean;
-  notice: { text: string; ok: boolean } | null;
-  sending: boolean;
   onBack: () => void;
   onEdit: () => void;
   onArchive: () => void;
   onDelete: () => void;
-  onCopyLink: () => void;
   onCreateInvoice: () => void;
   onAssignTask: () => void;
-  onRemind: () => void;
-  onInvite: () => void;
   onOpenTask: (cardId: string) => void;
 }) {
   const isMobile = useIsMobile();
   const openCards = cards.filter((c) => !c.completed_at);
-  // Las que el recordatorio incluiría: solo lo que espera al cliente.
-  const waitingOnClient = openCards.filter((c) => c.assigned_to_client);
   const custom = Object.entries(client.custom_fields ?? {});
   const allPayments = invoices.flatMap((inv) =>
     inv.invoice_payments.map((payment) => ({ invoice: inv, payment })),
@@ -1058,8 +968,6 @@ function ClientDetail({
         </div>
       </div>
 
-      {notice && <p style={notice.ok ? s.okBox : s.warnBox}>{notice.text}</p>}
-
       <div
         style={{
           ...s.detailWorkspace,
@@ -1128,34 +1036,6 @@ function ClientDetail({
             </dl>
           </section>
 
-          <section style={s.sectionCard}>
-            <h3 style={s.h3}>Acciones</h3>
-            <div style={s.actionStack}>
-              {waitingOnClient.length > 0 && client.email && (
-                <button
-                  onClick={onRemind}
-                  disabled={sending}
-                  style={{ ...s.ghostBtn, opacity: sending ? 0.45 : 1 }}
-                >
-                  {sending
-                    ? "Enviando..."
-                    : `Recordar pendientes (${waitingOnClient.length})`}
-                </button>
-              )}
-              {!registeredClientIds.has(client.id) && client.email && (
-                <button
-                  onClick={onInvite}
-                  disabled={sending}
-                  style={{ ...s.ghostBtn, opacity: sending ? 0.45 : 1 }}
-                >
-                  {sending ? "Enviando..." : "Invitar al panel"}
-                </button>
-              )}
-              <button onClick={onCopyLink} style={s.ghostBtn}>
-                {copied ? "Link copiado" : "Copiar link del tablero"}
-              </button>
-            </div>
-          </section>
 
           {client.notes && (
             <section style={s.sectionCard}>

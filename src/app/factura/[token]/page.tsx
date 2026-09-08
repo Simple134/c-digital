@@ -17,7 +17,7 @@ import type {
  * único que abre la puerta, y solo a esta factura.
  */
 
-// El estado de la factura cambia con cada abono: no cachear.
+// El estado de la factura cambia con cada pago: no cachear.
 export const dynamic = "force-dynamic";
 
 async function loadInvoice(token: string) {

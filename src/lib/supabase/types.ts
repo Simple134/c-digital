@@ -358,7 +358,7 @@ export interface InvoiceItem {
   sort_order: number;
 }
 
-// Un abono. Varios por factura: así el PDF lista método y fecha de cada pago y
+// Un pago. Varios por factura: así el PDF lista método y fecha de cada pago y
 // el saldo se deriva de la suma, sin campo `paid_amount` que desincronizar.
 export interface InvoicePayment {
   id: string;

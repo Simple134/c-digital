@@ -117,7 +117,7 @@ export default function Facturacion({
     setLoading(true);
     setError(null);
     const [inv, cli, projectRows, tm] = await Promise.all([
-      // Ítems y abonos vienen anidados: el estado de cada factura se calcula en
+      // Ítems y pagos vienen anidados: el estado de cada factura se calcula en
       // el cliente y no vale la pena una consulta por fila.
       supabase
         .from("invoices")
@@ -168,7 +168,7 @@ export default function Facturacion({
   async function removeInvoice(inv: FullInvoice) {
     if (
       !confirm(
-        `¿Eliminar la factura #${inv.number}? Se borrarán también sus abonos.`,
+        `¿Eliminar la factura #${inv.number}? Se borrarán también sus pagos.`,
       )
     )
       return;
@@ -265,7 +265,7 @@ export default function Facturacion({
           acc[t.status] += 1;
           return acc;
         },
-        { pendiente: 0, abonada: 0, completado: 0 } as Record<
+        { pendiente: 0, parcial: 0, completado: 0 } as Record<
           InvoiceStatus,
           number
         >,
@@ -301,7 +301,7 @@ export default function Facturacion({
         meta: `${invoices.length} factura${invoices.length === 1 ? "" : "s"} emitida${invoices.length === 1 ? "" : "s"}`,
       },
       {
-        label: "Abonado",
+        label: "Pagado",
         value: fmtBreakdown(paid),
         meta: "Pagos registrados",
         tone: "#00e5a0",
@@ -321,7 +321,7 @@ export default function Facturacion({
       {
         label: "Facturas abiertas",
         value: String(openInvoices),
-        meta: `${statusCounts.pendiente} pendiente${statusCounts.pendiente === 1 ? "" : "s"} · ${statusCounts.abonada} abonada${statusCounts.abonada === 1 ? "" : "s"}`,
+        meta: `${statusCounts.pendiente} pendiente${statusCounts.pendiente === 1 ? "" : "s"} · ${statusCounts.parcial} parcial${statusCounts.parcial === 1 ? "" : "es"}`,
       },
     ];
   }, [invoices.length, statusCounts, withTotals]);
@@ -339,7 +339,7 @@ export default function Facturacion({
         <div>
           <h1 style={{ fontSize: 28, margin: 0 }}>Facturación</h1>
           <p style={{ color: "#888", fontSize: 13, marginTop: 6 }}>
-            Facturas a clientes y pagos al equipo, con abonos parciales
+            Facturas a clientes y pagos al equipo, con pagos parciales
           </p>
         </div>
         <button
@@ -422,7 +422,7 @@ export default function Facturacion({
               >
                 Todos ({withTotals.length})
               </button>
-              {(["pendiente", "abonada", "completado"] as InvoiceStatus[]).map(
+              {(["pendiente", "parcial", "completado"] as InvoiceStatus[]).map(
                 (st) => (
                   <button
                     key={st}
@@ -644,7 +644,7 @@ function InvoiceCard({
             {fmtMoney(totals.total, cur)}
           </div>
           <div style={{ fontSize: 12, color: "#888", marginTop: 2 }}>
-            Abonado {fmtMoney(totals.paid, cur)}
+            Pagado {fmtMoney(totals.paid, cur)}
           </div>
           {totals.balance > 0 && (
             <div style={{ fontSize: 13, color: "#e6b800", marginTop: 2 }}>
@@ -718,7 +718,7 @@ function InvoiceCard({
   );
 }
 
-/* ---------------- Abonos ---------------- */
+/* ---------------- Pagos ---------------- */
 
 function PaymentHistoryDrawer({
   invoice,
@@ -824,7 +824,7 @@ function PaymentHistoryDrawer({
             }}
           >
             <div style={s.detailMetric}>
-              <span style={s.summaryLabel}>Abonado</span>
+              <span style={s.summaryLabel}>Pagado</span>
               <strong>{fmtMoney(totals.paid, invoice.currency)}</strong>
             </div>
             <div style={s.detailMetric}>
@@ -1038,7 +1038,7 @@ function Payments({
   isMobile: boolean;
 }) {
   async function removePayment(p: InvoicePayment) {
-    if (!confirm("¿Eliminar este abono?")) return;
+    if (!confirm("¿Eliminar este pago?")) return;
     const { error } = await supabase
       .from("invoice_payments")
       .delete()
@@ -1051,7 +1051,7 @@ function Payments({
     <div style={s.detail}>
       {invoice.invoice_payments.length === 0 ? (
         <p style={{ color: "#666", fontSize: 13, margin: "0 0 14px" }}>
-          Todavía no hay abonos registrados.
+          Todavía no hay pagos registrados.
         </p>
       ) : (
         <div style={{ marginBottom: 16 }}>
@@ -1282,9 +1282,9 @@ function InvoiceEditor({
         }))
       : [emptyItem()],
   );
-  // Abono inicial: el caso que motivó todo esto ("la factura es de 3000 pero el
+  // Pago inicial: el caso que motivó todo esto ("la factura es de 3000 pero el
   // cliente pagó 500 de entrada"). Solo al crear; después se usa el panel de
-  // abonos, que ya lleva su propio historial.
+  // pagos, que ya lleva su propio historial.
   const [initialAmount, setInitialAmount] = useState("");
   const [initialMethod, setInitialMethod] = useState(PAYMENT_METHODS[0]);
   const [saving, setSaving] = useState(false);
@@ -1374,7 +1374,7 @@ function InvoiceEditor({
         return setErr(error.message);
       }
       // Los ítems se reemplazan completos: son pocos y el diff fila a fila
-      // añadiría complejidad sin ganar nada. Los abonos NO se tocan.
+      // añadiría complejidad sin ganar nada. Los pagos NO se tocan.
       await supabase
         .from("invoice_items")
         .delete()
@@ -1420,7 +1420,7 @@ function InvoiceEditor({
       if (payError) {
         setSaving(false);
         return setErr(
-          "Factura creada, pero el abono inicial falló: " + payError.message,
+          "Factura creada, pero el pago inicial falló: " + payError.message,
         );
       }
     }
@@ -1699,10 +1699,10 @@ function InvoiceEditor({
             />
           </div>
 
-          {/* Abono inicial (solo al crear) */}
+          {/* Pago inicial (solo al crear) */}
           {!invoice && (
             <div style={s.field}>
-              <span style={s.label}>Abono inicial (opcional)</span>
+              <span style={s.label}>Pago inicial (opcional)</span>
               <div
                 style={{
                   display: "flex",
@@ -1733,7 +1733,7 @@ function InvoiceEditor({
               </div>
               <span style={s.help}>
                 Ej.: la factura es de 3,000 y el cliente adelanta 500. Después
-                puedes registrar más abonos desde la tarjeta.
+                puedes registrar más pagos desde la tarjeta.
               </span>
             </div>
           )}

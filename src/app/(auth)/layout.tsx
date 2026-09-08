@@ -12,6 +12,8 @@ export default function AuthLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className={`${poppins.variable} font-poppins`}>{children}</div>
+    <div className={`${poppins.variable} font-poppins dashboard-scope`}>
+      {children}
+    </div>
   );
 }

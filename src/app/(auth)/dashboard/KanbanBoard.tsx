@@ -1271,6 +1271,18 @@ export default function KanbanBoard({
                 <button
                   type="button"
                   style={styles.columnEditBtn}
+                  title="Añadir tarjeta"
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setCardModalColumn(column);
+                  }}
+                >
+                  +
+                </button>
+                <button
+                  type="button"
+                  style={styles.columnEditBtn}
                   title="Editar columna"
                   onPointerDown={(e) => e.stopPropagation()}
                   onClick={(e) => {
@@ -1295,15 +1307,6 @@ export default function KanbanBoard({
                 <span style={styles.count}>{column.totalChildrenCount}</span>
               </span>
             </div>
-          )}
-          allowListFooter={() => true}
-          renderListFooter={(column) => (
-            <button
-              style={styles.addCardBtn}
-              onClick={() => setCardModalColumn(column)}
-            >
-              + Añadir tarjeta
-            </button>
           )}
           rootStyle={{ background: "transparent", height: "100%" }}
         />

@@ -99,6 +99,16 @@ h3 {
   font-size: 1.4em;
 }
 
+/* Dashboard: usar Poppins limpio en h1/h2/h3, sin el tratamiento tipográfico del sitio marketing */
+.dashboard-scope h1,
+.dashboard-scope h2,
+.dashboard-scope h3 {
+  font-family: var(--font-poppins), "Poppins", sans-serif;
+  text-transform: none;
+  letter-spacing: normal;
+  font-weight: 600;
+}
+
 /* Header */
 header {
   position: absolute;

@@ -65,8 +65,13 @@ export default function InvoiceDoc({
           <div style={S.dateLine}>Fecha: {fmtDateTime(invoice.issued_at)}</div>
           <div style={{ ...S.muted, marginTop: 14 }}>Estado de la Factura</div>
           <div className="invoice-status-line" style={S.statusLine}>
-            {STATUS_LABEL[t.status]} {fmtMoney(Math.max(t.balance, 0), cur)}
+            {STATUS_LABEL[t.status]}
           </div>
+          {t.balance > 0 && (
+            <div style={{ ...S.muted, marginTop: 4 }}>
+              Restante: {fmtMoney(t.balance, cur)}
+            </div>
+          )}
         </div>
       </header>
 
@@ -109,7 +114,7 @@ export default function InvoiceDoc({
         </div>
       </div>
 
-      {/* Abonos */}
+      {/* Pagos */}
       {payments.length > 0 && (
         <section style={{ ...S.compactSection, marginTop: 12 }}>
           <div className="invoice-pay-head" style={S.payHead}>

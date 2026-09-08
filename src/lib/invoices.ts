@@ -4,13 +4,13 @@ import type { Invoice, InvoiceItem, InvoicePayment } from "./supabase/types";
  * Cálculo de totales y estado de una factura.
  *
  * Nada de esto se guarda en la base de datos. El saldo y el estado se derivan
- * siempre de los ítems y los abonos, porque son la única fuente de verdad: una
- * columna `paid_amount` se desincroniza en cuanto alguien edita un abono, y una
+ * siempre de los ítems y los pagos, porque son la única fuente de verdad: una
+ * columna `paid_amount` se desincroniza en cuanto alguien edita un pago, y una
  * columna `status` permite el absurdo de una factura "Completada" con saldo
  * pendiente.
  */
 
-export type InvoiceStatus = "pendiente" | "abonada" | "completado";
+export type InvoiceStatus = "pendiente" | "parcial" | "completado";
 
 export const CURRENCY_SYMBOL: Record<string, string> = {
   DOP: "$RD",
@@ -60,39 +60,39 @@ export function computeTotals(
   const balance = cents(total - paid);
 
   // El estado se ordena de mayor a menor certeza: si no queda saldo está
-  // completada aunque el abono haya venido en una sola cuota.
+  // completada aunque el pago haya venido en una sola cuota.
   const status: InvoiceStatus =
-    balance <= 0 ? "completado" : paid > 0 ? "abonada" : "pendiente";
+    balance <= 0 ? "completado" : paid > 0 ? "parcial" : "pendiente";
 
   return { subtotal, discount, tax, total, paid, balance, status };
 }
 
 export const STATUS_LABEL: Record<InvoiceStatus, string> = {
   pendiente: "Pendiente",
-  abonada: "Abonada",
+  parcial: "Parcial",
   completado: "Completado",
 };
 
 export const STATUS_COLOR: Record<InvoiceStatus, string> = {
   pendiente: "#ff8080",
-  abonada: "#e6b800",
+  parcial: "#e6b800",
   completado: "#00e5a0",
 };
 
 /**
- * Política de sobrepago: qué hacer cuando un abono excede el saldo.
+ * Política de sobrepago: qué hacer cuando un pago excede el saldo.
  *
- * Devuelve `null` si el abono se acepta sin más, o el texto de advertencia que
+ * Devuelve `null` si el pago se acepta sin más, o el texto de advertencia que
  * el dashboard mostrará antes de guardarlo.
  *
  * TODO(josue): define la política del negocio. Ahora mismo solo advierte y deja
  * pasar (útil para propinas, ajustes de cambio o un anticipo del próximo
- * trabajo). Las otras dos opciones razonables son bloquear el abono, o
+ * trabajo). Las otras dos opciones razonables son bloquear el pago, o
  * aceptarlo y dejar el saldo en negativo como crédito a favor.
  */
 export function paymentWarning(amount: number, balance: number): string | null {
   if (amount <= balance) return null;
-  return `El abono (${amount}) supera el saldo pendiente (${balance}). ¿Registrarlo de todas formas?`;
+  return `El pago (${amount}) supera el saldo pendiente (${balance}). ¿Registrarlo de todas formas?`;
 }
 
 /**

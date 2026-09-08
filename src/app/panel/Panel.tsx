@@ -1068,7 +1068,7 @@ function FacturacionSection({ invoices, items, payments, receipts }: Props) {
                 </span>
               </div>
 
-              {/* Vista de pagos: los abonos registrados por el equipo. */}
+              {/* Vista de pagos: los pagos registrados por el equipo. */}
               {invPayments.length > 0 && (
                 <div style={styles.paymentsBox}>
                   {invPayments.map((p) => (

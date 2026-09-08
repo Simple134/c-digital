@@ -55,7 +55,7 @@ function buildEmailHtml(opts: {
     .join("");
 
   const paymentRows = payments.length
-    ? `<div style="font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:#888;margin:28px 0 10px;">Abonos recibidos</div>
+    ? `<div style="font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:#888;margin:28px 0 10px;">Pagos recibidos</div>
        <table style="width:100%;font-size:13px;border-collapse:collapse;">
          ${payments
            .map(

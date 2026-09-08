@@ -127,7 +127,7 @@ export default async function ClientPanelPage() {
   const invoiceRows = (invoices as Invoice[]) ?? [];
   const invoiceIds = invoiceRows.map((i) => i.id);
 
-  // Ítems, abonos y comprobantes de todas sus facturas: queries planas, no N+1.
+  // Ítems, pagos y comprobantes de todas sus facturas: queries planas, no N+1.
   const [{ data: items }, { data: payments }, { data: receipts }] =
     invoiceIds.length
       ? await Promise.all([

@@ -157,7 +157,7 @@ export async function POST(request: NextRequest) {
   }
 
   // El link cobra el SALDO PENDIENTE, no el total: es lo que el cliente espera
-  // pagar. Consecuencia asumida: cuando hay abonos, la factura espejo en
+  // pagar. Consecuencia asumida: cuando hay pagos, la factura espejo en
   // Gestiono refleja solo el resto y no coincide con la de Supabase. Por eso se
   // manda como una sola línea con el saldo — desglosar conceptos que suman más
   // que el monto cobrado sería una factura incoherente.
