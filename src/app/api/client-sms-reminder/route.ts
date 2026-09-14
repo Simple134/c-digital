@@ -120,7 +120,8 @@ export async function POST(request: NextRequest) {
   const lines = pending
     .slice(0, 5)
     .map(
-      (t) => `• ${t.title}${t.dueDate ? ` (vence ${fmtDueDate(t.dueDate)})` : ""}`,
+      (t) =>
+        `• ${t.title}${t.dueDate ? ` (vence ${fmtDueDate(t.dueDate)})` : ""}`,
     );
   const extra = pending.length > 5 ? `\n+${pending.length - 5} más` : "";
   const headline =

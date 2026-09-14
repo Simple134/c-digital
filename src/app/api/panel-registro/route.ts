@@ -77,8 +77,7 @@ export async function POST(request: NextRequest) {
     if (ownerClient && !ownerClient.active) {
       return NextResponse.json(
         {
-          error:
-            "Este correo no está autorizado. Contáctanos para activarlo.",
+          error: "Este correo no está autorizado. Contáctanos para activarlo.",
         },
         { status: 403 },
       );
@@ -192,7 +191,11 @@ export async function POST(request: NextRequest) {
   const contactUpsert = contactId
     ? await admin
         .from("client_contacts")
-        .update({ auth_user_id: userId, name: fullName, accepted_at: new Date().toISOString() })
+        .update({
+          auth_user_id: userId,
+          name: fullName,
+          accepted_at: new Date().toISOString(),
+        })
         .eq("id", contactId)
     : await admin
         .from("client_contacts")

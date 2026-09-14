@@ -73,9 +73,10 @@ export default async function ClientPanelPage() {
       </main>
     );
   }
-  const { clients: clientData, ...contactData } = contactRow as ClientContact & {
-    clients: Client;
-  };
+  const { clients: clientData, ...contactData } =
+    contactRow as ClientContact & {
+      clients: Client;
+    };
   const client = clientData;
   const contact = contactData as ClientContact;
 

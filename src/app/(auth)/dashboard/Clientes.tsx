@@ -211,35 +211,35 @@ export default function Clientes({
       props,
       contactRows,
     ] = await Promise.all([
-        supabase.from("clients").select("*").order("name"),
-        supabase
-          .from("invoices")
-          .select("*, invoice_items(*), invoice_payments(*)")
-          .eq("party_type", "client")
-          .order("issued_at", { ascending: false }),
-        supabase.from("kanban_cards").select("*"),
-        supabase
-          .from("projects")
-          .select("*")
-          .order("sort_order", { ascending: true }),
-        supabase
-          .from("client_files")
-          .select("*")
-          .order("created_at", { ascending: false }),
-        supabase
-          .from("invoice_receipts")
-          .select("*")
-          .order("created_at", { ascending: false }),
-        supabase
-          .from("meeting_requests")
-          .select("*")
-          .order("created_at", { ascending: false }),
-        supabase
-          .from("proposals")
-          .select("*")
-          .order("created_at", { ascending: false }),
-        supabase.from("client_contacts").select("client_id, auth_user_id"),
-      ]);
+      supabase.from("clients").select("*").order("name"),
+      supabase
+        .from("invoices")
+        .select("*, invoice_items(*), invoice_payments(*)")
+        .eq("party_type", "client")
+        .order("issued_at", { ascending: false }),
+      supabase.from("kanban_cards").select("*"),
+      supabase
+        .from("projects")
+        .select("*")
+        .order("sort_order", { ascending: true }),
+      supabase
+        .from("client_files")
+        .select("*")
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("invoice_receipts")
+        .select("*")
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("meeting_requests")
+        .select("*")
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("proposals")
+        .select("*")
+        .order("created_at", { ascending: false }),
+      supabase.from("client_contacts").select("client_id, auth_user_id"),
+    ]);
     if (
       cli.error ||
       inv.error ||
@@ -278,8 +278,10 @@ export default function Clientes({
     setRegisteredClientIds(
       new Set(
         (
-          (contactRows.data as { client_id: string; auth_user_id: string | null }[]) ??
-          []
+          (contactRows.data as {
+            client_id: string;
+            auth_user_id: string | null;
+          }[]) ?? []
         )
           .filter((c) => c.auth_user_id)
           .map((c) => c.client_id),
@@ -1035,7 +1037,6 @@ function ClientDetail({
               ))}
             </dl>
           </section>
-
 
           {client.notes && (
             <section style={s.sectionCard}>

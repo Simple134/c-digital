@@ -240,7 +240,11 @@ export default function Panel(props: Props) {
         {section === "facturacion" && <FacturacionSection {...scopedProps} />}
         {section === "reuniones" && <ReunionesSection {...scopedProps} />}
         {section === "cuenta" && (
-          <CuentaSection client={client} contact={contact} contacts={contacts} />
+          <CuentaSection
+            client={client}
+            contact={contact}
+            contacts={contacts}
+          />
         )}
       </main>
     </div>
@@ -642,9 +646,7 @@ function TareasSection(props: Props) {
                 onRemove={removeCompleteFile}
                 max={MAX_EVIDENCE_FILES}
               />
-              {completeError && (
-                <p style={styles.formError}>{completeError}</p>
-              )}
+              {completeError && <p style={styles.formError}>{completeError}</p>}
               <button
                 type="button"
                 disabled={completeBusy}
@@ -1574,10 +1576,7 @@ function ColaboradoresCard({
       <div style={styles.sectionHead}>
         <h3 style={styles.h3}>Personas con acceso a este panel</h3>
         {!inviting && (
-          <button
-            onClick={() => setInviting(true)}
-            style={styles.secondaryBtn}
-          >
+          <button onClick={() => setInviting(true)} style={styles.secondaryBtn}>
             + Invitar
           </button>
         )}

@@ -34,7 +34,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "JSON inválido." }, { status: 400 });
   }
 
-  const name = String(body.name ?? "").replace(/\s+/g, " ").trim().slice(0, 120);
+  const name = String(body.name ?? "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 120);
   const email = body.email?.trim().toLowerCase() ?? "";
   if (!name || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     return NextResponse.json(

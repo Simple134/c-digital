@@ -7,8 +7,7 @@ import twilio from "twilio";
  */
 
 export type SmsResult =
-  | { sent: true; sid: string }
-  | { sent: false; reason: string };
+  { sent: true; sid: string } | { sent: false; reason: string };
 
 let client: ReturnType<typeof twilio> | null = null;
 

@@ -5,7 +5,12 @@ import { getPanelAuth } from "@/lib/supabase/guards";
 const BUCKET = "kanban-attachments";
 const MAX_BYTES = 10 * 1024 * 1024;
 const MAX_FILES = 6;
-const ALLOWED = new Set(["image/jpeg", "image/png", "image/webp", "image/heic"]);
+const ALLOWED = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/heic",
+]);
 
 /**
  * El cliente marca como completada una tarea que se le asignó, dejando
@@ -44,7 +49,10 @@ export async function PATCH(
     );
   }
 
-  const comment = String(form.get("comment") ?? "").trim().slice(0, 2000) || null;
+  const comment =
+    String(form.get("comment") ?? "")
+      .trim()
+      .slice(0, 2000) || null;
   const files = form
     .getAll("file")
     .filter((f): f is File => f instanceof File && f.size > 0);
@@ -121,7 +129,8 @@ export async function PATCH(
       .upload(path, await file.arrayBuffer(), { contentType: file.type });
     if (uploadError) {
       console.error("[panel/task] Error al subir evidencia:", uploadError);
-      if (uploadedPaths.length) await admin.storage.from(BUCKET).remove(uploadedPaths);
+      if (uploadedPaths.length)
+        await admin.storage.from(BUCKET).remove(uploadedPaths);
       return NextResponse.json(
         { error: "No se pudo subir una de las imágenes." },
         { status: 500 },
@@ -143,7 +152,8 @@ export async function PATCH(
     .eq("id", cardId);
 
   if (error) {
-    if (uploadedPaths.length) await admin.storage.from(BUCKET).remove(uploadedPaths);
+    if (uploadedPaths.length)
+      await admin.storage.from(BUCKET).remove(uploadedPaths);
     console.error("[panel/task] Error al completar la tarea:", error);
     return NextResponse.json(
       { error: "No se pudo completar la tarea." },
