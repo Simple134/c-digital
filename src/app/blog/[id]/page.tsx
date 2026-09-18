@@ -10,6 +10,7 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import Header from "@/components/layout/Header";
 import { getPostBySlug } from "@/lib/content";
 import { revealPending } from "@/lib/reveal";
+import { slugify } from "@/lib/format";
 import type { Post } from "@/lib/supabase/types";
 
 gsap.registerPlugin(ScrollTrigger);
@@ -43,18 +44,27 @@ export default function BlogArticle() {
     };
   }, [slug]);
 
-  // Genera la tabla de contenido a partir de los <h2 id> del contenido.
+  // Genera la tabla de contenido a partir de los <h2> del contenido.
+  // El HTML puede venir sin `id` en los <h2> (según cómo se haya cargado el
+  // post), así que se le asigna uno aquí a partir del texto en vez de
+  // depender de que quien redactó el artículo lo haya agregado a mano.
   useEffect(() => {
     if (!post?.content) return;
     requestAnimationFrame(() => {
-      const heads = document.querySelectorAll<HTMLElement>(
-        ".article-body h2[id]",
-      );
+      const heads = document.querySelectorAll<HTMLElement>(".article-body h2");
+      const used = new Set<string>();
       setTocItems(
-        Array.from(heads).map((h) => ({
-          id: h.id,
-          label: h.textContent ?? "",
-        })),
+        Array.from(heads).map((h) => {
+          if (!h.id) {
+            const base = slugify(h.textContent ?? "") || "seccion";
+            let id = base;
+            let n = 2;
+            while (used.has(id)) id = `${base}-${n++}`;
+            h.id = id;
+          }
+          used.add(h.id);
+          return { id: h.id, label: h.textContent ?? "" };
+        }),
       );
       revealPending(containerRef.current);
     });
