@@ -28,6 +28,7 @@ import type {
   InvoicePayment,
   KanbanCard,
   Project,
+  ProjectStatus,
 } from "@/lib/supabase/types";
 import useIsMobile from "./useIsMobile";
 
@@ -191,7 +192,6 @@ export default function Clientes({
   const [showArchived, setShowArchived] = useState(false);
   // `"new"` = ficha en blanco; un id = editando ese cliente.
   const [editing, setEditing] = useState<Client | "new" | null>(null);
-  const [registerLinkCopied, setRegisterLinkCopied] = useState(false);
   const isMobile = useIsMobile();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -435,25 +435,60 @@ export default function Clientes({
     load();
   }
 
+  async function createProject(
+    client: Client,
+    draft: ProjectDraft,
+  ): Promise<string | null> {
+    const name = draft.name.trim();
+    if (!name) return "El nombre del proyecto es obligatorio.";
+    const { error } = await supabase.from("projects").insert({
+      client_id: client.id,
+      name,
+      status: draft.status,
+      description: nil(draft.description),
+      started_at: nil(draft.started_at),
+      due_date: nil(draft.due_date),
+      completed_at:
+        draft.status === "completado" ? new Date().toISOString() : null,
+      sort_order: projects.filter((p) => p.client_id === client.id).length,
+    });
+    if (error) return error.message;
+    await load();
+    return null;
+  }
+
+  async function createMeeting(
+    client: Client,
+    draft: MeetingDraft,
+  ): Promise<string | null> {
+    if (!client.email) {
+      return "El cliente no tiene correo. Agrégalo en Contacto para poder registrar la reunión.";
+    }
+    const { error } = await supabase.from("meeting_requests").insert({
+      client_id: client.id,
+      project_id: nil(draft.project_id),
+      name: client.contact_name || client.name,
+      email: client.email,
+      business: client.company || client.name,
+      phone: client.phone,
+      note: nil(draft.note),
+      meeting_date: nil(draft.date),
+      meeting_time: nil(draft.time),
+      digital: [],
+      services: [],
+      status: "nuevo",
+    });
+    if (error) return error.message;
+    await load();
+    return null;
+  }
+
   function openClient(id: string) {
     router.push(`/dashboard?view=clientes&client=${id}`);
   }
 
   function closeClient() {
     router.push("/dashboard?view=clientes");
-  }
-
-  function copyPanelRegisterLink() {
-    const url = `${window.location.origin}/panel/registro`;
-    navigator.clipboard
-      .writeText(url)
-      .then(() => {
-        setRegisterLinkCopied(true);
-        setTimeout(() => setRegisterLinkCopied(false), 2000);
-      })
-      .catch(() => {
-        setError("No se pudo copiar el link. Intenta de nuevo.");
-      });
   }
 
   if (loading) return <p style={{ color: "#888" }}>Cargando clientes…</p>;
@@ -463,6 +498,7 @@ export default function Clientes({
       <div>
         {error && <p style={s.errorBox}>{error}</p>}
         <ClientDetail
+          key={selected.id}
           client={selected}
           registeredClientIds={registeredClientIds}
           projects={projects.filter((p) => p.client_id === selected.id)}
@@ -475,6 +511,8 @@ export default function Clientes({
           onFilesChanged={load}
           onBack={closeClient}
           onEdit={() => setEditing(selected)}
+          onCreateProject={(draft) => createProject(selected, draft)}
+          onCreateMeeting={(draft) => createMeeting(selected, draft)}
           onArchive={() => archive(selected)}
           onDelete={() => remove(selected)}
           onCreateInvoice={() => onCreateInvoice(selected.id)}
@@ -488,6 +526,7 @@ export default function Clientes({
             title={
               editing === "new" ? "Nuevo cliente" : `Editar ${editing.name}`
             }
+            isNew={editing === "new"}
             onClose={() => setEditing(null)}
             onSave={save}
           />
@@ -521,13 +560,6 @@ export default function Clientes({
           }}
         >
           {showArchived ? "Ocultar archivados" : "Ver archivados"}
-        </button>
-        <button
-          onClick={copyPanelRegisterLink}
-          style={{ ...s.secondaryBtn, ...(isMobile ? s.touchBtn : null) }}
-          title="Copia el formulario público para que un cliente cree su acceso"
-        >
-          {registerLinkCopied ? "✓ Link copiado" : "Copiar link registro"}
         </button>
         <button
           onClick={() => setEditing("new")}
@@ -680,6 +712,7 @@ export default function Clientes({
         <ClientEditor
           initial={editing === "new" ? emptyDraft() : toDraft(editing)}
           title={editing === "new" ? "Nuevo cliente" : `Editar ${editing.name}`}
+          isNew={editing === "new"}
           onClose={() => setEditing(null)}
           onSave={save}
         />
@@ -752,6 +785,16 @@ function IconRestore() {
   );
 }
 
+type ClientTab =
+  | "facturacion"
+  | "proyectos"
+  | "tareas"
+  | "contacto"
+  | "reuniones"
+  | "cuenta"
+  | "archivos"
+  | "propuestas";
+
 function ClientDetail({
   client,
   registeredClientIds,
@@ -765,6 +808,8 @@ function ClientDetail({
   onFilesChanged,
   onBack,
   onEdit,
+  onCreateProject,
+  onCreateMeeting,
   onArchive,
   onDelete,
   onCreateInvoice,
@@ -783,6 +828,8 @@ function ClientDetail({
   onFilesChanged: () => void;
   onBack: () => void;
   onEdit: () => void;
+  onCreateProject: (draft: ProjectDraft) => Promise<string | null>;
+  onCreateMeeting: (draft: MeetingDraft) => Promise<string | null>;
   onArchive: () => void;
   onDelete: () => void;
   onCreateInvoice: () => void;
@@ -790,8 +837,20 @@ function ClientDetail({
   onOpenTask: (cardId: string) => void;
 }) {
   const isMobile = useIsMobile();
+  const [tab, setTab] = useState<ClientTab>("facturacion");
+  const [creating, setCreating] = useState<"project" | "meeting" | null>(null);
   const openCards = cards.filter((c) => !c.completed_at);
   const custom = Object.entries(client.custom_fields ?? {});
+  const tabs: { key: ClientTab; label: string; count?: number }[] = [
+    { key: "facturacion", label: "Facturación", count: invoices.length },
+    { key: "proyectos", label: "Proyectos", count: projects.length },
+    { key: "tareas", label: "Tareas", count: openCards.length },
+    { key: "contacto", label: "Contacto" },
+    { key: "reuniones", label: "Reuniones", count: meetings.length },
+    { key: "cuenta", label: "Cuenta" },
+    { key: "archivos", label: "Archivos", count: files.length },
+    { key: "propuestas", label: "Propuestas", count: proposals.length },
+  ];
   const allPayments = invoices.flatMap((inv) =>
     inv.invoice_payments.map((payment) => ({ invoice: inv, payment })),
   );
@@ -907,6 +966,9 @@ function ClientDetail({
             >
               Asignar tarea
             </button>
+            <CopyRegisterLinkButton
+              style={{ ...s.secondaryBtn, ...(isMobile ? s.touchBtn : null) }}
+            />
           </div>
         </div>
 
@@ -970,85 +1032,152 @@ function ClientDetail({
         </div>
       </div>
 
-      <div
-        style={{
-          ...s.detailWorkspace,
-          ...(isMobile ? { gridTemplateColumns: "1fr" } : null),
-        }}
-      >
-        <aside style={s.detailRail}>
-          <section style={s.sectionCard}>
-            <h3 style={s.h3}>Contacto</h3>
-            <dl style={{ ...s.dataGrid, marginTop: 0 }}>
-              <Datum label="Contacto" value={client.contact_name} />
-              <Datum label="Correo" value={client.email} />
-              <Datum label="Teléfono" value={client.phone} />
-              <Datum label="RNC/Cédula" value={client.tax_id} />
-              <Datum label="Dirección" value={client.address} />
-              <Datum
-                label="Cumpleaños"
-                value={
-                  client.birth_date ? fmtBirthday(client.birth_date) : null
-                }
-              />
-              {client.website && (
-                <div>
-                  <dt style={s.dt}>Sitio web</dt>
-                  <dd style={s.dd}>
-                    <a
-                      href={client.website}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={s.link}
-                    >
-                      {client.website
-                        .replace(/^https?:\/\//, "")
-                        .replace(/\/$/, "")}
-                    </a>
-                  </dd>
-                </div>
-              )}
-            </dl>
-          </section>
+      <nav style={s.tabBar} aria-label="Secciones del cliente">
+        {tabs.map((t) => (
+          <button
+            key={t.key}
+            type="button"
+            onClick={() => setTab(t.key)}
+            style={{
+              ...s.tabBtn,
+              ...(tab === t.key ? s.tabBtnActive : null),
+              ...(isMobile ? s.touchBtn : null),
+            }}
+          >
+            {t.label}
+            {t.count !== undefined && <span style={s.tabCount}>{t.count}</span>}
+          </button>
+        ))}
+      </nav>
 
-          <section style={s.sectionCard}>
-            <h3 style={s.h3}>Cuenta</h3>
-            <dl style={{ ...s.dataGrid, marginTop: 0 }}>
-              <Datum label="Crédito" value={creditLabel} />
-              <Datum
-                label="Suscripciones"
-                value={
-                  client.custom_fields?.["Suscripciones"] ??
-                  client.custom_fields?.["Suscripción"] ??
-                  client.custom_fields?.["Suscripcion"] ??
-                  "Sin suscripciones registradas"
-                }
-              />
-              <Datum
-                label="Cotizaciones"
-                value={
-                  client.custom_fields?.["Cotizaciones"] ??
-                  "Sin cotizaciones registradas"
-                }
-              />
-              <Datum label="Método de pago" value={preferredPaymentMethod} />
-              {custom.map(([label, value]) => (
-                <Datum key={label} label={label} value={value || null} />
-              ))}
-            </dl>
-          </section>
-
-          {client.notes && (
-            <section style={s.sectionCard}>
-              <h3 style={s.h3}>Notas</h3>
-              <p style={{ ...s.body, whiteSpace: "pre-wrap" }}>
-                {client.notes}
-              </p>
-            </section>
+      <div style={s.detailMain}>
+        <div style={s.tabActions}>
+          {tab === "facturacion" && (
+            <button onClick={onCreateInvoice} style={s.primaryBtn}>
+              + Nueva factura
+            </button>
           )}
-        </aside>
+          {tab === "proyectos" && (
+            <button onClick={() => setCreating("project")} style={s.primaryBtn}>
+              + Nuevo proyecto
+            </button>
+          )}
+          {tab === "tareas" && (
+            <button onClick={onAssignTask} style={s.primaryBtn}>
+              + Nueva tarea
+            </button>
+          )}
+          {tab === "reuniones" && (
+            <button onClick={() => setCreating("meeting")} style={s.primaryBtn}>
+              + Nueva reunión
+            </button>
+          )}
+          {(tab === "contacto" || tab === "cuenta") && (
+            <button onClick={onEdit} style={s.secondaryBtn}>
+              {tab === "contacto" ? "Editar contacto" : "Editar cuenta"}
+            </button>
+          )}
+        </div>
 
-        <main style={s.detailMain}>
+        {tab === "facturacion" && (
+          <>
+            <div
+              style={{
+                ...s.moduleColumns,
+                ...(isMobile ? { gridTemplateColumns: "1fr" } : null),
+              }}
+            >
+              <section style={s.sectionCard}>
+                <h3 style={s.h3}>Facturas ({invoices.length})</h3>
+                {invoices.length > 0 ? (
+                  invoices.map((inv) => {
+                    const t = computeTotals(
+                      inv,
+                      inv.invoice_items,
+                      inv.invoice_payments,
+                    );
+                    return (
+                      <div
+                        key={inv.id}
+                        style={{ ...s.row, ...(isMobile ? s.rowMobile : null) }}
+                      >
+                        <span style={{ fontWeight: 600 }}>#{inv.number}</span>
+                        <span style={{ color: "#888" }}>
+                          {fmtDateTime(inv.issued_at)}
+                        </span>
+                        <span>{fmtMoney(t.total, inv.currency)}</span>
+                        <span
+                          style={{
+                            color: STATUS_COLOR[t.status],
+                            fontSize: 12,
+                          }}
+                        >
+                          {STATUS_LABEL[t.status]}
+                        </span>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <p style={s.emptyText}>Sin facturas todavía.</p>
+                )}
+              </section>
+
+              <section style={s.sectionCard}>
+                <h3 style={s.h3}>Pagos ({allPayments.length})</h3>
+                {allPayments.length > 0 ? (
+                  allPayments.map(({ invoice, payment }) => (
+                    <div
+                      key={payment.id}
+                      style={{ ...s.row, ...(isMobile ? s.rowMobile : null) }}
+                    >
+                      <span style={{ fontWeight: 600 }}>
+                        {fmtMoney(Number(payment.amount), invoice.currency)}
+                      </span>
+                      <span style={{ color: "#888" }}>
+                        Factura #{invoice.number}
+                      </span>
+                      <span style={{ color: "#888" }}>{payment.method}</span>
+                      <span style={{ color: "#888", fontSize: 12 }}>
+                        {fmtDateTime(payment.paid_at)}
+                      </span>
+                    </div>
+                  ))
+                ) : (
+                  <p style={s.emptyText}>Sin pagos registrados.</p>
+                )}
+              </section>
+            </div>
+
+            {receipts.length > 0 && (
+              <section style={s.sectionCard}>
+                <h3 style={s.h3}>Comprobantes ({receipts.length})</h3>
+                {receipts.map((receipt) => {
+                  const invoice = invoices.find(
+                    (inv) => inv.id === receipt.invoice_id,
+                  );
+                  return (
+                    <div
+                      key={receipt.id}
+                      style={{ ...s.row, ...(isMobile ? s.rowMobile : null) }}
+                    >
+                      <span style={{ fontWeight: 600 }}>
+                        Factura #{invoice?.number ?? "-"}
+                      </span>
+                      <span style={{ color: "#888" }}>
+                        {receipt.note || "Sin nota"}
+                      </span>
+                      <span style={{ color: "#888", fontSize: 12 }}>
+                        {fmtDateTime(receipt.created_at)}
+                      </span>
+                    </div>
+                  );
+                })}
+              </section>
+            )}
+          </>
+        )}
+
+        {tab === "proyectos" && (
           <section style={s.sectionCard}>
             <h3 style={s.h3}>Proyectos ({projects.length})</h3>
             {projects.length > 0 ? (
@@ -1080,188 +1209,181 @@ function ClientDetail({
               <p style={s.emptyText}>No hay proyectos vinculados.</p>
             )}
           </section>
+        )}
 
-          <div
-            style={{
-              ...s.moduleColumns,
-              ...(isMobile ? { gridTemplateColumns: "1fr" } : null),
-            }}
-          >
+        {tab === "tareas" && (
+          <section style={s.sectionCard}>
+            <h3 style={s.h3}>
+              Órdenes y tareas ({openCards.length}
+              {cards.length > openCards.length ? ` de ${cards.length}` : ""})
+            </h3>
+            {openCards.length > 0 ? (
+              openCards.map((card) => (
+                <button
+                  key={card.id}
+                  onClick={() => onOpenTask(card.id)}
+                  style={{
+                    ...s.row,
+                    ...s.rowButton,
+                    ...(isMobile ? s.rowMobile : null),
+                  }}
+                >
+                  <span style={{ gridColumn: "1 / span 2", textAlign: "left" }}>
+                    {card.title}
+                  </span>
+                  <span style={{ color: "#888", fontSize: 12 }}>
+                    {card.due_date ? `vence ${card.due_date}` : "sin fecha"}
+                  </span>
+                  <span style={{ fontSize: 12, color: "#e6b800" }}>
+                    {card.assigned_to_client ? "pendiente del cliente" : ""}
+                  </span>
+                </button>
+              ))
+            ) : (
+              <p style={s.emptyText}>Sin tareas abiertas.</p>
+            )}
+          </section>
+        )}
+
+        {tab === "contacto" && (
+          <>
             <section style={s.sectionCard}>
-              <h3 style={s.h3}>Facturas ({invoices.length})</h3>
-              {invoices.length > 0 ? (
-                invoices.map((inv) => {
-                  const t = computeTotals(
-                    inv,
-                    inv.invoice_items,
-                    inv.invoice_payments,
-                  );
-                  return (
-                    <div
-                      key={inv.id}
-                      style={{ ...s.row, ...(isMobile ? s.rowMobile : null) }}
-                    >
-                      <span style={{ fontWeight: 600 }}>#{inv.number}</span>
-                      <span style={{ color: "#888" }}>
-                        {fmtDateTime(inv.issued_at)}
-                      </span>
-                      <span>{fmtMoney(t.total, inv.currency)}</span>
-                      <span
-                        style={{ color: STATUS_COLOR[t.status], fontSize: 12 }}
+              <h3 style={s.h3}>Contacto</h3>
+              <dl style={{ ...s.dataGrid, marginTop: 0 }}>
+                <Datum label="Contacto" value={client.contact_name} />
+                <Datum label="Correo" value={client.email} />
+                <Datum label="Teléfono" value={client.phone} />
+                <Datum label="RNC/Cédula" value={client.tax_id} />
+                <Datum label="Dirección" value={client.address} />
+                <Datum
+                  label="Cumpleaños"
+                  value={
+                    client.birth_date ? fmtBirthday(client.birth_date) : null
+                  }
+                />
+                {client.website && (
+                  <div>
+                    <dt style={s.dt}>Sitio web</dt>
+                    <dd style={s.dd}>
+                      <a
+                        href={client.website}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={s.link}
                       >
-                        {STATUS_LABEL[t.status]}
-                      </span>
-                    </div>
-                  );
-                })
-              ) : (
-                <p style={s.emptyText}>Sin facturas todavía.</p>
-              )}
-            </section>
-
-            <section style={s.sectionCard}>
-              <h3 style={s.h3}>Pagos ({allPayments.length})</h3>
-              {allPayments.length > 0 ? (
-                allPayments.map(({ invoice, payment }) => (
-                  <div
-                    key={payment.id}
-                    style={{ ...s.row, ...(isMobile ? s.rowMobile : null) }}
-                  >
-                    <span style={{ fontWeight: 600 }}>
-                      {fmtMoney(Number(payment.amount), invoice.currency)}
-                    </span>
-                    <span style={{ color: "#888" }}>
-                      Factura #{invoice.number}
-                    </span>
-                    <span style={{ color: "#888" }}>{payment.method}</span>
-                    <span style={{ color: "#888", fontSize: 12 }}>
-                      {fmtDateTime(payment.paid_at)}
-                    </span>
+                        {client.website
+                          .replace(/^https?:\/\//, "")
+                          .replace(/\/$/, "")}
+                      </a>
+                    </dd>
                   </div>
-                ))
-              ) : (
-                <p style={s.emptyText}>Sin pagos registrados.</p>
-              )}
-            </section>
-          </div>
-
-          <div
-            style={{
-              ...s.moduleColumns,
-              ...(isMobile ? { gridTemplateColumns: "1fr" } : null),
-            }}
-          >
-            <section style={s.sectionCard}>
-              <h3 style={s.h3}>
-                Órdenes y tareas ({openCards.length}
-                {cards.length > openCards.length ? ` de ${cards.length}` : ""})
-              </h3>
-              {openCards.length > 0 ? (
-                openCards.map((card) => (
-                  <button
-                    key={card.id}
-                    onClick={() => onOpenTask(card.id)}
-                    style={{
-                      ...s.row,
-                      ...s.rowButton,
-                      ...(isMobile ? s.rowMobile : null),
-                    }}
-                  >
-                    <span
-                      style={{ gridColumn: "1 / span 2", textAlign: "left" }}
-                    >
-                      {card.title}
-                    </span>
-                    <span style={{ color: "#888", fontSize: 12 }}>
-                      {card.due_date ? `vence ${card.due_date}` : "sin fecha"}
-                    </span>
-                    <span style={{ fontSize: 12, color: "#e6b800" }}>
-                      {card.assigned_to_client ? "pendiente del cliente" : ""}
-                    </span>
-                  </button>
-                ))
-              ) : (
-                <p style={s.emptyText}>Sin tareas abiertas.</p>
-              )}
+                )}
+              </dl>
             </section>
 
-            <section style={s.sectionCard}>
-              <h3 style={s.h3}>Reuniones ({meetings.length})</h3>
-              {meetings.length > 0 ? (
-                meetings.map((meeting) => (
-                  <div
-                    key={meeting.id}
-                    style={{ ...s.row, ...(isMobile ? s.rowMobile : null) }}
-                  >
-                    <span style={{ fontWeight: 600 }}>
-                      {meeting.meeting_date ?? "Sin fecha"}
-                    </span>
-                    <span style={{ color: "#888" }}>
-                      {meeting.meeting_time ?? meeting.status}
-                    </span>
-                    <span style={{ color: "#888" }}>
-                      {meeting.project_id
-                        ? projects.find((p) => p.id === meeting.project_id)
-                            ?.name
-                        : ""}
-                    </span>
-                    <span style={{ color: "#888", fontSize: 12 }}>
-                      {meeting.summary ? "con resumen" : "sin resumen"}
-                    </span>
-                  </div>
-                ))
-              ) : (
-                <p style={s.emptyText}>Sin reuniones registradas.</p>
-              )}
-            </section>
-          </div>
+            {client.notes && (
+              <section style={s.sectionCard}>
+                <h3 style={s.h3}>Notas</h3>
+                <p style={{ ...s.body, whiteSpace: "pre-wrap" }}>
+                  {client.notes}
+                </p>
+              </section>
+            )}
+          </>
+        )}
 
-          {receipts.length > 0 && (
-            <section style={s.sectionCard}>
-              <h3 style={s.h3}>Comprobantes ({receipts.length})</h3>
-              {receipts.map((receipt) => {
-                const invoice = invoices.find(
-                  (inv) => inv.id === receipt.invoice_id,
-                );
-                return (
-                  <div
-                    key={receipt.id}
-                    style={{ ...s.row, ...(isMobile ? s.rowMobile : null) }}
-                  >
-                    <span style={{ fontWeight: 600 }}>
-                      Factura #{invoice?.number ?? "-"}
-                    </span>
-                    <span style={{ color: "#888" }}>
-                      {receipt.note || "Sin nota"}
-                    </span>
-                    <span style={{ color: "#888", fontSize: 12 }}>
-                      {fmtDateTime(receipt.created_at)}
-                    </span>
-                  </div>
-                );
-              })}
-            </section>
-          )}
+        {tab === "reuniones" && (
+          <section style={s.sectionCard}>
+            <h3 style={s.h3}>Reuniones ({meetings.length})</h3>
+            {meetings.length > 0 ? (
+              meetings.map((meeting) => (
+                <div
+                  key={meeting.id}
+                  style={{ ...s.row, ...(isMobile ? s.rowMobile : null) }}
+                >
+                  <span style={{ fontWeight: 600 }}>
+                    {meeting.meeting_date ?? "Sin fecha"}
+                  </span>
+                  <span style={{ color: "#888" }}>
+                    {meeting.meeting_time ?? meeting.status}
+                  </span>
+                  <span style={{ color: "#888" }}>
+                    {meeting.project_id
+                      ? projects.find((p) => p.id === meeting.project_id)?.name
+                      : ""}
+                  </span>
+                  <span style={{ color: "#888", fontSize: 12 }}>
+                    {meeting.summary ? "con resumen" : "sin resumen"}
+                  </span>
+                </div>
+              ))
+            ) : (
+              <p style={s.emptyText}>Sin reuniones registradas.</p>
+            )}
+          </section>
+        )}
 
-          <div
-            style={{
-              ...s.moduleColumns,
-              ...(isMobile ? { gridTemplateColumns: "1fr" } : null),
-            }}
-          >
-            <ClientFilesSection
-              clientId={client.id}
-              files={files}
-              onChanged={onFilesChanged}
-            />
-            <ClientProposalsSection
-              clientId={client.id}
-              proposals={proposals}
-              onChanged={onFilesChanged}
-            />
-          </div>
-        </main>
+        {tab === "cuenta" && (
+          <section style={s.sectionCard}>
+            <h3 style={s.h3}>Cuenta</h3>
+            <dl style={{ ...s.dataGrid, marginTop: 0 }}>
+              <Datum label="Crédito" value={creditLabel} />
+              <Datum
+                label="Suscripciones"
+                value={
+                  client.custom_fields?.["Suscripciones"] ??
+                  client.custom_fields?.["Suscripción"] ??
+                  client.custom_fields?.["Suscripcion"] ??
+                  "Sin suscripciones registradas"
+                }
+              />
+              <Datum
+                label="Cotizaciones"
+                value={
+                  client.custom_fields?.["Cotizaciones"] ??
+                  "Sin cotizaciones registradas"
+                }
+              />
+              <Datum label="Método de pago" value={preferredPaymentMethod} />
+              {custom.map(([label, value]) => (
+                <Datum key={label} label={label} value={value || null} />
+              ))}
+            </dl>
+          </section>
+        )}
+
+        {tab === "archivos" && (
+          <ClientFilesSection
+            clientId={client.id}
+            files={files}
+            onChanged={onFilesChanged}
+          />
+        )}
+
+        {tab === "propuestas" && (
+          <ClientProposalsSection
+            clientId={client.id}
+            proposals={proposals}
+            onChanged={onFilesChanged}
+          />
+        )}
       </div>
+
+      {creating === "project" && (
+        <ProjectCreateDrawer
+          clientName={client.name}
+          onClose={() => setCreating(null)}
+          onSubmit={onCreateProject}
+        />
+      )}
+      {creating === "meeting" && (
+        <MeetingCreateDrawer
+          clientName={client.name}
+          projects={projects}
+          onClose={() => setCreating(null)}
+          onSubmit={onCreateMeeting}
+        />
+      )}
     </div>
   );
 }
@@ -1729,14 +1851,48 @@ function Datum({ label, value }: { label: string; value: string | null }) {
 
 /* ---------------- Editor ---------------- */
 
+/**
+ * Copia el formulario público de registro del panel (/panel/registro).
+ * Es un link general: el cliente lo abre y crea su acceso con el correo que
+ * ya está en su ficha.
+ */
+function CopyRegisterLinkButton({ style }: { style: React.CSSProperties }) {
+  const [state, setState] = useState<"idle" | "copied" | "failed">("idle");
+
+  function copy() {
+    navigator.clipboard
+      .writeText(`${window.location.origin}/panel/registro`)
+      .then(() => setState("copied"))
+      .catch(() => setState("failed"))
+      .finally(() => setTimeout(() => setState("idle"), 2000));
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={copy}
+      style={style}
+      title="Copia el formulario público para que un cliente cree su acceso"
+    >
+      {state === "copied"
+        ? "✓ Link copiado"
+        : state === "failed"
+          ? "No se pudo copiar"
+          : "Copiar link registro"}
+    </button>
+  );
+}
+
 function ClientEditor({
   initial,
   title,
+  isNew,
   onClose,
   onSave,
 }: {
   initial: Draft;
   title: string;
+  isNew: boolean;
   onClose: () => void;
   onSave: (draft: Draft) => Promise<string | null>;
 }) {
@@ -1813,6 +1969,12 @@ function ClientEditor({
           style={{ ...s.drawerBody, ...(isMobile ? { padding: 14 } : null) }}
         >
           {err && <p style={s.errorBox}>{err}</p>}
+
+          {isNew && (
+            <div style={{ marginBottom: 14 }}>
+              <CopyRegisterLinkButton style={gbtn} />
+            </div>
+          )}
 
           <label style={s.field}>
             <span style={s.label}>Nombre corto *</span>
@@ -2016,6 +2178,252 @@ function ClientEditor({
   );
 }
 
+type ProjectDraft = {
+  name: string;
+  status: ProjectStatus;
+  description: string;
+  started_at: string;
+  due_date: string;
+};
+
+type MeetingDraft = {
+  project_id: string;
+  date: string;
+  time: string;
+  note: string;
+};
+
+const PROJECT_STATUS_OPTIONS: { value: ProjectStatus; label: string }[] = [
+  { value: "activo", label: "Activo" },
+  { value: "pausado", label: "Pausado" },
+  { value: "completado", label: "Completado" },
+];
+
+/**
+ * Cajón genérico para crear algo desde la ficha del cliente. Cada formulario
+ * aporta sus campos y un `onSubmit` que devuelve el mensaje de error o `null`.
+ */
+function CreateDrawer({
+  title,
+  onClose,
+  onSubmit,
+  children,
+}: {
+  title: string;
+  onClose: () => void;
+  onSubmit: () => Promise<string | null>;
+  children: React.ReactNode;
+}) {
+  const isMobile = useIsMobile();
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  async function submit() {
+    setSaving(true);
+    setErr(null);
+    const message = await onSubmit();
+    setSaving(false);
+    if (message) setErr(message);
+    else onClose();
+  }
+
+  return (
+    <div style={s.overlay} onClick={onClose}>
+      <div
+        style={{
+          ...s.drawer,
+          ...(isMobile ? { width: "100%", borderLeft: "none" } : null),
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div style={s.drawerHeader}>
+          <h2 style={{ margin: 0, fontSize: 20 }}>{title}</h2>
+          <button onClick={onClose} style={s.closeBtn}>
+            ✕
+          </button>
+        </div>
+        <div
+          style={{ ...s.drawerBody, ...(isMobile ? { padding: 14 } : null) }}
+        >
+          {err && <p style={s.errorBox}>{err}</p>}
+          {children}
+        </div>
+        <div style={s.drawerFooter}>
+          <button
+            onClick={onClose}
+            style={isMobile ? { ...s.ghostBtn, ...s.touchBtn } : s.ghostBtn}
+          >
+            Cancelar
+          </button>
+          <button
+            onClick={submit}
+            disabled={saving}
+            style={{ ...s.primaryBtn, ...(isMobile ? s.touchBtn : null) }}
+          >
+            {saving ? "Guardando…" : "Crear"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ProjectCreateDrawer({
+  clientName,
+  onClose,
+  onSubmit,
+}: {
+  clientName: string;
+  onClose: () => void;
+  onSubmit: (draft: ProjectDraft) => Promise<string | null>;
+}) {
+  const [draft, setDraft] = useState<ProjectDraft>({
+    name: "",
+    status: "activo",
+    description: "",
+    started_at: "",
+    due_date: "",
+  });
+  const set = (patch: Partial<ProjectDraft>) =>
+    setDraft((prev) => ({ ...prev, ...patch }));
+
+  return (
+    <CreateDrawer
+      title={`Nuevo proyecto · ${clientName}`}
+      onClose={onClose}
+      onSubmit={() => onSubmit(draft)}
+    >
+      <label style={s.field}>
+        <span style={s.label}>Nombre *</span>
+        <input
+          value={draft.name}
+          onChange={(e) => set({ name: e.target.value })}
+          style={s.input}
+          autoFocus
+        />
+      </label>
+      <label style={s.field}>
+        <span style={s.label}>Estado</span>
+        <select
+          value={draft.status}
+          onChange={(e) => set({ status: e.target.value as ProjectStatus })}
+          style={s.input}
+        >
+          {PROJECT_STATUS_OPTIONS.map((o) => (
+            <option key={o.value} value={o.value}>
+              {o.label}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label style={s.field}>
+        <span style={s.label}>Descripción</span>
+        <textarea
+          value={draft.description}
+          onChange={(e) => set({ description: e.target.value })}
+          style={{ ...s.input, minHeight: 80, resize: "vertical" }}
+        />
+      </label>
+      <div style={s.pair}>
+        <label style={{ ...s.field, flex: 1 }}>
+          <span style={s.label}>Inicio</span>
+          <input
+            type="date"
+            value={draft.started_at}
+            onChange={(e) => set({ started_at: e.target.value })}
+            style={s.input}
+          />
+        </label>
+        <label style={{ ...s.field, flex: 1 }}>
+          <span style={s.label}>Vencimiento</span>
+          <input
+            type="date"
+            value={draft.due_date}
+            onChange={(e) => set({ due_date: e.target.value })}
+            style={s.input}
+          />
+        </label>
+      </div>
+    </CreateDrawer>
+  );
+}
+
+function MeetingCreateDrawer({
+  clientName,
+  projects,
+  onClose,
+  onSubmit,
+}: {
+  clientName: string;
+  projects: Project[];
+  onClose: () => void;
+  onSubmit: (draft: MeetingDraft) => Promise<string | null>;
+}) {
+  const [draft, setDraft] = useState<MeetingDraft>({
+    project_id: "",
+    date: "",
+    time: "",
+    note: "",
+  });
+  const set = (patch: Partial<MeetingDraft>) =>
+    setDraft((prev) => ({ ...prev, ...patch }));
+
+  return (
+    <CreateDrawer
+      title={`Nueva reunión · ${clientName}`}
+      onClose={onClose}
+      onSubmit={() => onSubmit(draft)}
+    >
+      <div style={s.pair}>
+        <label style={{ ...s.field, flex: 1 }}>
+          <span style={s.label}>Fecha</span>
+          <input
+            type="date"
+            value={draft.date}
+            onChange={(e) => set({ date: e.target.value })}
+            style={s.input}
+          />
+        </label>
+        <label style={{ ...s.field, flex: 1 }}>
+          <span style={s.label}>Hora</span>
+          <input
+            type="time"
+            value={draft.time}
+            onChange={(e) => set({ time: e.target.value })}
+            style={s.input}
+          />
+        </label>
+      </div>
+      {projects.length > 0 && (
+        <label style={s.field}>
+          <span style={s.label}>Proyecto</span>
+          <select
+            value={draft.project_id}
+            onChange={(e) => set({ project_id: e.target.value })}
+            style={s.input}
+          >
+            <option value="">Sin proyecto</option>
+            {projects.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
+      <label style={s.field}>
+        <span style={s.label}>Tema / nota</span>
+        <textarea
+          value={draft.note}
+          onChange={(e) => set({ note: e.target.value })}
+          style={{ ...s.input, minHeight: 80, resize: "vertical" }}
+          placeholder="De qué se va a hablar"
+        />
+      </label>
+    </CreateDrawer>
+  );
+}
+
 const s: Record<string, CSSProperties> = {
   toolbar: {
     display: "flex",
@@ -2191,17 +2599,36 @@ const s: Record<string, CSSProperties> = {
     color: "#777",
   },
   detailStatValue: { fontSize: 17, fontWeight: 600, letterSpacing: -0.2 },
-  detailWorkspace: {
-    display: "grid",
-    gridTemplateColumns: "320px minmax(0, 1fr)",
-    gap: 16,
-    alignItems: "start",
+  tabActions: { display: "flex", gap: 8, justifyContent: "flex-end" },
+  tabBar: {
+    display: "flex",
+    gap: 4,
+    overflowX: "auto",
+    borderBottom: "1px solid #1e1e1e",
   },
-  detailRail: {
-    display: "grid",
-    gap: 12,
-    alignContent: "start",
-    minWidth: 0,
+  tabBtn: {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 6,
+    background: "none",
+    border: "none",
+    borderBottom: "2px solid transparent",
+    marginBottom: -1,
+    color: "#888",
+    padding: "10px 14px",
+    fontSize: 13,
+    fontWeight: 600,
+    cursor: "pointer",
+    whiteSpace: "nowrap",
+    fontFamily: "inherit",
+  },
+  tabBtnActive: { color: "#fff", borderBottomColor: "#00e5a0" },
+  tabCount: {
+    background: "#1a1a1a",
+    borderRadius: 10,
+    padding: "1px 7px",
+    fontSize: 11,
+    color: "#aaa",
   },
   detailMain: {
     display: "grid",
