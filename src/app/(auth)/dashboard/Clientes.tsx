@@ -163,11 +163,18 @@ function fmtBirthday(date: string): string {
 export default function Clientes({
   supabase,
   onCreateInvoice,
+  onOpenInvoice,
+  onOpenProject,
+  onOpenMeeting,
   onAssignTask,
   onOpenTask,
 }: {
   supabase: Supabase;
+  onOpenProject: (clientId: string, projectId: string) => void;
+  onOpenMeeting: (clientId: string, meetingId: string) => void;
   onCreateInvoice: (clientId: string) => void;
+  /** Lleva a Facturación y abre el detalle (pagos, editar) de esa factura. */
+  onOpenInvoice: (clientId: string, invoiceId: string) => void;
   onAssignTask: (clientId: string) => void;
   /** Lleva al Kanban filtrado por el cliente y abre esa tarjeta. */
   onOpenTask: (clientId: string, cardId: string) => void;
@@ -516,6 +523,9 @@ export default function Clientes({
           onArchive={() => archive(selected)}
           onDelete={() => remove(selected)}
           onCreateInvoice={() => onCreateInvoice(selected.id)}
+          onOpenInvoice={(invoiceId) => onOpenInvoice(selected.id, invoiceId)}
+          onOpenProject={(id) => onOpenProject(selected.id, id)}
+          onOpenMeeting={(id) => onOpenMeeting(selected.id, id)}
           onAssignTask={() => onAssignTask(selected.id)}
           onOpenTask={(cardId) => onOpenTask(selected.id, cardId)}
         />
@@ -813,6 +823,9 @@ function ClientDetail({
   onArchive,
   onDelete,
   onCreateInvoice,
+  onOpenInvoice,
+  onOpenProject,
+  onOpenMeeting,
   onAssignTask,
   onOpenTask,
 }: {
@@ -833,12 +846,24 @@ function ClientDetail({
   onArchive: () => void;
   onDelete: () => void;
   onCreateInvoice: () => void;
+  onOpenInvoice: (invoiceId: string) => void;
+  onOpenProject: (projectId: string) => void;
+  onOpenMeeting: (meetingId: string) => void;
   onAssignTask: () => void;
   onOpenTask: (cardId: string) => void;
 }) {
   const isMobile = useIsMobile();
   const [tab, setTab] = useState<ClientTab>("facturacion");
   const [creating, setCreating] = useState<"project" | "meeting" | null>(null);
+  // Saldo pendiente del cliente, sumado por moneda.
+  const pendingByCurrency = Object.entries(
+    invoices.reduce<Record<string, number>>((acc, inv) => {
+      const t = computeTotals(inv, inv.invoice_items, inv.invoice_payments);
+      if (t.balance > 0)
+        acc[inv.currency] = (acc[inv.currency] ?? 0) + t.balance;
+      return acc;
+    }, {}),
+  );
   const openCards = cards.filter((c) => !c.completed_at);
   const custom = Object.entries(client.custom_fields ?? {});
   const tabs: { key: ClientTab; label: string; count?: number }[] = [
@@ -1089,6 +1114,25 @@ function ClientDetail({
             >
               <section style={s.sectionCard}>
                 <h3 style={s.h3}>Facturas ({invoices.length})</h3>
+                {pendingByCurrency.length > 0 && (
+                  <div style={{ marginBottom: 12 }}>
+                    <div style={{ color: "#888", fontSize: 12 }}>
+                      Saldo pendiente
+                    </div>
+                    {pendingByCurrency.map(([cur, amount]) => (
+                      <div
+                        key={cur}
+                        style={{
+                          fontSize: 28,
+                          fontWeight: 700,
+                          color: "#f5a524",
+                        }}
+                      >
+                        {fmtMoney(amount, cur)}
+                      </div>
+                    ))}
+                  </div>
+                )}
                 {invoices.length > 0 ? (
                   invoices.map((inv) => {
                     const t = computeTotals(
@@ -1099,13 +1143,29 @@ function ClientDetail({
                     return (
                       <div
                         key={inv.id}
-                        style={{ ...s.row, ...(isMobile ? s.rowMobile : null) }}
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => onOpenInvoice(inv.id)}
+                        onKeyDown={(e) =>
+                          e.key === "Enter" && onOpenInvoice(inv.id)
+                        }
+                        style={{
+                          ...s.row,
+                          ...(isMobile ? s.rowMobile : null),
+                          cursor: "pointer",
+                        }}
                       >
                         <span style={{ fontWeight: 600 }}>#{inv.number}</span>
                         <span style={{ color: "#888" }}>
                           {fmtDateTime(inv.issued_at)}
+                          {inv.due_date ? ` · vence ${inv.due_date}` : ""}
                         </span>
-                        <span>{fmtMoney(t.total, inv.currency)}</span>
+                        <span>
+                          {fmtMoney(t.total, inv.currency)}
+                          {t.balance > 0 && t.status !== "completado"
+                            ? ` (saldo ${fmtMoney(t.balance, inv.currency)})`
+                            : ""}
+                        </span>
                         <span
                           style={{
                             color: STATUS_COLOR[t.status],
@@ -1190,7 +1250,16 @@ function ClientDetail({
                     (card) => card.completed_at,
                   ).length;
                   return (
-                    <div key={project.id} style={s.projectTile}>
+                    <div
+                      key={project.id}
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => onOpenProject(project.id)}
+                      onKeyDown={(e) =>
+                        e.key === "Enter" && onOpenProject(project.id)
+                      }
+                      style={{ ...s.projectTile, cursor: "pointer" }}
+                    >
                       <strong>{project.name}</strong>
                       <span style={s.listMeta}>{project.status}</span>
                       <span style={s.body}>
@@ -1299,7 +1368,17 @@ function ClientDetail({
               meetings.map((meeting) => (
                 <div
                   key={meeting.id}
-                  style={{ ...s.row, ...(isMobile ? s.rowMobile : null) }}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => onOpenMeeting(meeting.id)}
+                  onKeyDown={(e) =>
+                    e.key === "Enter" && onOpenMeeting(meeting.id)
+                  }
+                  style={{
+                    ...s.row,
+                    ...(isMobile ? s.rowMobile : null),
+                    cursor: "pointer",
+                  }}
                 >
                   <span style={{ fontWeight: 600 }}>
                     {meeting.meeting_date ?? "Sin fecha"}

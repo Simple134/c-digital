@@ -330,6 +330,10 @@ export interface Invoice {
   party_phone: string | null;
   party_address: string | null;
   issued_at: string;
+  // Fecha límite de pago (YYYY-MM-DD). Null en facturas anteriores.
+  due_date: string | null;
+  // Etapas de recordatorio ya enviadas (5, 1, 0 días antes del vencimiento).
+  reminders_sent: number[];
   currency: InvoiceCurrency;
   discount: number;
   tax_rate: number;

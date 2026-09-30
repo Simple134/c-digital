@@ -85,6 +85,8 @@ export default function Dashboard({ userEmail }: { userEmail: string }) {
   const [handoffProjectId, setHandoffProjectId] = useState<string | null>(null);
   // Tarjeta concreta que el Kanban debe abrir al recibir el salto.
   const [handoffCardId, setHandoffCardId] = useState<string | null>(null);
+  // Registro existente (factura o reunión) que la vista destino debe abrir.
+  const [handoffItemId, setHandoffItemId] = useState<string | null>(null);
 
   // Acordeones del sidebar; se abre el que contiene el item activo al entrar.
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() => {
@@ -134,8 +136,15 @@ export default function Dashboard({ userEmail }: { userEmail: string }) {
   }
 
   const handoff = useCallback(
-    (view: View, clientId: string, cardId?: string, projectId?: string) => {
+    (
+      view: View,
+      clientId: string,
+      cardId?: string,
+      projectId?: string,
+      itemId?: string,
+    ) => {
       setEditing(null);
+      setHandoffItemId(itemId ?? null);
       setHandoffClientId(clientId);
       setHandoffProjectId(projectId ?? null);
       setHandoffCardId(cardId ?? null);
@@ -148,6 +157,7 @@ export default function Dashboard({ userEmail }: { userEmail: string }) {
     setHandoffClientId(null);
     setHandoffProjectId(null);
     setHandoffCardId(null);
+    setHandoffItemId(null);
   }, []);
 
   const load = useCallback(
@@ -371,6 +381,15 @@ export default function Dashboard({ userEmail }: { userEmail: string }) {
             <Clientes
               supabase={supabase}
               onCreateInvoice={(id) => handoff("facturacion", id)}
+              onOpenInvoice={(id, invoiceId) =>
+                handoff("facturacion", id, undefined, undefined, invoiceId)
+              }
+              onOpenProject={(id, projectId) =>
+                handoff("proyectos", id, undefined, projectId)
+              }
+              onOpenMeeting={(id, meetingId) =>
+                handoff("solicitudes", id, undefined, undefined, meetingId)
+              }
               onAssignTask={(id) => handoff("kanban", id)}
               onOpenTask={(id, cardId) => handoff("kanban", id, cardId)}
             />
@@ -387,6 +406,8 @@ export default function Dashboard({ userEmail }: { userEmail: string }) {
             </div>
             <Proyectos
               supabase={supabase}
+              prefillProjectId={handoffProjectId}
+              onPrefillUsed={clearHandoff}
               onOpenTasks={(clientId, projectId) =>
                 handoff("kanban", clientId, undefined, projectId)
               }
@@ -415,13 +436,18 @@ export default function Dashboard({ userEmail }: { userEmail: string }) {
                 </p>
               </div>
             </div>
-            <Solicitudes supabase={supabase} />
+            <Solicitudes
+              supabase={supabase}
+              prefillId={handoffItemId}
+              onPrefillUsed={clearHandoff}
+            />
           </>
         ) : view === "facturacion" ? (
           <>
             <Facturacion
               supabase={supabase}
               prefillClientId={handoffClientId}
+              prefillInvoiceId={handoffItemId}
               onPrefillUsed={clearHandoff}
             />
           </>

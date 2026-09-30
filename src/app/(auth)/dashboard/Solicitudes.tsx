@@ -56,7 +56,15 @@ function waLink(phone: string | null) {
 const tableFor = (kind: Row["kind"]) =>
   kind === "audit" ? "form_submissions" : "meeting_requests";
 
-export default function Solicitudes({ supabase }: { supabase: Supabase }) {
+export default function Solicitudes({
+  supabase,
+  prefillId,
+  onPrefillUsed,
+}: {
+  supabase: Supabase;
+  prefillId?: string | null;
+  onPrefillUsed?: () => void;
+}) {
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -99,6 +107,13 @@ export default function Solicitudes({ supabase }: { supabase: Supabase }) {
   useEffect(() => {
     load();
   }, [load]);
+
+  // Salto desde la ficha del cliente: expande la reunión pedida.
+  useEffect(() => {
+    if (!prefillId || !rows.some((r) => r.id === prefillId)) return;
+    setExpanded(prefillId);
+    onPrefillUsed?.();
+  }, [prefillId, rows, onPrefillUsed]);
 
   async function updateStatus(row: Row, status: FormSubmissionStatus) {
     setRows((prev) =>

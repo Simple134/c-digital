@@ -275,6 +275,25 @@ function DashboardSection(props: Props & { goTo: (s: SectionId) => void }) {
     acc.paid += t.paid;
   }
 
+  // Saldo pendiente por moneda y la fecha de pago más próxima entre las
+  // facturas que aún deben algo.
+  const pending: Record<string, number> = {};
+  let nextDue: string | null = null;
+  let overdue = false;
+  const today = new Date().toISOString().slice(0, 10);
+  for (const inv of invoices) {
+    const t = computeTotals(
+      inv,
+      items.filter((i) => i.invoice_id === inv.id),
+      payments.filter((p) => p.invoice_id === inv.id),
+    );
+    if (t.balance <= 0) continue;
+    pending[inv.currency] = (pending[inv.currency] ?? 0) + t.balance;
+    if (inv.due_date && (!nextDue || inv.due_date < nextDue))
+      nextDue = inv.due_date;
+  }
+  if (nextDue && nextDue < today) overdue = true;
+
   // Entregas estimadas: próximas fechas límite de tareas abiertas.
   const upcoming = cards
     .filter((c) => c.due_date && !c.completed_at)
@@ -284,6 +303,51 @@ function DashboardSection(props: Props & { goTo: (s: SectionId) => void }) {
   return (
     <section style={styles.section}>
       <h2 style={styles.h2}>Dashboard</h2>
+
+      {Object.keys(pending).length > 0 && (
+        <div
+          style={{
+            border: `1px solid ${overdue ? "#ff5c5c" : "#f5a524"}`,
+            borderRadius: 14,
+            padding: "20px 24px",
+            marginBottom: 20,
+          }}
+        >
+          <div style={{ color: "#888", fontSize: 13 }}>Saldo pendiente</div>
+          {Object.entries(pending).map(([cur, amount]) => (
+            <div
+              key={cur}
+              style={{
+                fontSize: 40,
+                fontWeight: 700,
+                lineHeight: 1.2,
+                color: overdue ? "#ff5c5c" : "#f5a524",
+              }}
+            >
+              {fmtMoney(amount, cur)}
+            </div>
+          ))}
+          {nextDue && (
+            <div style={{ color: overdue ? "#ff5c5c" : "#888", fontSize: 13 }}>
+              {overdue ? "Vencido el" : "Fecha de pago:"} {nextDue}
+            </div>
+          )}
+          <button
+            onClick={() => goTo("facturacion")}
+            style={{
+              marginTop: 10,
+              background: "none",
+              border: "none",
+              color: "#00e5a0",
+              cursor: "pointer",
+              padding: 0,
+              fontSize: 13,
+            }}
+          >
+            Ver facturas →
+          </button>
+        </div>
+      )}
 
       <div style={styles.statGrid}>
         <div style={styles.statCard}>
@@ -1062,6 +1126,9 @@ function FacturacionSection({ invoices, items, payments, receipts }: Props) {
               <div style={styles.rowBetween}>
                 <span style={styles.metaText}>
                   Emitida el {fmtDateTime(inv.issued_at)}
+                  {inv.due_date && t.balance > 0
+                    ? ` · Fecha de pago: ${inv.due_date}`
+                    : ""}
                 </span>
                 <span style={styles.invAmount}>
                   {t.balance > 0

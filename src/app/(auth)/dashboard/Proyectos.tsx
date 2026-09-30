@@ -73,8 +73,12 @@ const nil = (value: string) => (value.trim() ? value.trim() : null);
 export default function Proyectos({
   supabase,
   onOpenTasks,
+  prefillProjectId,
+  onPrefillUsed,
 }: {
   supabase: Supabase;
+  prefillProjectId?: string | null;
+  onPrefillUsed?: () => void;
   onOpenTasks: (clientId: string, projectId: string) => void;
 }) {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -129,6 +133,15 @@ export default function Proyectos({
   useEffect(() => {
     load();
   }, [load]);
+
+  // Salto desde la ficha del cliente: abre el editor del proyecto pedido.
+  useEffect(() => {
+    if (!prefillProjectId) return;
+    const target = projects.find((p) => p.id === prefillProjectId);
+    if (!target) return;
+    setEditing(target);
+    onPrefillUsed?.();
+  }, [prefillProjectId, projects, onPrefillUsed]);
 
   const clientById = useMemo(
     () => new Map(clients.map((client) => [client.id, client])),

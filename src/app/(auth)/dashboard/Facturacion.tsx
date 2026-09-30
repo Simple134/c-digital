@@ -88,10 +88,13 @@ export default function Facturacion({
   // Clientes; `onPrefillUsed` lo limpia para que cerrar el formulario y volver
   // a la sección no lo reabra solo.
   prefillClientId,
+  // Factura existente cuyo detalle se abre al entrar (desde la ficha del cliente).
+  prefillInvoiceId,
   onPrefillUsed,
 }: {
   supabase: Supabase;
   prefillClientId?: string | null;
+  prefillInvoiceId?: string | null;
   onPrefillUsed?: () => void;
 }) {
   const [invoices, setInvoices] = useState<FullInvoice[]>([]);
@@ -159,11 +162,17 @@ export default function Facturacion({
   // abriría sin cliente seleccionado.
   const [prefilled, setPrefilled] = useState<string | null>(null);
   useEffect(() => {
-    if (!prefillClientId) return;
+    if (!prefillClientId || prefillInvoiceId) return;
     setPrefilled(prefillClientId);
     setEditing("new");
     onPrefillUsed?.();
-  }, [prefillClientId, onPrefillUsed]);
+  }, [prefillClientId, prefillInvoiceId, onPrefillUsed]);
+
+  useEffect(() => {
+    if (!prefillInvoiceId) return;
+    setPaymentsInvoiceId(prefillInvoiceId);
+    onPrefillUsed?.();
+  }, [prefillInvoiceId, onPrefillUsed]);
 
   async function removeInvoice(inv: FullInvoice) {
     if (
@@ -1268,6 +1277,7 @@ function InvoiceEditor({
   const [issuedAt, setIssuedAt] = useState(
     toLocalInput(invoice?.issued_at ?? new Date().toISOString()),
   );
+  const [dueDate, setDueDate] = useState(invoice?.due_date ?? "");
   const [discount, setDiscount] = useState(String(invoice?.discount ?? 0));
   const [withTax, setWithTax] = useState(Number(invoice?.tax_rate ?? 0) > 0);
   const [description, setDescription] = useState(invoice?.description ?? "");
@@ -1354,6 +1364,11 @@ function InvoiceEditor({
       team_member_id: partyType === "team" ? party.id : null,
       ...partySnapshot,
       issued_at: new Date(issuedAt).toISOString(),
+      due_date: dueDate || null,
+      // Fecha nueva = recordatorios nuevos.
+      ...(dueDate !== (invoice?.due_date ?? "")
+        ? { reminders_sent: [] }
+        : null),
       currency,
       discount: Number(discount) || 0,
       tax_rate: withTax ? ITBIS : 0,
@@ -1423,6 +1438,17 @@ function InvoiceEditor({
           "Factura creada, pero el pago inicial falló: " + payError.message,
         );
       }
+    }
+
+    // Si la fecha de pago ya cae dentro de la ventana (5 días o menos), el
+    // servidor manda el recordatorio de una vez; fuera de ella no hace nada y
+    // el cron diario se encarga. No bloquea el guardado si falla.
+    if (dueDate && invoiceId) {
+      fetch("/api/invoice-reminders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ invoiceId }),
+      }).catch(() => {});
     }
 
     setSaving(false);
@@ -1536,6 +1562,15 @@ function InvoiceEditor({
                 type="datetime-local"
                 value={issuedAt}
                 onChange={(e) => setIssuedAt(e.target.value)}
+                style={inp}
+              />
+            </label>
+            <label style={{ ...s.field, flex: 1 }}>
+              <span style={s.label}>Fecha de pago (vencimiento)</span>
+              <input
+                type="date"
+                value={dueDate}
+                onChange={(e) => setDueDate(e.target.value)}
                 style={inp}
               />
             </label>

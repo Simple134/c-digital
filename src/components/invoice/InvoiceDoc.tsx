@@ -63,6 +63,9 @@ export default function InvoiceDoc({
           style={{ ...S.statusBlock, textAlign: "right" }}
         >
           <div style={S.dateLine}>Fecha: {fmtDateTime(invoice.issued_at)}</div>
+          {invoice.due_date && (
+            <div style={S.dateLine}>Fecha de pago: {invoice.due_date}</div>
+          )}
           <div style={{ ...S.muted, marginTop: 14 }}>Estado de la Factura</div>
           <div className="invoice-status-line" style={S.statusLine}>
             {STATUS_LABEL[t.status]}
