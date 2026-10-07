@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isTeamMember } from "@/lib/supabase/guards";
 import { buildEmailHtml } from "@/lib/invoice-email";
+import { computeTotals, fmtMoney } from "@/lib/invoices";
 import type {
   Invoice,
   InvoiceItem,
@@ -35,7 +36,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "No autorizado" }, { status: 403 });
   }
 
-  let body: { invoiceId?: string; to?: string };
+  let body: { invoiceId?: string; to?: string; paymentReminder?: boolean };
   try {
     body = await request.json();
   } catch {
@@ -95,16 +96,36 @@ export async function POST(request: NextRequest) {
     });
   }
 
+  const items = (itemsRes.data as InvoiceItem[]) ?? [];
+  const payments = (paymentsRes.data as InvoicePayment[]) ?? [];
+
+  // Reenvío de cobro: el saldo del encabezado sale de la base de datos, no del
+  // navegador. Una factura saldada no se cobra.
+  let reminder: { headline: string } | undefined;
+  if (body.paymentReminder) {
+    const { balance } = computeTotals(invoice as Invoice, items, payments);
+    if (balance <= 0) {
+      return NextResponse.json<SendResult>({
+        sent: false,
+        reason: "La factura ya está saldada.",
+      });
+    }
+    reminder = {
+      headline: `Pago pendiente: saldo de ${fmtMoney(balance, (invoice as Invoice).currency)}`,
+    };
+  }
+
   try {
     const resend = new Resend(process.env.RESEND_API_KEY);
     await resend.emails.send({
       from,
       to: [recipient],
-      subject: `Factura #${(invoice as Invoice).number} · C Digital`,
+      subject: `${reminder ? "Pago pendiente · " : ""}Factura #${(invoice as Invoice).number} · C Digital`,
       html: buildEmailHtml({
         invoice: invoice as Invoice,
-        items: (itemsRes.data as InvoiceItem[]) ?? [],
-        payments: (paymentsRes.data as InvoicePayment[]) ?? [],
+        items,
+        payments,
+        reminder,
         url: `${request.nextUrl.origin}/factura/${(invoice as Invoice).public_token}`,
       }),
     });

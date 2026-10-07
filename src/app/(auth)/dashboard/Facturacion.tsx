@@ -226,13 +226,22 @@ export default function Facturacion({
     }
   }
 
-  async function sendEmail(inv: FullInvoice) {
-    const to = prompt("Enviar la factura a:", inv.party_email ?? "");
+  async function sendEmail(inv: FullInvoice, paymentReminder = false) {
+    const to = prompt(
+      paymentReminder
+        ? "Reenviar correo de pago a:"
+        : "Enviar la factura a:",
+      inv.party_email ?? "",
+    );
     if (to === null) return;
     const res = await fetch("/api/invoice-send", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ invoiceId: inv.id, to: to.trim() || undefined }),
+      body: JSON.stringify({
+        invoiceId: inv.id,
+        to: to.trim() || undefined,
+        paymentReminder,
+      }),
     });
     const data = await res.json();
     if (!res.ok) return alert(data.error ?? "No se pudo enviar.");
@@ -542,6 +551,7 @@ export default function Facturacion({
             removeInvoice(paymentsInvoice.inv);
           }}
           onSend={() => sendEmail(paymentsInvoice.inv)}
+          onResendPayment={() => sendEmail(paymentsInvoice.inv, true)}
           onPaymentLink={() => paymentLink(paymentsInvoice.inv)}
           linking={linking === paymentsInvoice.inv.id}
           onChanged={load}
@@ -738,6 +748,7 @@ function PaymentHistoryDrawer({
   onEdit,
   onDelete,
   onSend,
+  onResendPayment,
   onPaymentLink,
   linking,
   onChanged,
@@ -750,6 +761,7 @@ function PaymentHistoryDrawer({
   onEdit: () => void;
   onDelete: () => void;
   onSend: () => void;
+  onResendPayment: () => void;
   onPaymentLink: () => void;
   linking: boolean;
   onChanged: () => void;
@@ -914,6 +926,19 @@ function PaymentHistoryDrawer({
               >
                 Enviar por correo
               </button>
+              {totals.balance > 0 && (
+                <button
+                  onClick={onResendPayment}
+                  style={{
+                    ...s.ghostBtn,
+                    ...s.drawerActionBtn,
+                    ...(isMobile ? s.touchBtn : null),
+                    color: "#e6b800",
+                  }}
+                >
+                  Reenviar correo de pago
+                </button>
+              )}
               <button
                 onClick={onEdit}
                 style={{
