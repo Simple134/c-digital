@@ -24,7 +24,7 @@ export function buildEmailHtml(opts: {
   payments: InvoicePayment[];
   url: string;
   /** Si viene, el correo es un recordatorio de pago y no el envío inicial. */
-  reminder?: { headline: string };
+  reminder?: { headline: string; installment?: number };
 }): string {
   const { invoice, items, payments, url, reminder } = opts;
   const cur = invoice.currency;
@@ -54,6 +54,14 @@ export function buildEmailHtml(opts: {
            .join("")}
        </table>`
     : "";
+
+  const installmentBlock =
+    reminder?.installment && t.balance > 0
+      ? `<div style="margin-top:20px;padding:14px 16px;background:#03210f;border:1px solid #0a5c38;border-radius:8px;">
+           <span style="font-size:12px;color:#00e5a0;text-transform:uppercase;letter-spacing:.05em;">Cuota a pagar hoy</span>
+           <div style="font-size:22px;font-weight:700;color:#00e5a0;margin-top:4px;">${esc(fmtMoney(reminder.installment, cur))}</div>
+         </div>`
+      : "";
 
   const balanceBlock =
     t.balance > 0
@@ -93,6 +101,7 @@ export function buildEmailHtml(opts: {
         <div style="text-align:right;font-size:12px;color:#888;margin-top:4px;">Estado: ${esc(STATUS_LABEL[t.status])}</div>
 
         ${paymentRows}
+        ${installmentBlock}
         ${balanceBlock}
 
         ${invoice.description ? `<div style="margin-top:26px;"><div style="font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:#888;margin-bottom:6px;">Descripción</div><p style="margin:0;font-size:13px;color:#ccc;line-height:1.5;">${esc(invoice.description)}</p></div>` : ""}

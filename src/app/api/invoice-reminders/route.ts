@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
   const { data: due } = await admin
     .from("invoices")
     .select("id")
-    .not("due_date", "is", null);
+    .or("due_date.not.is.null,pay_days.neq.{}");
 
   let sent = 0;
   for (const { id } of (due as { id: string }[]) ?? []) {

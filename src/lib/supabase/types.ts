@@ -334,6 +334,12 @@ export interface Invoice {
   due_date: string | null;
   // Etapas de recordatorio ya enviadas (5, 1, 0 días antes del vencimiento).
   reminders_sent: number[];
+  // Pago recurrente: cuota fija y días del mes en que se cobra (p. ej. 15 y 30).
+  // `pay_days` vacío = sin recurrencia. `last_installment_on` evita enviar dos
+  // correos de cuota el mismo día.
+  installment_amount: number | null;
+  pay_days: number[];
+  last_installment_on: string | null;
   currency: InvoiceCurrency;
   discount: number;
   tax_rate: number;

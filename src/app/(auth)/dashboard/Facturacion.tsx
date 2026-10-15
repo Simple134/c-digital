@@ -1303,6 +1303,10 @@ function InvoiceEditor({
     toLocalInput(invoice?.issued_at ?? new Date().toISOString()),
   );
   const [dueDate, setDueDate] = useState(invoice?.due_date ?? "");
+  const [payDays, setPayDays] = useState<number[]>(invoice?.pay_days ?? []);
+  const [installment, setInstallment] = useState(
+    invoice?.installment_amount ? String(invoice.installment_amount) : "",
+  );
   const [discount, setDiscount] = useState(String(invoice?.discount ?? 0));
   const [withTax, setWithTax] = useState(Number(invoice?.tax_rate ?? 0) > 0);
   const [description, setDescription] = useState(invoice?.description ?? "");
@@ -1394,6 +1398,14 @@ function InvoiceEditor({
       ...(dueDate !== (invoice?.due_date ?? "")
         ? { reminders_sent: [] }
         : null),
+      // Solo se escriben si hay recurrencia (o ya la había): así guardar una
+      // factura normal no depende de que la migración esté aplicada.
+      ...(payDays.length || invoice?.pay_days?.length
+        ? {
+            pay_days: payDays,
+            installment_amount: Number(installment) || null,
+          }
+        : null),
       currency,
       discount: Number(discount) || 0,
       tax_rate: withTax ? ITBIS : 0,
@@ -1468,7 +1480,7 @@ function InvoiceEditor({
     // Si la fecha de pago ya cae dentro de la ventana (5 días o menos), el
     // servidor manda el recordatorio de una vez; fuera de ella no hace nada y
     // el cron diario se encarga. No bloquea el guardado si falla.
-    if (dueDate && invoiceId) {
+    if ((dueDate || payDays.length) && invoiceId) {
       fetch("/api/invoice-reminders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -1610,6 +1622,61 @@ function InvoiceEditor({
                 <option value="USD">US$ (USD)</option>
               </select>
             </label>
+          </div>
+
+          {/* Pago recurrente */}
+          <div
+            style={{
+              display: "flex",
+              gap: 12,
+              flexDirection: isMobile ? "column" : "row",
+            }}
+          >
+            <div style={{ ...s.field, flex: 1 }}>
+              <span style={s.label}>Pago recurrente (días del mes)</span>
+              <div style={{ display: "flex", gap: 8 }}>
+                {[15, 30].map((d) => {
+                  const on = payDays.includes(d);
+                  return (
+                    <button
+                      key={d}
+                      type="button"
+                      onClick={() =>
+                        setPayDays((cur) =>
+                          on
+                            ? cur.filter((x) => x !== d)
+                            : [...cur, d].sort((a, b) => a - b),
+                        )
+                      }
+                      style={{
+                        ...inp,
+                        cursor: "pointer",
+                        width: 72,
+                        fontWeight: on ? 700 : 400,
+                        borderColor: on ? "#00e5a0" : undefined,
+                        color: on ? "#00e5a0" : undefined,
+                      }}
+                    >
+                      Día {d}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            {payDays.length > 0 && (
+              <label style={{ ...s.field, flex: 1 }}>
+                <span style={s.label}>Cuota a cobrar cada día de pago</span>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={installment}
+                  onChange={(e) => setInstallment(e.target.value)}
+                  placeholder="Ej. 500"
+                  style={inp}
+                />
+              </label>
+            )}
           </div>
 
           {/* Conceptos */}

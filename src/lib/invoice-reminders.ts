@@ -1,7 +1,7 @@
 import { Resend } from "resend";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { buildEmailHtml } from "@/lib/invoice-email";
-import { computeTotals } from "@/lib/invoices";
+import { computeTotals, fmtMoney } from "@/lib/invoices";
 import type {
   Invoice,
   InvoiceItem,
@@ -16,6 +16,10 @@ import type {
  * ya enviadas. Si la factura se crea o se edita cuando ya está dentro de una
  * ventana, la etapa correspondiente sale de inmediato en vez de esperar al cron.
  * Al cambiar la fecha de vencimiento la lista se reinicia (ver InvoiceEditor).
+ *
+ * Facturas recurrentes (`pay_days` no vacío): ignoran las etapas anteriores y
+ * mandan un solo correo con la cuota los días del mes indicados (15, 30...),
+ * mientras quede saldo. Un día mayor al último del mes cae en el último día.
  */
 
 export type ReminderStage = 5 | 1 | 0;
@@ -38,6 +42,13 @@ export function reminderStage(
   );
   if (days < 0 || days > 5) return null;
   return days === 0 ? 0 : days === 1 ? 1 : 5;
+}
+
+/** ¿Hoy toca cobrar según los días del mes configurados? */
+export function isPayDay(payDays: number[], today = todayInSantoDomingo()) {
+  const [y, m, d] = today.split("-").map(Number);
+  const lastDay = new Date(Date.UTC(y, m, 0)).getUTCDate();
+  return payDays.some((pd) => Math.min(pd, lastDay) === d);
 }
 
 function headline(dueDate: string, today: string): string {
@@ -65,13 +76,23 @@ export async function sendInvoiceReminder(
     .eq("id", invoiceId)
     .maybeSingle<Invoice>();
   if (!invoice) return { sent: false, reason: "Factura no encontrada" };
-  if (!invoice.due_date) return { sent: false, reason: "Sin fecha de pago" };
+  if (!invoice.due_date && !(invoice.pay_days ?? []).length)
+    return { sent: false, reason: "Sin fecha de pago" };
 
   const today = todayInSantoDomingo();
-  const stage = reminderStage(invoice.due_date, today);
-  if (stage === null) return { sent: false, reason: "Fuera de la ventana" };
-  if ((invoice.reminders_sent ?? []).includes(stage))
-    return { sent: false, reason: "Ya enviado" };
+  const recurring = (invoice.pay_days ?? []).length > 0;
+  let stage: ReminderStage | null = null;
+  if (recurring) {
+    if (!isPayDay(invoice.pay_days, today))
+      return { sent: false, reason: "Hoy no es día de pago" };
+    if (invoice.last_installment_on === today)
+      return { sent: false, reason: "Ya enviado" };
+  } else {
+    stage = reminderStage(invoice.due_date!, today);
+    if (stage === null) return { sent: false, reason: "Fuera de la ventana" };
+    if ((invoice.reminders_sent ?? []).includes(stage))
+      return { sent: false, reason: "Ya enviado" };
+  }
   if (!invoice.party_email) return { sent: false, reason: "Sin correo" };
 
   const [itemsRes, paymentsRes] = await Promise.all([
@@ -90,25 +111,33 @@ export async function sendInvoiceReminder(
   const payments = (paymentsRes.data as InvoicePayment[]) ?? [];
 
   // Una factura saldada no se recuerda.
-  if (computeTotals(invoice, items, payments).balance <= 0)
-    return { sent: false, reason: "Factura saldada" };
+  const { balance } = computeTotals(invoice, items, payments);
+  if (balance <= 0) return { sent: false, reason: "Factura saldada" };
 
   const from = process.env.RESEND_FROM;
   if (!process.env.RESEND_API_KEY || !from)
     return { sent: false, reason: "Correo no configurado" };
 
-  const head = headline(invoice.due_date, today);
+  const installment = recurring
+    ? Math.min(Number(invoice.installment_amount) || balance, balance)
+    : undefined;
+  const head = recurring
+    ? "Recordatorio de pago: hoy toca tu cuota"
+    : headline(invoice.due_date!, today);
+  const subject = recurring
+    ? `Cuota de ${fmtMoney(installment!, invoice.currency)} · Factura #${invoice.number} · C Digital`
+    : `${head.replace("Recordatorio de pago: tu factura", `Factura #${invoice.number}`)} · C Digital`;
   try {
     await new Resend(process.env.RESEND_API_KEY).emails.send({
       from,
       to: [invoice.party_email],
-      subject: `${head.replace("Recordatorio de pago: tu factura", `Factura #${invoice.number}`)} · C Digital`,
+      subject,
       html: buildEmailHtml({
         invoice,
         items,
         payments,
         url: `${origin}/factura/${invoice.public_token}`,
-        reminder: { headline: head },
+        reminder: { headline: head, installment },
       }),
     });
   } catch (e) {
@@ -120,7 +149,11 @@ export async function sendInvoiceReminder(
   // en la próxima corrida y no un recordatorio que nunca salió.
   await admin
     .from("invoices")
-    .update({ reminders_sent: [...(invoice.reminders_sent ?? []), stage] })
+    .update(
+      recurring
+        ? { last_installment_on: today }
+        : { reminders_sent: [...(invoice.reminders_sent ?? []), stage] },
+    )
     .eq("id", invoice.id);
 
   return { sent: true, recipient: invoice.party_email };
