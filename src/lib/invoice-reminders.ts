@@ -17,9 +17,11 @@ import type {
  * ventana, la etapa correspondiente sale de inmediato en vez de esperar al cron.
  * Al cambiar la fecha de vencimiento la lista se reinicia (ver InvoiceEditor).
  *
- * Facturas recurrentes (`pay_days` no vacío): ignoran las etapas anteriores y
- * mandan un solo correo con la cuota los días del mes indicados (15, 30...),
- * mientras quede saldo. Un día mayor al último del mes cae en el último día.
+ * Facturas recurrentes (`pay_days` no vacío): ignoran `due_date` y aplican las
+ * mismas tres etapas a la próxima fecha de cobro (15, 30...) mientras quede
+ * saldo. Un día mayor al último del mes cae en el último día. Como no hay una
+ * sola fecha, `last_installment_on` guarda el ciclo ya avisado y
+ * `reminders_sent` sus etapas; al cambiar de ciclo las etapas cuentan desde cero.
  */
 
 export type ReminderStage = 5 | 1 | 0;
@@ -44,21 +46,38 @@ export function reminderStage(
   return days === 0 ? 0 : days === 1 ? 1 : 5;
 }
 
-/** ¿Hoy toca cobrar según los días del mes configurados? */
-export function isPayDay(payDays: number[], today = todayInSantoDomingo()) {
+/** Próxima fecha de cobro (hoy incluido) según los días del mes configurados. */
+export function nextPayDate(
+  payDays: number[],
+  today = todayInSantoDomingo(),
+): string {
   const [y, m, d] = today.split("-").map(Number);
-  const lastDay = new Date(Date.UTC(y, m, 0)).getUTCDate();
-  return payDays.some((pd) => Math.min(pd, lastDay) === d);
+  const inMonth = (year: number, month: number) => {
+    const lastDay = new Date(Date.UTC(year, month, 0)).getUTCDate();
+    return payDays
+      .map((pd) => Math.min(pd, lastDay))
+      .filter((day) => year !== y || month !== m || day >= d)
+      .sort((a, b) => a - b)[0];
+  };
+  let year = y;
+  let month = m;
+  let day = inMonth(year, month);
+  if (day === undefined) {
+    month = m === 12 ? 1 : m + 1;
+    year = m === 12 ? y + 1 : y;
+    day = inMonth(year, month);
+  }
+  return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 }
 
-function headline(dueDate: string, today: string): string {
+function headline(dueDate: string, today: string, subject: string): string {
   const days = Math.round(
     (Date.parse(`${dueDate}T00:00:00Z`) - Date.parse(`${today}T00:00:00Z`)) /
       86_400_000,
   );
-  if (days === 0) return "Recordatorio de pago: tu factura vence hoy";
-  if (days === 1) return "Recordatorio de pago: tu factura vence mañana";
-  return `Recordatorio de pago: tu factura vence en ${days} días`;
+  if (days === 0) return `Recordatorio de pago: ${subject} vence hoy`;
+  if (days === 1) return `Recordatorio de pago: ${subject} vence mañana`;
+  return `Recordatorio de pago: ${subject} vence en ${days} días`;
 }
 
 export type ReminderResult =
@@ -81,18 +100,16 @@ export async function sendInvoiceReminder(
 
   const today = todayInSantoDomingo();
   const recurring = (invoice.pay_days ?? []).length > 0;
-  let stage: ReminderStage | null = null;
-  if (recurring) {
-    if (!isPayDay(invoice.pay_days, today))
-      return { sent: false, reason: "Hoy no es día de pago" };
-    if (invoice.last_installment_on === today)
-      return { sent: false, reason: "Ya enviado" };
-  } else {
-    stage = reminderStage(invoice.due_date!, today);
-    if (stage === null) return { sent: false, reason: "Fuera de la ventana" };
-    if ((invoice.reminders_sent ?? []).includes(stage))
-      return { sent: false, reason: "Ya enviado" };
-  }
+  const dueDate = recurring
+    ? nextPayDate(invoice.pay_days, today)
+    : invoice.due_date!;
+  const stage = reminderStage(dueDate, today);
+  if (stage === null) return { sent: false, reason: "Fuera de la ventana" };
+  const alreadySent =
+    recurring && invoice.last_installment_on !== dueDate
+      ? []
+      : (invoice.reminders_sent ?? []);
+  if (alreadySent.includes(stage)) return { sent: false, reason: "Ya enviado" };
   if (!invoice.party_email) return { sent: false, reason: "Sin correo" };
 
   const [itemsRes, paymentsRes] = await Promise.all([
@@ -121,11 +138,9 @@ export async function sendInvoiceReminder(
   const installment = recurring
     ? Math.min(Number(invoice.installment_amount) || balance, balance)
     : undefined;
-  const head = recurring
-    ? "Recordatorio de pago: hoy toca tu cuota"
-    : headline(invoice.due_date!, today);
+  const head = headline(dueDate, today, recurring ? "tu cuota" : "tu factura");
   const subject = recurring
-    ? `Cuota de ${fmtMoney(installment!, invoice.currency)} · Factura #${invoice.number} · C Digital`
+    ? `${head.replace("Recordatorio de pago: tu cuota", `Cuota de ${fmtMoney(installment!, invoice.currency)} · Factura #${invoice.number}`)} · C Digital`
     : `${head.replace("Recordatorio de pago: tu factura", `Factura #${invoice.number}`)} · C Digital`;
   try {
     await new Resend(process.env.RESEND_API_KEY).emails.send({
@@ -133,7 +148,7 @@ export async function sendInvoiceReminder(
       to: [invoice.party_email],
       subject,
       html: buildEmailHtml({
-        invoice,
+        invoice: { ...invoice, due_date: dueDate },
         items,
         payments,
         url: `${origin}/factura/${invoice.public_token}`,
@@ -151,8 +166,11 @@ export async function sendInvoiceReminder(
     .from("invoices")
     .update(
       recurring
-        ? { last_installment_on: today }
-        : { reminders_sent: [...(invoice.reminders_sent ?? []), stage] },
+        ? {
+            last_installment_on: dueDate,
+            reminders_sent: [...alreadySent, stage],
+          }
+        : { reminders_sent: [...alreadySent, stage] },
     )
     .eq("id", invoice.id);
 
